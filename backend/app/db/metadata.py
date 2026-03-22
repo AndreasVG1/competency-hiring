@@ -1,8 +1,5 @@
-"""Database package for SQLite and Neo4j integration points."""
-
 from app.db.base import Base
 from app.db.models import (
-    CompetencyLevel,
     JobOffer,
     JobOfferRequirement,
     JobOfferStatus,
@@ -12,6 +9,7 @@ from app.db.models import (
     RequirementPriority,
     User,
     UserRole,
+    CompetencyLevel,
 )
 
 __all__ = [

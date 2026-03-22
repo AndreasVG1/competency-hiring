@@ -22,13 +22,16 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Add dependencies for FastAPI, SQLAlchemy 2.x, Alembic, password hashing, JWT auth, Neo4j driver, and pytest.
 - Define environment-based configuration for SQLite URL, Neo4j URL, Neo4j credentials, JWT secret, and frontend origin.
 
-3. [] Define the Phase 1 domain model in SQLite
+3. [X] Define the Phase 1 domain model in SQLite
+- Keep SQLite domain entities limited to business-owned data; do not mirror Neo4j nodes as SQL domain tables or persist Neo4j internal node IDs.
 - Create `users` with: `id`, `email`, `password_hash`, `role`, `created_at`.
-- Create `job_seeker_profiles` with: `user_id`, `full_name`, `summary`, `location`, `created_at`, `updated_at`.
+- Create `job_seeker_profiles` with: `user_id`, `full_name`, `summary`, `location`, `occupation_key`, `created_at`, `updated_at`.
+- Persist the selected occupation as `occupation_key` so profile setup and later profile views have a stable graph reference.
 - Create `job_seeker_competencies` with: `id`, `user_id`, `competency_key`, `level`.
 - Create `recruiter_profiles` with: `user_id`, `company_name`, `contact_name`.
 - Create `job_offers` with: `id`, `recruiter_user_id`, `title`, `description`, `status`, `created_at`, `updated_at`.
 - Create `job_offer_requirements` with: `id`, `job_offer_id`, `competency_key`, `priority`.
+- Treat occupation and competency display data, including optional lower graph levels like activity indicators and competency elements, as Neo4j-backed catalog read models resolved through backend APIs rather than SQLite-owned domain state.
 - Use Alembic from the beginning so schema changes stay reviewable.
 
 4. [] Define the competency catalog contract

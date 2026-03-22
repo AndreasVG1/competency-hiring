@@ -1,0 +1,22 @@
+{
+  "name": "competency-hiring-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --build && vite build",
+    "type-check": "vue-tsc --build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.0",
+    "vue-tsc": "^2.2.10"
+  }
+}

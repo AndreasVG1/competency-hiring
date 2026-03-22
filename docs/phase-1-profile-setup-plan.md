@@ -12,17 +12,17 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 
 ## Step-by-Step Tasks
 
-1. Create the project skeleton and documentation
+1. [X] Create the project skeleton and documentation
 - Add a short implementation note in `docs/` that records the chosen stack and this phase scope.
 - Restructure the backend toward `backend/app/{api,core,modules,db}` and the frontend toward a standard Vite Vue app.
 - Remove the committed local virtual environment from the tracked project and keep environments outside the repo.
 
-2. Set up backend foundations
+2. [] Set up backend foundations
 - Initialize FastAPI with an app entrypoint, health route, settings module, dependency wiring, CORS, and structured error responses.
 - Add dependencies for FastAPI, SQLAlchemy 2.x, Alembic, password hashing, JWT auth, Neo4j driver, and pytest.
 - Define environment-based configuration for SQLite URL, Neo4j URL, Neo4j credentials, JWT secret, and frontend origin.
 
-3. Define the Phase 1 domain model in SQLite
+3. [] Define the Phase 1 domain model in SQLite
 - Create `users` with: `id`, `email`, `password_hash`, `role`, `created_at`.
 - Create `job_seeker_profiles` with: `user_id`, `full_name`, `summary`, `location`, `created_at`, `updated_at`.
 - Create `job_seeker_competencies` with: `id`, `user_id`, `competency_key`, `level`.
@@ -31,56 +31,56 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Create `job_offer_requirements` with: `id`, `job_offer_id`, `competency_key`, `priority`.
 - Use Alembic from the beginning so schema changes stay reviewable.
 
-4. Define the competency catalog contract
+4. [] Define the competency catalog contract
 - Treat Neo4j as the source of truth for competency catalog lookup only.
 - Require each mock competency node in Neo4j to have a stable `competency_key` and display `label`.
 - Store only `competency_key` in SQLite relations; do not store Neo4j internal node IDs.
 - Expose catalog search and detail endpoints from the backend so the frontend never talks to Neo4j directly.
 
-5. Implement authentication and authorization
+5. [] Implement authentication and authorization
 - Build minimal email/password registration and login.
 - Assign role at registration: `job_seeker` or `recruiter`.
 - Use JWT bearer auth for this phase, with the authenticated user injected into protected endpoints.
 - Enforce role checks in backend dependencies so seekers cannot call recruiter routes and recruiters cannot call seeker routes.
 
-6. Implement seeker profile backend
+6. [] Implement seeker profile backend
 - Add service methods and endpoints to create/read/update the seeker profile.
 - Add service methods and endpoints to add, update, list, and remove seeker competencies.
 - Restrict access so a seeker can only manage their own profile.
 - Validate `level` against an explicit enum, for example: `beginner`, `intermediate`, `advanced`.
 
-7. Implement recruiter job profile backend
+7. [] Implement recruiter job profile backend
 - Add service methods and endpoints to create/read/update the recruiter profile.
 - Add service methods and endpoints to create/read/update recruiter job offers.
 - Add service methods and endpoints to add, update, list, and remove job offer competency requirements.
 - Keep job offers in `draft` status only for this phase.
 - Validate `priority` against an explicit enum, for example: `must_have`, `important`, `nice_to_have`.
 
-8. Set up frontend foundations
+8. [] Set up frontend foundations
 - Initialize Vue 3 + Vite with Vue Router.
 - Add a small auth store for current user, token, login state, and role-aware route guarding.
 - Create a typed API client layer so UI components stay free of HTTP details.
 - Establish two protected areas: seeker routes and recruiter routes.
 
-9. Build the authentication UI
+9. [] Build the authentication UI
 - Create registration and login pages.
 - Let the user choose seeker vs recruiter role during registration.
 - Persist login state for the session and fetch `/auth/me` on app startup to restore the current user view.
 
-10. Build the seeker profile UI
+10. [] Build the seeker profile UI
 - Create a seeker dashboard/profile page with personal profile fields.
 - Add a competency picker that calls the backend catalog search endpoint.
 - Let the seeker add competencies with levels, edit levels, and remove competencies.
 - Show the saved competency profile clearly as a list/table.
 
-11. Build the recruiter job profile UI
+11. [] Build the recruiter job profile UI
 - Create a recruiter dashboard with a minimal recruiter/company profile form.
 - Add a job offer creation page with title, description, and competency requirements.
 - Add a competency picker that calls the same catalog search endpoint.
 - Let the recruiter add requirements with priority, edit priority, and remove requirements.
 - Show saved job offers and allow editing of draft entries.
 
-12. Finish with validation, tests, and acceptance checks
+12. [] Finish with validation, tests, and acceptance checks
 - Add backend unit and API tests before expanding the scope further.
 - Manually verify the two end-to-end flows in the browser against the running API.
 - Only after both creation flows are stable should matching and explanation work begin.

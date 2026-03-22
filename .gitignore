@@ -123,3 +123,4 @@ dmypy.json
 # Project-local development artifacts
 node_modules/
 backend/app/env/
+.DS_Store

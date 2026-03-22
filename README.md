@@ -1,0 +1,1 @@
+Start backend service: Inside competency-hiring/backend ```python3 -m uvicorn app.main:app --reload```

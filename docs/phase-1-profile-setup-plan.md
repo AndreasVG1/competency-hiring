@@ -17,7 +17,7 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Restructure the backend toward `backend/app/{api,core,modules,db}` and the frontend toward a standard Vite Vue app.
 - Remove the committed local virtual environment from the tracked project and keep environments outside the repo.
 
-2. [] Set up backend foundations
+2. [X] Set up backend foundations
 - Initialize FastAPI with an app entrypoint, health route, settings module, dependency wiring, CORS, and structured error responses.
 - Add dependencies for FastAPI, SQLAlchemy 2.x, Alembic, password hashing, JWT auth, Neo4j driver, and pytest.
 - Define environment-based configuration for SQLite URL, Neo4j URL, Neo4j credentials, JWT secret, and frontend origin.

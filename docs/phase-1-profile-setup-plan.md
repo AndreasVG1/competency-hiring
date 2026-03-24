@@ -39,8 +39,9 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Require each mock competency node in Neo4j to have a stable `competency_key` and display `label`.
 - Store only `competency_key` in SQLite relations; do not store Neo4j internal node IDs.
 - Expose catalog search and detail endpoints from the backend so the frontend never talks to Neo4j directly.
+- Use `docs/phase-1-step-4-competency-catalog-contract-plan.md` as the implementation-level plan for this step.
 
-5. [] Implement authentication and authorization
+5. [X] Implement authentication and authorization
 - Build minimal email/password registration and login.
 - Assign role at registration: `job_seeker` or `recruiter`.
 - Use JWT bearer auth for this phase, with the authenticated user injected into protected endpoints.

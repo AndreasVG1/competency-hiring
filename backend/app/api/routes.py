@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.schemas import HealthResponse
 from app.core.settings import get_settings
+from app.modules.auth.router import router as auth_router
 
 api_router = APIRouter()
 
@@ -14,3 +15,6 @@ def health_check() -> HealthResponse:
         service=settings.app_name,
         environment=settings.environment,
     )
+
+
+api_router.include_router(auth_router)

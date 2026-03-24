@@ -39,7 +39,12 @@ class Settings(BaseSettings):
     neo4j_password: str = Field(..., validation_alias="NEO4J_PASSWORD")
     neo4j_database: str = Field("neo4j", validation_alias="NEO4J_DATABASE")
 
-    jwt_secret: str = Field("change-me", validation_alias="JWT_SECRET")
+    jwt_secret: str = Field(..., validation_alias="JWT_SECRET")
+    jwt_algorithm: str = Field("HS256", validation_alias="JWT_ALGORITHM")
+    jwt_access_token_expire_minutes: int = Field(
+        60,
+        validation_alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
+    )
     frontend_origin: str = Field(
         "http://localhost:5173",
         validation_alias="FRONTEND_ORIGIN",

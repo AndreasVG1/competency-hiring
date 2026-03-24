@@ -34,7 +34,7 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Treat occupation and competency display data, including optional lower graph levels like activity indicators and competency elements, as Neo4j-backed catalog read models resolved through backend APIs rather than SQLite-owned domain state.
 - Use Alembic from the beginning so schema changes stay reviewable.
 
-4. [] Define the competency catalog contract
+4. [X] Define the competency catalog contract
 - Treat Neo4j as the source of truth for competency catalog lookup only.
 - Require each mock competency node in Neo4j to have a stable `competency_key` and display `label`.
 - Store only `competency_key` in SQLite relations; do not store Neo4j internal node IDs.

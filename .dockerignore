@@ -1,0 +1,32 @@
+# VCS and editor files
+.git
+.gitignore
+.DS_Store
+.vscode/
+.idea/
+
+# CI/docs/local notes
+.gitlab-ci.yml
+AGENTS.md
+docs/
+README.md
+
+# Secrets and env files
+.env
+.env.*
+
+# Python cache and virtualenvs
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Frontend dependencies and build outputs
+frontend/node_modules/
+frontend/dist/
+
+# Docker artifacts
+.dockerignore
+docker-compose.yml

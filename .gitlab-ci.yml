@@ -1,6 +1,9 @@
 stages:
   - deploy
 
+variables:
+  DEPLOY_ENV_PATH: /etc/competency-hiring/.env
+
 deploy:
   stage: deploy
   only:
@@ -8,4 +11,6 @@ deploy:
   tags:
     - shared
   script:
+    - test -f "$DEPLOY_ENV_PATH" || { echo "Missing deploy env file at $DEPLOY_ENV_PATH"; exit 1; }
+    - cp "$DEPLOY_ENV_PATH" .env
     - docker compose -p competency-hiring up --build --remove-orphans --detach

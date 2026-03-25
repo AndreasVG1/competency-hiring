@@ -29,7 +29,7 @@ def set_auth_cookies(response: Response, *, refresh_token: str) -> None:
         max_age=max_age_seconds,
         httponly=True,
         secure=settings.auth_cookie_secure,
-        samesite=settings.auth_cookie_samesite,
+        samesite=settings.auth_cookie_samesite, # type: ignore
         path=settings.auth_cookie_path,
     )
     response.set_cookie(
@@ -38,7 +38,7 @@ def set_auth_cookies(response: Response, *, refresh_token: str) -> None:
         max_age=max_age_seconds,
         httponly=False,
         secure=settings.auth_cookie_secure,
-        samesite=settings.auth_cookie_samesite,
+        samesite=settings.auth_cookie_samesite, # type: ignore
         path=settings.auth_cookie_path,
     )
 

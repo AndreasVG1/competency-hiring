@@ -17,15 +17,15 @@ class Settings(BaseSettings):
     )
 
     app_name: str = Field(
-        "Competency Hiring API",
+        ...,
         validation_alias="APP_NAME",
     )
     environment: str = Field(
-        "development",
+        ...,
         validation_alias="ENVIRONMENT",
     )
     debug: bool = Field(
-        False,
+        ...,
         validation_alias="DEBUG",
     )
 
@@ -37,46 +37,48 @@ class Settings(BaseSettings):
     neo4j_uri: str = Field(..., validation_alias="NEO4J_URI")
     neo4j_username: str = Field(..., validation_alias="NEO4J_USERNAME")
     neo4j_password: str = Field(..., validation_alias="NEO4J_PASSWORD")
-    neo4j_database: str = Field("neo4j", validation_alias="NEO4J_DATABASE")
+    neo4j_database: str = Field(..., validation_alias="NEO4J_DATABASE")
 
     jwt_secret: str = Field(..., validation_alias="JWT_SECRET")
-    jwt_algorithm: str = Field("HS256", validation_alias="JWT_ALGORITHM")
+    jwt_algorithm: str = Field(..., validation_alias="JWT_ALGORITHM")
     jwt_access_token_expire_minutes: int = Field(
-        60,
+        ...,
         validation_alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
     )
     jwt_refresh_token_expire_days: int = Field(
-        14,
+        ...,
         validation_alias="JWT_REFRESH_TOKEN_EXPIRE_DAYS",
     )
     frontend_origin: str = Field(
-        "http://localhost:5173",
+        ...,
         validation_alias="FRONTEND_ORIGIN",
     )
     auth_refresh_cookie_name: str = Field(
-        "competency_hiring_refresh_token",
+        ...,
         validation_alias="AUTH_REFRESH_COOKIE_NAME",
     )
     auth_csrf_cookie_name: str = Field(
-        "competency_hiring_csrf_token",
+        ...,
         validation_alias="AUTH_CSRF_COOKIE_NAME",
     )
     auth_cookie_secure: bool = Field(
-        False,
+        ...,
         validation_alias="AUTH_COOKIE_SECURE",
     )
     auth_cookie_samesite: str = Field(
-        "lax",
+        ...,
         validation_alias="AUTH_COOKIE_SAMESITE",
     )
     auth_cookie_path: str = Field(
-        "/api/v1/auth",
+        ...,
         validation_alias="AUTH_COOKIE_PATH",
     )
 
     @property
     def allowed_origins(self) -> list[str]:
-        return [self.frontend_origin]
+        raw_origins = [origin.strip() for origin in self.frontend_origin.split(",")]
+        normalized = [origin.rstrip("/") for origin in raw_origins if origin]
+        return normalized
 
 
 @lru_cache

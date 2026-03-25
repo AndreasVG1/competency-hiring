@@ -17,7 +17,7 @@ This step is intentionally foundation-only:
 - no registration/login form implementation yet (step 9)
 - no seeker profile UI yet (step 10)
 - no recruiter job profile UI yet (step 11)
-- no startup `/auth/me` session restoration yet (step 9)
+- no startup `/api/v1/auth/me` session restoration yet (step 9)
 
 ## Alignment with AGENTS.md
 
@@ -41,15 +41,15 @@ Current frontend state:
 
 Current backend state relevant for frontend contracts:
 
-- auth endpoints: `/auth/register`, `/auth/login`, `/auth/me`
-- protected role-specific endpoints under `/seeker/*` and `/recruiter/*`
-- catalog endpoints require auth and are shared by both roles
+- auth endpoints: `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/auth/logout`, `/api/v1/auth/me`
+- protected role-specific endpoints under `/api/v1/seeker/*` and `/api/v1/recruiter/*`
+- catalog endpoints require auth and are shared by both roles under `/api/v1/catalog/*`
 - backend error format is structured (`error`, `details[]`)
 
 ## Locked Decisions (From Planning Discussion)
 
 1. Auth store implementation uses **Pinia**.
-2. Step 8 remains **foundation-only** and does not include startup `/auth/me` bootstrap.
+2. Step 8 remains **foundation-only** and does not include startup `/api/v1/auth/me` bootstrap.
 3. Wrong-role access redirects to the user’s own protected area.
 4. API base URL strategy uses **`VITE_API_BASE_URL`** with localhost default.
 
@@ -68,7 +68,7 @@ Current backend state relevant for frontend contracts:
 
 - real auth page UI and forms
 - real seeker/recruiter feature pages
-- session restore call to `/auth/me` on startup
+- session restore call to `/api/v1/auth/me` on startup
 - new backend endpoints or backend schema changes
 
 ## Routing and Navigation Plan
@@ -124,7 +124,8 @@ Use a small auth store only for session-related state.
 ### Storage behavior in step 8
 
 - define token/session storage helper support
-- do not run startup `/auth/me` restoration yet
+- include typed support for refresh/logout auth flow (`/api/v1/auth/refresh`, `/api/v1/auth/logout`) in the API/auth foundation
+- do not run startup `/api/v1/auth/me` restoration yet
 - actual restore flow is implemented in step 9
 
 ## Typed API Client Plan
@@ -233,6 +234,5 @@ Step 8 is complete when:
 
 - backend remains reachable at `http://localhost:8000` by default
 - environment-specific base URL is supplied via `VITE_API_BASE_URL` when needed
-- backend path prefixes remain as currently implemented (`/auth`, `/seeker`, `/recruiter`, catalog routes)
-- session bootstrap via `/auth/me` is intentionally deferred to step 9
-
+- backend path prefixes remain as currently implemented (`/api/v1/auth`, `/api/v1/seeker`, `/api/v1/recruiter`, `/api/v1/catalog`)
+- session bootstrap via `/api/v1/auth/me` is intentionally deferred to step 9

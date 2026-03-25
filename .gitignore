@@ -122,6 +122,7 @@ dmypy.json
 
 # Project-local development artifacts
 node_modules/
+*.tsbuildinfo
 backend/app/env/
 backend/data/
 .DS_Store

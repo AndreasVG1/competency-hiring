@@ -1,6 +1,19 @@
+import { createPinia } from "pinia";
 import { createApp } from "vue";
 
 import App from "./App.vue";
+import { setAccessTokenResolver } from "./api/httpClient";
+import { router } from "./router";
+import { useAuthStore } from "./stores/auth";
 import "./styles.css";
 
-createApp(App).mount("#app");
+const app = createApp(App);
+const pinia = createPinia();
+
+app.use(pinia);
+
+const authStore = useAuthStore(pinia);
+setAccessTokenResolver(() => authStore.accessToken);
+
+app.use(router);
+app.mount("#app");

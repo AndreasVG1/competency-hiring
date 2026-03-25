@@ -80,6 +80,7 @@ async function submitRegistration(): Promise<void> {
         error.payload.details[0]?.message ?? "Unable to create account.";
     } else {
       errorMessage.value = "Unexpected error while creating account.";
+      console.error("Registration error:", error);
     }
   } finally {
     isSubmitting.value = false;

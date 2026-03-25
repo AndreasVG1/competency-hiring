@@ -1,14 +1,18 @@
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+API_PREFIX = "/api/v1"
+REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
+SEEKER_ROUTE = f"{API_PREFIX}/seeker/profile"
+SEEKER_COMPETENCIES_ROUTE = f"{API_PREFIX}/seeker/competencies"
 
 SEEKER_PATHS = [
-    ("GET", "/seeker/profile"),
-    ("PUT", "/seeker/profile"),
-    ("GET", "/seeker/competencies"),
-    ("POST", "/seeker/competencies"),
-    ("PATCH", "/seeker/competencies/1"),
-    ("DELETE", "/seeker/competencies/1"),
+    ("GET", SEEKER_ROUTE),
+    ("PUT", SEEKER_ROUTE),
+    ("GET", SEEKER_COMPETENCIES_ROUTE),
+    ("POST", SEEKER_COMPETENCIES_ROUTE),
+    ("PATCH", f"{SEEKER_COMPETENCIES_ROUTE}/1"),
+    ("DELETE", f"{SEEKER_COMPETENCIES_ROUTE}/1"),
 ]
 
 
@@ -24,7 +28,7 @@ def assert_structured_http_error(response, *, status_code: int, message: str | N
 
 def register_and_get_token(client: TestClient, *, email: str, role: str) -> str:
     response = client.post(
-        "/auth/register",
+        REGISTER_ROUTE,
         json={"email": email, "password": "StrongPassword123!", "role": role},
     )
     assert response.status_code in (200, 201)
@@ -85,7 +89,7 @@ def test_profile_get_returns_404_before_creation(client: TestClient):
         role="job_seeker",
     )
 
-    response = client.get("/seeker/profile", headers=auth_headers(token))
+    response = client.get(SEEKER_ROUTE, headers=auth_headers(token))
 
     assert_structured_http_error(
         response,
@@ -107,7 +111,7 @@ def test_profile_put_creates_profile_when_missing(client: TestClient, monkeypatc
     )
 
     response = client.put(
-        "/seeker/profile",
+        SEEKER_ROUTE,
         headers=auth_headers(token),
         json={
             "full_name": "Alice Example",
@@ -140,7 +144,7 @@ def test_profile_put_updates_existing_profile(client: TestClient, monkeypatch):
     )
 
     first = client.put(
-        "/seeker/profile",
+        SEEKER_ROUTE,
         headers=auth_headers(token),
         json={
             "full_name": "First Name",
@@ -152,7 +156,7 @@ def test_profile_put_updates_existing_profile(client: TestClient, monkeypatch):
     assert first.status_code == 200
 
     second = client.put(
-        "/seeker/profile",
+        SEEKER_ROUTE,
         headers=auth_headers(token),
         json={
             "full_name": "Updated Name",
@@ -183,7 +187,7 @@ def test_unknown_occupation_key_in_profile_write_returns_structured_404(client: 
     monkeypatch.setattr("app.modules.seeker.service.get_occupation_detail", raise_not_found)
 
     response = client.put(
-        "/seeker/profile",
+        SEEKER_ROUTE,
         headers=auth_headers(token),
         json={
             "full_name": "Alice Example",
@@ -209,7 +213,7 @@ def test_competency_post_creates_row_for_current_seeker(client: TestClient, monk
     )
 
     response = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "level": "intermediate"},
     )
@@ -234,14 +238,14 @@ def test_duplicate_competency_post_returns_structured_409(client: TestClient, mo
     )
 
     first = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "level": "intermediate"},
     )
     assert first.status_code == 201
 
     second = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "level": "advanced"},
     )
@@ -261,7 +265,7 @@ def test_invalid_level_returns_422(client: TestClient):
     )
 
     response = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "level": "expert"},
     )
@@ -290,21 +294,21 @@ def test_competency_list_returns_only_current_seeker_records(client: TestClient,
     )
 
     one_create = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(seeker_one),
         json={"competency_key": "comp_1", "level": "beginner"},
     )
     assert one_create.status_code == 201
 
     two_create = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(seeker_two),
         json={"competency_key": "comp_2", "level": "advanced"},
     )
     assert two_create.status_code == 201
 
     list_response = client.get(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(seeker_one),
     )
 
@@ -328,7 +332,7 @@ def test_competency_patch_updates_level_for_own_record(client: TestClient, monke
     )
 
     created = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "level": "beginner"},
     )
@@ -336,7 +340,7 @@ def test_competency_patch_updates_level_for_own_record(client: TestClient, monke
     competency_id = created.json()["id"]
 
     patched = client.patch(
-        f"/seeker/competencies/{competency_id}",
+        f"{SEEKER_COMPETENCIES_ROUTE}/{competency_id}",
         headers=auth_headers(token),
         json={"level": "advanced"},
     )
@@ -363,7 +367,7 @@ def test_competency_patch_returns_404_for_non_owned_or_missing_record(client: Te
     )
 
     created = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(owner_token),
         json={"competency_key": "comp_1", "level": "intermediate"},
     )
@@ -371,7 +375,7 @@ def test_competency_patch_returns_404_for_non_owned_or_missing_record(client: Te
     competency_id = created.json()["id"]
 
     response = client.patch(
-        f"/seeker/competencies/{competency_id}",
+        f"{SEEKER_COMPETENCIES_ROUTE}/{competency_id}",
         headers=auth_headers(other_token),
         json={"level": "advanced"},
     )
@@ -396,7 +400,7 @@ def test_competency_delete_removes_own_record_and_returns_204(client: TestClient
     )
 
     created = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "level": "intermediate"},
     )
@@ -404,13 +408,13 @@ def test_competency_delete_removes_own_record_and_returns_204(client: TestClient
     competency_id = created.json()["id"]
 
     deleted = client.delete(
-        f"/seeker/competencies/{competency_id}",
+        f"{SEEKER_COMPETENCIES_ROUTE}/{competency_id}",
         headers=auth_headers(token),
     )
     assert deleted.status_code == 204
     assert deleted.content == b""
 
-    listed = client.get("/seeker/competencies", headers=auth_headers(token))
+    listed = client.get(SEEKER_COMPETENCIES_ROUTE, headers=auth_headers(token))
     assert listed.status_code == 200
     assert listed.json() == []
 
@@ -433,7 +437,7 @@ def test_competency_delete_returns_404_for_non_owned_or_missing_record(client: T
     )
 
     created = client.post(
-        "/seeker/competencies",
+        SEEKER_COMPETENCIES_ROUTE,
         headers=auth_headers(owner_token),
         json={"competency_key": "comp_1", "level": "intermediate"},
     )
@@ -441,7 +445,7 @@ def test_competency_delete_returns_404_for_non_owned_or_missing_record(client: T
     competency_id = created.json()["id"]
 
     response = client.delete(
-        f"/seeker/competencies/{competency_id}",
+        f"{SEEKER_COMPETENCIES_ROUTE}/{competency_id}",
         headers=auth_headers(other_token),
     )
 

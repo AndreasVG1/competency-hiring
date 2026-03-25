@@ -6,6 +6,10 @@ from fastapi.testclient import TestClient
 
 from app.db.models import User, UserRole
 
+API_PREFIX = "/api/v1"
+REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
+LOGIN_ROUTE = f"{API_PREFIX}/auth/login"
+AUTH_ME_ROUTE = f"{API_PREFIX}/auth/me"
 
 def assert_error_response(response, *, status_code: int, error: str, message: str) -> None:
     assert response.status_code == status_code
@@ -29,7 +33,7 @@ def assert_auth_payload(body: dict, *, email: str, role: str) -> None:
 
 def register_user(client: TestClient, *, email: str, password: str, role: str):
     return client.post(
-        "/auth/register",
+        REGISTER_ROUTE,
         json={"email": email, "password": password, "role": role},
     )
 
@@ -69,7 +73,7 @@ def create_user(db_session, *, email: str, role: UserRole) -> User:
 
 
 def test_health_endpoint(client):
-    response = client.get("/health")
+    response = client.get(API_PREFIX + "/health")
 
     assert response.status_code == 200
     body = response.json()
@@ -114,10 +118,10 @@ def test_register_duplicate_email_returns_conflict_with_structured_error(client)
         "role": "recruiter",
     }
 
-    first_response = client.post("/auth/register", json=payload)
+    first_response = client.post(REGISTER_ROUTE, json=payload)
     assert first_response.status_code in (200, 201)
 
-    second_response = client.post("/auth/register", json=payload)
+    second_response = client.post(REGISTER_ROUTE, json=payload)
 
     assert_error_response(
         second_response,
@@ -135,7 +139,7 @@ def test_register_duplicate_email_returns_conflict_with_structured_error(client)
     ],
 )
 def test_register_rejects_invalid_payload_with_validation_error(client, payload, field):
-    response = client.post("/auth/register", json=payload)
+    response = client.post(REGISTER_ROUTE, json=payload)
 
     assert response.status_code == 422
     body = response.json()
@@ -153,7 +157,7 @@ def test_login_returns_auth_payload_for_valid_credentials(client):
     )
 
     response = client.post(
-        "/auth/login",
+        LOGIN_ROUTE,
         json={"email": "login-success@example.com", "password": "StrongPassword123!"},
     )
 
@@ -180,7 +184,7 @@ def test_login_rejects_invalid_credentials_with_generic_message(client, payload)
         role="job_seeker",
     )
 
-    response = client.post("/auth/login", json=payload)
+    response = client.post(LOGIN_ROUTE, json=payload)
 
     assert_error_response(
         response,
@@ -202,7 +206,7 @@ def test_get_me_returns_authenticated_user_for_valid_token(client):
     token = register_response.json()["access_token"]
 
     response = client.get(
-        "/auth/me",
+        AUTH_ME_ROUTE,
         headers={"Authorization": f"Bearer {token}"},
     )
 
@@ -213,7 +217,7 @@ def test_get_me_returns_authenticated_user_for_valid_token(client):
 
 
 def test_get_me_missing_token_returns_unauthorized(client):
-    response = client.get("/auth/me")
+    response = client.get(AUTH_ME_ROUTE)
 
     assert_error_response(
         response,
@@ -225,7 +229,7 @@ def test_get_me_missing_token_returns_unauthorized(client):
 
 def test_get_me_malformed_token_returns_unauthorized(client):
     response = client.get(
-        "/auth/me",
+        AUTH_ME_ROUTE,
         headers={"Authorization": "Bearer definitely-not-a-jwt"},
     )
 
@@ -241,7 +245,7 @@ def test_get_me_expired_token_returns_unauthorized(client):
     security_module = import_or_xfail("app.modules.auth.security")
 
     response = client.get(
-        "/auth/me",
+        AUTH_ME_ROUTE,
         headers={"Authorization": f"Bearer {security_module.create_access_token(subject='1', expires_delta_seconds=-1)}"},
     )
 
@@ -257,7 +261,7 @@ def test_get_me_missing_user_returns_unauthorized(client):
     security_module = import_or_xfail("app.modules.auth.security")
 
     response = client.get(
-        "/auth/me",
+        AUTH_ME_ROUTE,
         headers={"Authorization": f"Bearer {security_module.create_access_token(subject='999999')}"},
     )
 

@@ -5,6 +5,10 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+API_PREFIX = "/api/v1"
+REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
+OCCUPATIONS_ROUTE = f"{API_PREFIX}/catalog/occupations"
+COMPETENCIES_ROUTE = f"{API_PREFIX}/catalog/competencies"
 
 def import_or_xfail(module_name: str):
     try:
@@ -34,7 +38,7 @@ def patch_callable(monkeypatch, router_module: Any, service_module: Any, candida
 
 def register_and_get_token(client: TestClient, *, role: str = "job_seeker") -> str:
     response = client.post(
-        "/auth/register",
+        REGISTER_ROUTE,
         json={
             "email": f"catalog-{role}@example.com",
             "password": "StrongPassword123!",
@@ -72,10 +76,10 @@ def assert_absent_forbidden_id_fields(payload: Any) -> None:
 @pytest.mark.parametrize(
     "path",
     [
-        "/competencies?query=med",
-        "/competencies/comp_1",
-        "/occupations?query=ster",
-        "/occupations/occ_1",
+        f"{COMPETENCIES_ROUTE}?query=med",
+        f"{COMPETENCIES_ROUTE}/comp_1",
+        f"{OCCUPATIONS_ROUTE}?query=ster",
+        f"{OCCUPATIONS_ROUTE}/occ_1",
     ],
 )
 def test_catalog_endpoints_require_authentication(client: TestClient, path: str):
@@ -119,7 +123,7 @@ def test_competency_search_returns_deterministic_contract_shape(client: TestClie
     )
 
     response = client.get(
-        "/competencies",
+        COMPETENCIES_ROUTE,
         params={"query": "comp", "limit": 2},
         headers=auth_headers(token),
     )
@@ -166,16 +170,15 @@ def test_unknown_catalog_keys_return_structured_404(client: TestClient, monkeypa
     )
 
     competency_response = client.get(
-        "/competencies/unknown_key",
+        f"{COMPETENCIES_ROUTE}/unknown_key",
         headers=auth_headers(token),
     )
     occupation_response = client.get(
-        "/occupations/unknown_key",
+        f"{OCCUPATIONS_ROUTE}/unknown_key",
         headers=auth_headers(token),
     )
 
     if competency_response.status_code == 404 and occupation_response.status_code == 404:
-        # If routes are not present yet, both will be 404 with default FastAPI detail shape.
         competency_body = competency_response.json()
         if isinstance(competency_body, dict) and "error" not in competency_body:
             pytest.xfail("Catalog routes are not wired into the API router yet.")
@@ -204,12 +207,12 @@ def test_catalog_search_returns_empty_list_for_no_matches(client: TestClient, mo
     )
 
     competencies_response = client.get(
-        "/competencies",
+        COMPETENCIES_ROUTE,
         params={"query": "nope", "limit": 10},
         headers=auth_headers(token),
     )
     occupations_response = client.get(
-        "/occupations",
+        OCCUPATIONS_ROUTE,
         params={"query": "nope", "limit": 10},
         headers=auth_headers(token),
     )
@@ -267,11 +270,11 @@ def test_catalog_payload_never_exposes_neo4j_internal_id_fields(client: TestClie
     )
 
     competency_response = client.get(
-        "/competencies/comp_1",
+        f"{COMPETENCIES_ROUTE}/comp_1",
         headers=auth_headers(token),
     )
     occupation_response = client.get(
-        "/occupations/occ_1",
+        f"{OCCUPATIONS_ROUTE}/occ_1",
         headers=auth_headers(token),
     )
 

@@ -2,17 +2,24 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 
+API_PREFIX = "/api/v1"
+REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
+RECRUITER_PROFILE_ROUTE = f"{API_PREFIX}/recruiter/profile"
+RECRUITER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/recruiter/job-offers"
+RECRUITER_REQUIREMENTS_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/requirements"
+
+
 RECRUITER_PATHS = [
-    ("GET", "/recruiter/profile"),
-    ("PUT", "/recruiter/profile"),
-    ("GET", "/recruiter/job-offers"),
-    ("POST", "/recruiter/job-offers"),
-    ("GET", "/recruiter/job-offers/1"),
-    ("PATCH", "/recruiter/job-offers/1"),
-    ("GET", "/recruiter/job-offers/1/requirements"),
-    ("POST", "/recruiter/job-offers/1/requirements"),
-    ("PATCH", "/recruiter/job-offers/1/requirements/1"),
-    ("DELETE", "/recruiter/job-offers/1/requirements/1"),
+    ("GET", RECRUITER_PROFILE_ROUTE),
+    ("PUT", RECRUITER_PROFILE_ROUTE),
+    ("GET", RECRUITER_JOB_OFFERS_ROUTE),
+    ("POST", RECRUITER_JOB_OFFERS_ROUTE),
+    ("GET", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
+    ("PATCH", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
+    ("GET", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}"),
+    ("POST", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}"),
+    ("PATCH", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}/1"),
+    ("DELETE", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}/1"),
 ]
 
 
@@ -28,7 +35,7 @@ def assert_structured_http_error(response, *, status_code: int, message: str | N
 
 def register_and_get_token(client: TestClient, *, email: str, role: str) -> str:
     response = client.post(
-        "/auth/register",
+        REGISTER_ROUTE,
         json={"email": email, "password": "StrongPassword123!", "role": role},
     )
     assert response.status_code in (200, 201)
@@ -69,7 +76,7 @@ def call_endpoint(client: TestClient, method: str, path: str, *, token: str | No
 
 def create_offer(client: TestClient, token: str, *, title: str = "Backend Engineer") -> int:
     response = client.post(
-        "/recruiter/job-offers",
+        RECRUITER_JOB_OFFERS_ROUTE,
         headers=auth_headers(token),
         json={"title": title, "description": "Build APIs"},
     )
@@ -86,7 +93,7 @@ def create_requirement(
     priority: str = "must_have",
 ) -> int:
     response = client.post(
-        f"/recruiter/job-offers/{job_offer_id}/requirements",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=job_offer_id),
         headers=auth_headers(token),
         json={"competency_key": competency_key, "priority": priority},
     )
@@ -127,7 +134,7 @@ def test_profile_get_returns_404_before_creation(client: TestClient):
         role="recruiter",
     )
 
-    response = client.get("/recruiter/profile", headers=auth_headers(token))
+    response = client.get(RECRUITER_PROFILE_ROUTE, headers=auth_headers(token))
 
     assert_structured_http_error(
         response,
@@ -144,7 +151,7 @@ def test_profile_put_creates_profile_when_missing(client: TestClient):
     )
 
     response = client.put(
-        "/recruiter/profile",
+        RECRUITER_PROFILE_ROUTE,
         headers=auth_headers(token),
         json={"company_name": "Acme", "contact_name": "Alice"},
     )
@@ -163,14 +170,14 @@ def test_profile_put_updates_existing_profile(client: TestClient):
     )
 
     first = client.put(
-        "/recruiter/profile",
+        RECRUITER_PROFILE_ROUTE,
         headers=auth_headers(token),
         json={"company_name": "Acme", "contact_name": "Alice"},
     )
     assert first.status_code == 200
 
     second = client.put(
-        "/recruiter/profile",
+        RECRUITER_PROFILE_ROUTE,
         headers=auth_headers(token),
         json={"company_name": "Beta", "contact_name": "Bob"},
     )
@@ -189,7 +196,7 @@ def test_job_offer_post_creates_draft_offer(client: TestClient):
     )
 
     response = client.post(
-        "/recruiter/job-offers",
+        RECRUITER_JOB_OFFERS_ROUTE,
         headers=auth_headers(token),
         json={"title": "Backend Engineer", "description": "Build APIs", "status": "published"},
     )
@@ -217,7 +224,7 @@ def test_job_offer_list_and_get_return_only_current_recruiter_records(client: Te
     create_offer(client, recruiter_two, title="Offer Two")
 
     list_response = client.get(
-        "/recruiter/job-offers",
+        RECRUITER_JOB_OFFERS_ROUTE,
         headers=auth_headers(recruiter_one),
     )
 
@@ -228,7 +235,7 @@ def test_job_offer_list_and_get_return_only_current_recruiter_records(client: Te
     assert items[0]["title"] == "Offer One"
 
     get_response = client.get(
-        f"/recruiter/job-offers/{own_offer_id}",
+        f"{RECRUITER_JOB_OFFERS_ROUTE}/{own_offer_id}",
         headers=auth_headers(recruiter_one),
     )
     assert get_response.status_code == 200
@@ -244,7 +251,7 @@ def test_job_offer_patch_updates_own_offer_fields(client: TestClient):
     offer_id = create_offer(client, token)
 
     response = client.patch(
-        f"/recruiter/job-offers/{offer_id}",
+        f"{RECRUITER_JOB_OFFERS_ROUTE}/{offer_id}",
         headers=auth_headers(token),
         json={"title": "Senior Backend Engineer", "description": "Build and improve APIs"},
     )
@@ -270,7 +277,7 @@ def test_job_offer_get_and_patch_return_404_for_non_owned_or_missing_offer(clien
     offer_id = create_offer(client, owner)
 
     get_response = client.get(
-        f"/recruiter/job-offers/{offer_id}",
+        f"{RECRUITER_JOB_OFFERS_ROUTE}/{offer_id}",
         headers=auth_headers(other),
     )
     assert_structured_http_error(
@@ -280,7 +287,7 @@ def test_job_offer_get_and_patch_return_404_for_non_owned_or_missing_offer(clien
     )
 
     patch_response = client.patch(
-        f"/recruiter/job-offers/{offer_id}",
+        f"{RECRUITER_JOB_OFFERS_ROUTE}/{offer_id}",
         headers=auth_headers(other),
         json={"title": "Hacked"},
     )
@@ -305,7 +312,7 @@ def test_requirement_post_creates_row_for_owned_offer(client: TestClient, monkey
     )
 
     response = client.post(
-        f"/recruiter/job-offers/{offer_id}/requirements",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "priority": "important"},
     )
@@ -332,14 +339,14 @@ def test_duplicate_requirement_post_returns_structured_409(client: TestClient, m
     )
 
     first = client.post(
-        f"/recruiter/job-offers/{offer_id}/requirements",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "priority": "must_have"},
     )
     assert first.status_code == 201
 
     second = client.post(
-        f"/recruiter/job-offers/{offer_id}/requirements",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "priority": "nice_to_have"},
     )
@@ -365,7 +372,7 @@ def test_unknown_competency_key_in_requirement_write_returns_structured_404(clie
     monkeypatch.setattr("app.modules.recruiter.service.get_competency_detail", raise_not_found)
 
     response = client.post(
-        f"/recruiter/job-offers/{offer_id}/requirements",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
         headers=auth_headers(token),
         json={"competency_key": "unknown", "priority": "must_have"},
     )
@@ -382,7 +389,7 @@ def test_invalid_priority_returns_422(client: TestClient):
     offer_id = create_offer(client, token)
 
     response = client.post(
-        f"/recruiter/job-offers/{offer_id}/requirements",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
         headers=auth_headers(token),
         json={"competency_key": "comp_1", "priority": "critical"},
     )
@@ -417,7 +424,7 @@ def test_requirement_list_returns_only_requirements_for_owned_offer(client: Test
     create_requirement(client, recruiter_two, job_offer_id=offer_two, competency_key="comp_2", priority="important")
 
     response = client.get(
-        f"/recruiter/job-offers/{offer_one}/requirements",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_one),
         headers=auth_headers(recruiter_one),
     )
 
@@ -444,7 +451,7 @@ def test_requirement_patch_updates_priority_for_own_requirement(client: TestClie
     requirement_id = create_requirement(client, token, job_offer_id=offer_id)
 
     response = client.patch(
-        f"/recruiter/job-offers/{offer_id}/requirements/{requirement_id}",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id) + f"/{requirement_id}",
         headers=auth_headers(token),
         json={"priority": "nice_to_have"},
     )
@@ -474,7 +481,7 @@ def test_requirement_patch_returns_404_for_non_owned_or_missing_requirement(clie
     requirement_id = create_requirement(client, owner, job_offer_id=offer_id)
 
     response = client.patch(
-        f"/recruiter/job-offers/{offer_id}/requirements/{requirement_id}",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id) + f"/{requirement_id}",
         headers=auth_headers(other),
         json={"priority": "important"},
     )
@@ -502,14 +509,14 @@ def test_requirement_delete_removes_own_requirement_and_returns_204(client: Test
     requirement_id = create_requirement(client, token, job_offer_id=offer_id)
 
     deleted = client.delete(
-        f"/recruiter/job-offers/{offer_id}/requirements/{requirement_id}",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id) + f"/{requirement_id}",
         headers=auth_headers(token),
     )
     assert deleted.status_code == 204
     assert deleted.content == b""
 
     listed = client.get(
-        f"/recruiter/job-offers/{offer_id}/requirements",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
         headers=auth_headers(token),
     )
     assert listed.status_code == 200
@@ -537,7 +544,7 @@ def test_requirement_delete_returns_404_for_non_owned_or_missing_requirement(cli
     requirement_id = create_requirement(client, owner, job_offer_id=offer_id)
 
     response = client.delete(
-        f"/recruiter/job-offers/{offer_id}/requirements/{requirement_id}",
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id) + f"/{requirement_id}",
         headers=auth_headers(other),
     )
 

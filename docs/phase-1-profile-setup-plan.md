@@ -90,13 +90,15 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Only after both creation flows are stable should matching and explanation work begin.
 
 ## Public APIs and Types
-
+Base API route prefix:
+- `/api/v1/`
+---
 - `POST /auth/register`
 - `POST /auth/login`
 - `GET /auth/me`
 
-- `GET /competencies?query=...`
-- `GET /competencies/{competency_key}`
+- `GET /catalog/competencies?query=...`
+- `GET /catalog/competencies/{competency_key}`
 
 - `GET /seeker/profile`
 - `PUT /seeker/profile`

@@ -12,7 +12,7 @@ from app.modules.catalog.service import (
     search_occupations,
 )
 
-router = APIRouter(tags=["catalog"])
+router = APIRouter(prefix="/catalog", tags=["catalog"])
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 QueryText = Annotated[str, Query(max_length=200)]

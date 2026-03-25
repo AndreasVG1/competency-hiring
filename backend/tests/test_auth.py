@@ -9,6 +9,8 @@ from app.db.models import User, UserRole
 API_PREFIX = "/api/v1"
 REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
 LOGIN_ROUTE = f"{API_PREFIX}/auth/login"
+REFRESH_ROUTE = f"{API_PREFIX}/auth/refresh"
+LOGOUT_ROUTE = f"{API_PREFIX}/auth/logout"
 AUTH_ME_ROUTE = f"{API_PREFIX}/auth/me"
 
 def assert_error_response(response, *, status_code: int, error: str, message: str) -> None:
@@ -22,6 +24,7 @@ def assert_error_response(response, *, status_code: int, error: str, message: st
 
 def assert_auth_payload(body: dict, *, email: str, role: str) -> None:
     assert body["access_token"]
+    assert body["refresh_token"]
     assert body["token_type"] == "bearer"
 
     user_data = body["user"]
@@ -35,6 +38,13 @@ def register_user(client: TestClient, *, email: str, password: str, role: str):
     return client.post(
         REGISTER_ROUTE,
         json={"email": email, "password": password, "role": role},
+    )
+
+
+def login_user(client: TestClient, *, email: str, password: str):
+    return client.post(
+        LOGIN_ROUTE,
+        json={"email": email, "password": password},
     )
 
 
@@ -156,9 +166,10 @@ def test_login_returns_auth_payload_for_valid_credentials(client):
         role="job_seeker",
     )
 
-    response = client.post(
-        LOGIN_ROUTE,
-        json={"email": "login-success@example.com", "password": "StrongPassword123!"},
+    response = login_user(
+        client,
+        email="login-success@example.com",
+        password="StrongPassword123!",
     )
 
     assert response.status_code == 200
@@ -317,3 +328,119 @@ def test_job_seeker_token_is_rejected_by_recruiter_dependency(app, db_session):
         error="http_error",
         message="You do not have permission to access this resource.",
     )
+
+
+def test_refresh_returns_new_token_pair_and_rotates_refresh_token(client):
+    register_user(
+        client,
+        email="refresh-success@example.com",
+        password="StrongPassword123!",
+        role="job_seeker",
+    )
+    login_response = login_user(
+        client,
+        email="refresh-success@example.com",
+        password="StrongPassword123!",
+    )
+    assert login_response.status_code == 200
+    issued = login_response.json()
+
+    refresh_response = client.post(
+        REFRESH_ROUTE,
+        json={"refresh_token": issued["refresh_token"]},
+    )
+
+    assert refresh_response.status_code == 200
+    body = refresh_response.json()
+    assert body["access_token"]
+    assert body["refresh_token"]
+    assert body["refresh_token"] != issued["refresh_token"]
+    assert body["user"]["email"] == "refresh-success@example.com"
+
+    reused_response = client.post(
+        REFRESH_ROUTE,
+        json={"refresh_token": issued["refresh_token"]},
+    )
+    assert_error_response(
+        reused_response,
+        status_code=401,
+        error="http_error",
+        message="Invalid refresh token.",
+    )
+
+
+def test_refresh_rejects_expired_refresh_token(client, db_session):
+    auth_service_module = import_or_xfail("app.modules.auth.service")
+    refresh_model_module = import_or_xfail("app.db.models")
+
+    register_user(
+        client,
+        email="refresh-expired@example.com",
+        password="StrongPassword123!",
+        role="job_seeker",
+    )
+    login_response = login_user(
+        client,
+        email="refresh-expired@example.com",
+        password="StrongPassword123!",
+    )
+    refresh_token = login_response.json()["refresh_token"]
+    token_hash = auth_service_module.security.hash_refresh_token(refresh_token)
+    session = (
+        db_session.query(refresh_model_module.RefreshTokenSession)
+        .filter(refresh_model_module.RefreshTokenSession.token_hash == token_hash)
+        .one()
+    )
+    session.expires_at = auth_service_module._utc_now() - auth_service_module.timedelta(seconds=1)
+    db_session.commit()
+
+    response = client.post(
+        REFRESH_ROUTE,
+        json={"refresh_token": refresh_token},
+    )
+    assert_error_response(
+        response,
+        status_code=401,
+        error="http_error",
+        message="Invalid refresh token.",
+    )
+
+
+def test_logout_revokes_refresh_token_and_is_idempotent(client):
+    register_user(
+        client,
+        email="logout@example.com",
+        password="StrongPassword123!",
+        role="job_seeker",
+    )
+    login_response = login_user(
+        client,
+        email="logout@example.com",
+        password="StrongPassword123!",
+    )
+    refresh_token = login_response.json()["refresh_token"]
+
+    first_logout = client.post(LOGOUT_ROUTE, json={"refresh_token": refresh_token})
+    assert first_logout.status_code == 204
+
+    second_logout = client.post(LOGOUT_ROUTE, json={"refresh_token": refresh_token})
+    assert second_logout.status_code == 204
+
+    refresh_after_logout = client.post(
+        REFRESH_ROUTE,
+        json={"refresh_token": refresh_token},
+    )
+    assert_error_response(
+        refresh_after_logout,
+        status_code=401,
+        error="http_error",
+        message="Invalid refresh token.",
+    )
+
+
+def test_logout_returns_204_for_unknown_refresh_token(client):
+    response = client.post(
+        LOGOUT_ROUTE,
+        json={"refresh_token": "this-token-does-not-exist"},
+    )
+    assert response.status_code == 204

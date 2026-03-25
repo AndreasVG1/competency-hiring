@@ -1,11 +1,16 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import User, UserRole
+from app.core.settings import get_settings
+from app.db.models import RefreshTokenSession, User, UserRole
 from app.modules.auth import security
 
 INVALID_CREDENTIALS_MESSAGE = "Invalid email or password."
 DUPLICATE_EMAIL_MESSAGE = "Email is already registered."
+INVALID_REFRESH_TOKEN_MESSAGE = "Invalid refresh token."
 
 
 def normalize_email(email: str) -> str:
@@ -56,3 +61,81 @@ def authenticate_user(db_session: Session, *, email: str, password: str) -> User
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _refresh_token_expires_at() -> datetime:
+    settings = get_settings()
+    return _utc_now() + timedelta(days=settings.jwt_refresh_token_expire_days)
+
+
+def _create_refresh_token_session(
+    db_session: Session,
+    *,
+    user_id: int,
+) -> str:
+    refresh_token = security.create_refresh_token()
+    session = RefreshTokenSession(
+        user_id=user_id,
+        token_hash=security.hash_refresh_token(refresh_token),
+        expires_at=_refresh_token_expires_at(),
+    )
+    db_session.add(session)
+    return refresh_token
+
+
+def issue_auth_tokens(db_session: Session, *, user: User) -> tuple[str, str]:
+    access_token = security.create_access_token(subject=str(user.id), role=user.role.value)
+    refresh_token = _create_refresh_token_session(db_session, user_id=user.id)
+    db_session.commit()
+    return access_token, refresh_token
+
+
+def _get_refresh_token_session(
+    db_session: Session,
+    *,
+    refresh_token: str,
+) -> RefreshTokenSession | None:
+    token_hash = security.hash_refresh_token(refresh_token)
+    statement = select(RefreshTokenSession).where(RefreshTokenSession.token_hash == token_hash)
+    return db_session.execute(statement).scalar_one_or_none()
+
+
+def _require_active_refresh_token_session(
+    db_session: Session,
+    *,
+    refresh_token: str,
+) -> RefreshTokenSession:
+    session = _get_refresh_token_session(db_session, refresh_token=refresh_token)
+    if (
+        session is None
+        or session.revoked_at is not None
+        or session.expires_at <= _utc_now()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=INVALID_REFRESH_TOKEN_MESSAGE,
+        )
+    return session
+
+
+def rotate_refresh_token(db_session: Session, *, refresh_token: str) -> tuple[User, str, str]:
+    session = _require_active_refresh_token_session(db_session, refresh_token=refresh_token)
+    session.revoked_at = _utc_now()
+    access_token = security.create_access_token(
+        subject=str(session.user_id),
+        role=session.user.role.value,
+    )
+    new_refresh_token = _create_refresh_token_session(db_session, user_id=session.user_id)
+    db_session.commit()
+    return session.user, access_token, new_refresh_token
+
+
+def revoke_refresh_token(db_session: Session, *, refresh_token: str) -> None:
+    session = _get_refresh_token_session(db_session, refresh_token=refresh_token)
+    if session is not None and session.revoked_at is None and session.expires_at > _utc_now():
+        session.revoked_at = _utc_now()
+        db_session.commit()

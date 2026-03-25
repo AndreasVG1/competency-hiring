@@ -45,6 +45,10 @@ class Settings(BaseSettings):
         60,
         validation_alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
     )
+    jwt_refresh_token_expire_days: int = Field(
+        14,
+        validation_alias="JWT_REFRESH_TOKEN_EXPIRE_DAYS",
+    )
     frontend_origin: str = Field(
         "http://localhost:5173",
         validation_alias="FRONTEND_ORIGIN",

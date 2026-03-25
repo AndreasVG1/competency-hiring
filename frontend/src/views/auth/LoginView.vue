@@ -70,7 +70,6 @@ async function submitLogin(): Promise<void> {
         error.payload.details[0]?.message ?? "Unable to sign in with provided credentials.";
     } else {
       errorMessage.value = "Unexpected error while signing in.";
-      console.error("Login error:", error);
     }
   } finally {
     isSubmitting.value = false;

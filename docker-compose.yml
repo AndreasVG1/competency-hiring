@@ -34,7 +34,7 @@ services:
       dockerfile: Dockerfile
       target: frontend-runtime
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:83}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
     restart: unless-stopped
     depends_on:
       backend:

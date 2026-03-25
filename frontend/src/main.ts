@@ -3,6 +3,7 @@ import { createApp } from "vue";
 
 import App from "./App.vue";
 import { setAccessTokenResolver } from "./api/httpClient";
+import { bootstrapAuthSession } from "./bootstrap/authBootstrap";
 import { router } from "./router";
 import { useAuthStore } from "./stores/auth";
 import "./styles.css";
@@ -15,5 +16,10 @@ app.use(pinia);
 const authStore = useAuthStore(pinia);
 setAccessTokenResolver(() => authStore.accessToken);
 
-app.use(router);
-app.mount("#app");
+async function bootstrapApplication(): Promise<void> {
+  await bootstrapAuthSession(authStore);
+  app.use(router);
+  app.mount("#app");
+}
+
+void bootstrapApplication();

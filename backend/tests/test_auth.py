@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from fastapi.testclient import TestClient
 
 from app.db.models import User, UserRole
+from app.core.settings import get_settings
 
 API_PREFIX = "/api/v1"
 REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
@@ -46,6 +47,13 @@ def login_user(client: TestClient, *, email: str, password: str):
         LOGIN_ROUTE,
         json={"email": email, "password": password},
     )
+
+
+def csrf_headers_from_cookie(client: TestClient) -> dict[str, str]:
+    settings = get_settings()
+    csrf_token = client.cookies.get(settings.auth_csrf_cookie_name)
+    assert csrf_token
+    return {"x-csrf-token": csrf_token}
 
 
 def import_or_xfail(module_name: str):
@@ -444,3 +452,78 @@ def test_logout_returns_204_for_unknown_refresh_token(client):
         json={"refresh_token": "this-token-does-not-exist"},
     )
     assert response.status_code == 204
+
+
+def test_login_sets_refresh_and_csrf_cookies(client):
+    register_user(
+        client,
+        email="cookie-login@example.com",
+        password="StrongPassword123!",
+        role="job_seeker",
+    )
+    response = login_user(
+        client,
+        email="cookie-login@example.com",
+        password="StrongPassword123!",
+    )
+    assert response.status_code == 200
+
+    settings = get_settings()
+    assert client.cookies.get(settings.auth_refresh_cookie_name)
+    assert client.cookies.get(settings.auth_csrf_cookie_name)
+
+
+def test_refresh_accepts_cookie_with_csrf_header(client):
+    register_user(
+        client,
+        email="cookie-refresh@example.com",
+        password="StrongPassword123!",
+        role="job_seeker",
+    )
+    login_response = login_user(
+        client,
+        email="cookie-refresh@example.com",
+        password="StrongPassword123!",
+    )
+    issued_refresh_token = login_response.json()["refresh_token"]
+
+    refresh_response = client.post(
+        REFRESH_ROUTE,
+        headers=csrf_headers_from_cookie(client),
+    )
+    assert refresh_response.status_code == 200
+    rotated_refresh_token = refresh_response.json()["refresh_token"]
+    assert rotated_refresh_token != issued_refresh_token
+
+    old_token_reuse = client.post(
+        REFRESH_ROUTE,
+        json={"refresh_token": issued_refresh_token},
+    )
+    assert_error_response(
+        old_token_reuse,
+        status_code=401,
+        error="http_error",
+        message="Invalid refresh token.",
+    )
+
+
+def test_refresh_with_cookie_requires_csrf_header(client):
+    register_user(
+        client,
+        email="cookie-csrf@example.com",
+        password="StrongPassword123!",
+        role="job_seeker",
+    )
+    login_user(
+        client,
+        email="cookie-csrf@example.com",
+        password="StrongPassword123!",
+    )
+
+    response = client.post(REFRESH_ROUTE)
+    assert_error_response(
+        response,
+        status_code=403,
+        error="http_error",
+        message="Missing or invalid CSRF token.",
+    )

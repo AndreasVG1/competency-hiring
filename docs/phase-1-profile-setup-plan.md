@@ -60,13 +60,13 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Keep job offers in `draft` status only for this phase.
 - Validate `priority` against an explicit enum, for example: `must_have`, `important`, `nice_to_have`.
 
-8. [] Set up frontend foundations
+8. [X] Set up frontend foundations
 - Initialize Vue 3 + Vite with Vue Router.
 - Add a small auth store for current user, token, login state, and role-aware route guarding.
 - Create a typed API client layer so UI components stay free of HTTP details.
 - Establish two protected areas: seeker routes and recruiter routes.
 
-9. [] Build the authentication UI
+9. [X] Build the authentication UI
 - Create registration and login pages.
 - Let the user choose seeker vs recruiter role during registration.
 - Persist login state for the session and fetch `/auth/me` on app startup to restore the current user view.

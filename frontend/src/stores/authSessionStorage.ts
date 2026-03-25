@@ -4,7 +4,6 @@ const SESSION_STORAGE_KEY = "competency_hiring.auth.session.v1";
 
 interface PersistedAuthSession {
   accessToken: string;
-  refreshToken: string;
   currentUser: AuthenticatedUser;
 }
 
@@ -24,7 +23,7 @@ export function readAuthSession(): PersistedAuthSession | null {
 
   try {
     const parsed = JSON.parse(rawValue) as PersistedAuthSession;
-    if (!parsed.accessToken || !parsed.refreshToken || !parsed.currentUser) {
+    if (!parsed.accessToken || !parsed.currentUser) {
       return null;
     }
     return parsed;
@@ -32,4 +31,3 @@ export function readAuthSession(): PersistedAuthSession | null {
     return null;
   }
 }
-

@@ -10,6 +10,7 @@ interface RequestOptions {
   headers?: Record<string, string>;
   auth?: boolean;
   signal?: AbortSignal;
+  credentials?: RequestCredentials;
 }
 
 type AccessTokenResolver = () => string | null;
@@ -103,6 +104,7 @@ export async function apiRequest<TResponse>(
     headers: requestHeaders,
     body: requestBody,
     signal: options.signal,
+    credentials: options.credentials,
   });
 
   if (!response.ok) {
@@ -116,4 +118,3 @@ export async function apiRequest<TResponse>(
 
   return (await parseJsonSafe(response)) as TResponse;
 }
-

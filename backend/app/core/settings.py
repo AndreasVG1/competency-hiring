@@ -53,6 +53,26 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         validation_alias="FRONTEND_ORIGIN",
     )
+    auth_refresh_cookie_name: str = Field(
+        "competency_hiring_refresh_token",
+        validation_alias="AUTH_REFRESH_COOKIE_NAME",
+    )
+    auth_csrf_cookie_name: str = Field(
+        "competency_hiring_csrf_token",
+        validation_alias="AUTH_CSRF_COOKIE_NAME",
+    )
+    auth_cookie_secure: bool = Field(
+        False,
+        validation_alias="AUTH_COOKIE_SECURE",
+    )
+    auth_cookie_samesite: str = Field(
+        "lax",
+        validation_alias="AUTH_COOKIE_SAMESITE",
+    )
+    auth_cookie_path: str = Field(
+        "/api/v1/auth",
+        validation_alias="AUTH_COOKIE_PATH",
+    )
 
     @property
     def allowed_origins(self) -> list[str]:

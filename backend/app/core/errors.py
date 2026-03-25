@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.api.schemas import ErrorDetail, ErrorResponse
+
+logger = logging.getLogger(__name__)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -39,8 +43,12 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request,
         exc: Exception,
     ) -> JSONResponse:
-        del request
-        del exc
+        logger.exception(
+            "Unhandled exception while processing %s %s",
+            request.method,
+            request.url.path,
+            exc_info=exc,
+        )
         payload = ErrorResponse(
             error="internal_server_error",
             details=[ErrorDetail(message="An unexpected error occurred.")],

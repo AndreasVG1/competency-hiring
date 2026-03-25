@@ -36,19 +36,20 @@ export function setAccessTokenResolver(resolver: AccessTokenResolver): void {
 
 function buildUrl(path: string, query?: Record<string, PrimitiveQueryValue>): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = new URL(`${apiBaseUrl}${normalizedPath}`);
-
-  if (!query) {
-    return url.toString();
-  }
-
-  for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null) {
-      continue;
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (value !== undefined && value !== null) {
+      searchParams.set(key, String(value));
     }
-    url.searchParams.set(key, String(value));
   }
 
+  if (!apiBaseUrl) {
+    const queryString = searchParams.toString();
+    return queryString ? `${normalizedPath}?${queryString}` : normalizedPath;
+  }
+
+  const url = new URL(normalizedPath, `${apiBaseUrl}/`);
+  searchParams.forEach((value, key) => url.searchParams.set(key, value));
   return url.toString();
 }
 

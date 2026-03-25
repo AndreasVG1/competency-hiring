@@ -47,7 +47,7 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Use JWT bearer auth for this phase, with the authenticated user injected into protected endpoints.
 - Enforce role checks in backend dependencies so seekers cannot call recruiter routes and recruiters cannot call seeker routes.
 
-6. [] Implement seeker profile backend
+6. [X] Implement seeker profile backend
 - Add service methods and endpoints to create/read/update the seeker profile.
 - Add service methods and endpoints to add, update, list, and remove seeker competencies.
 - Restrict access so a seeker can only manage their own profile.

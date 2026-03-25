@@ -8,4 +8,14 @@ deploy:
   tags:
     - shared
   script:
+    - |
+      cat > .env <<EOF
+      NEO4J_URI=${NEO4J_URI}
+      NEO4J_USERNAME=${NEO4J_USERNAME}
+      NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      NEO4J_DATABASE=${NEO4J_DATABASE}
+      NEO4J_AUTH=${NEO4J_AUTH}
+      JWT_SECRET=${JWT_SECRET}
+      EOF
     - docker compose -p competency-hiring up --build --remove-orphans --detach
+    - rm -f .env

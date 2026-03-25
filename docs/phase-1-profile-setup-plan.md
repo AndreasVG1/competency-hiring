@@ -53,7 +53,7 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Restrict access so a seeker can only manage their own profile.
 - Validate `level` against an explicit enum, for example: `beginner`, `intermediate`, `advanced`.
 
-7. [] Implement recruiter job profile backend
+7. [X] Implement recruiter job profile backend
 - Add service methods and endpoints to create/read/update the recruiter profile.
 - Add service methods and endpoints to create/read/update recruiter job offers.
 - Add service methods and endpoints to add, update, list, and remove job offer competency requirements.

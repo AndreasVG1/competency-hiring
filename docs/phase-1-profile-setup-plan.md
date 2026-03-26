@@ -71,7 +71,7 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Let the user choose seeker vs recruiter role during registration.
 - Persist login state for the session and fetch `/auth/me` on app startup to restore the current user view.
 
-10. [] Build the seeker profile UI
+10. [X] Build the seeker profile UI
 - Create a seeker dashboard/profile page with personal profile fields.
 - Add a competency picker that calls the backend catalog search endpoint.
 - Let the seeker add competencies with levels, edit levels, and remove competencies.

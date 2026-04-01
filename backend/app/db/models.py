@@ -29,6 +29,8 @@ class RequirementPriority(str, enum.Enum):
 
 class JobOfferStatus(str, enum.Enum):
     DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
 
 
 def enum_column(enum_type: type[enum.Enum], *, name: str) -> Enum:

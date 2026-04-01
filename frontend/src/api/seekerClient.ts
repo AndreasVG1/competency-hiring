@@ -21,6 +21,12 @@ export const seekerClient = {
     });
   },
 
+  deleteProfile(): Promise<void> {
+    return apiRequest<void>(`${SEEKER_BASE_PATH}/profile`, {
+      method: "DELETE",
+    });
+  },
+
   listCompetencies(): Promise<SeekerCompetencyResponse[]> {
     return apiRequest<SeekerCompetencyResponse[]>(`${SEEKER_BASE_PATH}/competencies`);
   },
@@ -51,4 +57,3 @@ export const seekerClient = {
     });
   },
 };
-

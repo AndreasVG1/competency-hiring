@@ -164,3 +164,19 @@ def delete_competency_for_user(
 
     db_session.delete(competency)
     db_session.commit()
+
+
+def delete_profile_for_user(
+    db_session: Session,
+    *,
+    user_id: int,
+) -> None:
+    profile = get_profile_or_404(db_session, user_id=user_id)
+
+    (
+        db_session.query(JobSeekerCompetency)
+        .filter(JobSeekerCompetency.user_id == user_id)
+        .delete(synchronize_session=False)
+    )
+    db_session.delete(profile)
+    db_session.commit()

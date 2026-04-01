@@ -102,6 +102,7 @@ Base API route prefix:
 
 - `GET /seeker/profile`
 - `PUT /seeker/profile`
+- `DELETE /seeker/profile`
 - `GET /seeker/competencies`
 - `POST /seeker/competencies`
 - `PATCH /seeker/competencies/{id}`
@@ -113,10 +114,20 @@ Base API route prefix:
 - `POST /recruiter/job-offers`
 - `GET /recruiter/job-offers/{id}`
 - `PATCH /recruiter/job-offers/{id}`
+- `DELETE /recruiter/job-offers/{id}`
 - `GET /recruiter/job-offers/{id}/requirements`
 - `POST /recruiter/job-offers/{id}/requirements`
 - `PATCH /recruiter/job-offers/{id}/requirements/{requirement_id}`
 - `DELETE /recruiter/job-offers/{id}/requirements/{requirement_id}`
+
+Frontend route split after phase-1 improvements:
+- `/seeker` read-only profile overview
+- `/seeker/edit` profile + competency editor
+- `/recruiter` read-only recruiter overview + job offer list
+- `/recruiter/edit` recruiter profile editor
+- `/recruiter/job-offers/new` draft offer creation route
+- `/recruiter/job-offers/{id}` read-only offer detail
+- `/recruiter/job-offers/{id}/edit` offer + requirements editor
 
 Important public types:
 - `UserRole = job_seeker | recruiter`

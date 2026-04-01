@@ -15,6 +15,7 @@ from app.modules.seeker.schemas import (
 )
 from app.modules.seeker.service import (
     add_competency_for_user,
+    delete_profile_for_user,
     delete_competency_for_user,
     get_profile_or_404,
     list_competencies_for_user,
@@ -49,6 +50,18 @@ def upsert_seeker_profile(
         occupation_key=payload.occupation_key,
     )
     return SeekerProfileResponse.model_validate(profile)
+
+
+@router.delete("/profile", status_code=status.HTTP_204_NO_CONTENT)
+def remove_seeker_profile(
+    db_session: DbSession,
+    current_seeker: CurrentSeeker,
+) -> Response:
+    delete_profile_for_user(
+        db_session,
+        user_id=current_seeker.id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/competencies", response_model=list[SeekerCompetencyResponse])

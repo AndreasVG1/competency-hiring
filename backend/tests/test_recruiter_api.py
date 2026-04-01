@@ -17,6 +17,7 @@ RECRUITER_PATHS = [
     ("POST", RECRUITER_JOB_OFFERS_ROUTE),
     ("GET", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
     ("PATCH", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
+    ("DELETE", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
     ("GET", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}"),
     ("POST", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}"),
     ("PATCH", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}/1"),
@@ -598,6 +599,77 @@ def test_requirement_delete_returns_404_for_non_owned_or_missing_requirement(cli
 
     assert_structured_http_error(
         response,
+        status_code=404,
+        message="Job offer not found.",
+    )
+
+
+def test_job_offer_delete_removes_offer_and_requirements_and_returns_204(client: TestClient, monkeypatch):
+    token = register_and_get_token(
+        client,
+        email="recruiter-offer-delete-own@example.com",
+        role="recruiter",
+    )
+    offer_id = create_offer(client, token, occupation_key="backend_engineer")
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_competency_detail",
+        lambda *, competency_key: {"key": competency_key, "label": "Competency", "code": "C", "ekr_level": 4},
+    )
+    requirement_id = create_requirement(client, token, job_offer_id=offer_id)
+    assert requirement_id > 0
+
+    deleted = client.delete(
+        f"{RECRUITER_JOB_OFFERS_ROUTE}/{offer_id}",
+        headers=auth_headers(token),
+    )
+    assert deleted.status_code == 204
+    assert deleted.content == b""
+
+    list_response = client.get(RECRUITER_JOB_OFFERS_ROUTE, headers=auth_headers(token))
+    assert list_response.status_code == 200
+    assert list_response.json() == []
+
+    requirements_response = client.get(
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(token),
+    )
+    assert_structured_http_error(
+        requirements_response,
+        status_code=404,
+        message="Job offer not found.",
+    )
+
+
+def test_job_offer_delete_returns_404_for_non_owned_or_missing_offer(client: TestClient):
+    owner = register_and_get_token(
+        client,
+        email="recruiter-offer-delete-owner@example.com",
+        role="recruiter",
+    )
+    other = register_and_get_token(
+        client,
+        email="recruiter-offer-delete-other@example.com",
+        role="recruiter",
+    )
+    offer_id = create_offer(client, owner, occupation_key="backend_engineer")
+
+    non_owned = client.delete(
+        f"{RECRUITER_JOB_OFFERS_ROUTE}/{offer_id}",
+        headers=auth_headers(other),
+    )
+    assert_structured_http_error(
+        non_owned,
+        status_code=404,
+        message="Job offer not found.",
+    )
+
+    missing = client.delete(
+        f"{RECRUITER_JOB_OFFERS_ROUTE}/999999",
+        headers=auth_headers(owner),
+    )
+    assert_structured_http_error(
+        missing,
         status_code=404,
         message="Job offer not found.",
     )

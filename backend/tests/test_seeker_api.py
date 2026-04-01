@@ -9,6 +9,7 @@ SEEKER_COMPETENCIES_ROUTE = f"{API_PREFIX}/seeker/competencies"
 SEEKER_PATHS = [
     ("GET", SEEKER_ROUTE),
     ("PUT", SEEKER_ROUTE),
+    ("DELETE", SEEKER_ROUTE),
     ("GET", SEEKER_COMPETENCIES_ROUTE),
     ("POST", SEEKER_COMPETENCIES_ROUTE),
     ("PATCH", f"{SEEKER_COMPETENCIES_ROUTE}/1"),
@@ -453,4 +454,70 @@ def test_competency_delete_returns_404_for_non_owned_or_missing_record(client: T
         response,
         status_code=404,
         message="Seeker competency not found.",
+    )
+
+
+def test_profile_delete_removes_profile_and_competencies_and_returns_204(client: TestClient, monkeypatch):
+    token = register_and_get_token(
+        client,
+        email="seeker-profile-delete-own@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.seeker.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": "Occupation"},
+    )
+    monkeypatch.setattr(
+        "app.modules.seeker.service.get_competency_detail",
+        lambda *, competency_key: {"key": competency_key, "label": "Competency", "code": "C", "ekr_level": 4},
+    )
+
+    created_profile = client.put(
+        SEEKER_ROUTE,
+        headers=auth_headers(token),
+        json={
+            "full_name": "Alice Example",
+            "summary": "Bio",
+            "location": "Tallinn",
+            "occupation_key": "occ_1",
+        },
+    )
+    assert created_profile.status_code == 200
+
+    created_competency = client.post(
+        SEEKER_COMPETENCIES_ROUTE,
+        headers=auth_headers(token),
+        json={"competency_key": "comp_1", "level": "intermediate"},
+    )
+    assert created_competency.status_code == 201
+
+    deleted = client.delete(SEEKER_ROUTE, headers=auth_headers(token))
+    assert deleted.status_code == 204
+    assert deleted.content == b""
+
+    profile_after_delete = client.get(SEEKER_ROUTE, headers=auth_headers(token))
+    assert_structured_http_error(
+        profile_after_delete,
+        status_code=404,
+        message="Seeker profile not found.",
+    )
+
+    competencies_after_delete = client.get(SEEKER_COMPETENCIES_ROUTE, headers=auth_headers(token))
+    assert competencies_after_delete.status_code == 200
+    assert competencies_after_delete.json() == []
+
+
+def test_profile_delete_returns_404_when_profile_is_missing(client: TestClient):
+    token = register_and_get_token(
+        client,
+        email="seeker-profile-delete-missing@example.com",
+        role="job_seeker",
+    )
+
+    response = client.delete(SEEKER_ROUTE, headers=auth_headers(token))
+    assert_structured_http_error(
+        response,
+        status_code=404,
+        message="Seeker profile not found.",
     )

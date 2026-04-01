@@ -14,6 +14,11 @@
         <input v-model="password" type="password" autocomplete="new-password" required />
       </label>
 
+      <label class="form-field">
+        <span>Confirm Password</span>
+        <input v-model="confirmPassword" type="password" autocomplete="new-password" required />
+      </label>
+
       <fieldset class="role-fieldset">
         <legend>Register as</legend>
         <label class="radio-option">
@@ -50,6 +55,7 @@ const authStore = useAuthStore();
 
 const email = ref("");
 const password = ref("");
+const confirmPassword = ref("");
 const role = ref<UserRole>("job_seeker");
 const errorMessage = ref<string | null>(null);
 const isSubmitting = ref(false);
@@ -65,6 +71,12 @@ async function submitRegistration(): Promise<void> {
 
   isSubmitting.value = true;
   errorMessage.value = null;
+
+  if (password.value !== confirmPassword.value) {
+    errorMessage.value = "Passwords do not match.";
+    isSubmitting.value = false;
+    return;
+  }
 
   try {
     const response = await authClient.register({

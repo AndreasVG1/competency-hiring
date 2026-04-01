@@ -265,3 +265,75 @@ def test_unknown_occupation_key_in_create_offer_returns_404(db_session, monkeypa
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Occupation not found."
+
+
+def test_job_offer_delete_removes_offer_and_requirements(db_session, monkeypatch):
+    user = create_user(db_session, email="service-recruiter-offer-delete@example.com")
+    monkeypatch.setattr(
+        service,
+        "get_competency_detail",
+        lambda *, competency_key: {"key": competency_key, "label": "Competency"},
+    )
+
+    offer = service.create_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+    requirement = service.add_requirement_to_job_offer(
+        db_session,
+        user_id=user.id,
+        job_offer_id=offer.id,
+        competency_key="comp_1",
+        priority=RequirementPriority.MUST_HAVE,
+    )
+    assert requirement.id
+
+    service.delete_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        job_offer_id=offer.id,
+    )
+
+    deleted_offer = (
+        db_session.query(JobOffer)
+        .filter(JobOffer.id == offer.id)
+        .one_or_none()
+    )
+    deleted_requirement = (
+        db_session.query(JobOfferRequirement)
+        .filter(JobOfferRequirement.id == requirement.id)
+        .one_or_none()
+    )
+    assert deleted_offer is None
+    assert deleted_requirement is None
+
+
+def test_job_offer_delete_returns_404_for_non_owned_or_missing_offer(db_session):
+    owner = create_user(db_session, email="service-recruiter-offer-delete-owner@example.com")
+    other = create_user(db_session, email="service-recruiter-offer-delete-other@example.com")
+    offer = service.create_job_offer_for_user(
+        db_session,
+        user_id=owner.id,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+
+    with pytest.raises(HTTPException) as non_owned_error:
+        service.delete_job_offer_for_user(
+            db_session,
+            user_id=other.id,
+            job_offer_id=offer.id,
+        )
+    assert non_owned_error.value.status_code == 404
+    assert non_owned_error.value.detail == "Job offer not found."
+
+    with pytest.raises(HTTPException) as missing_error:
+        service.delete_job_offer_for_user(
+            db_session,
+            user_id=owner.id,
+            job_offer_id=999999,
+        )
+    assert missing_error.value.status_code == 404
+    assert missing_error.value.detail == "Job offer not found."

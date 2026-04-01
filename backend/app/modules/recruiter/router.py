@@ -19,6 +19,7 @@ from app.modules.recruiter.schemas import (
 from app.modules.recruiter.service import (
     add_requirement_to_job_offer,
     create_job_offer_for_user,
+    delete_job_offer_for_user,
     delete_requirement,
     get_owned_job_offer_or_404,
     get_profile_or_404,
@@ -114,6 +115,20 @@ def patch_job_offer(
         description=payload.description,
     )
     return JobOfferResponse.model_validate(job_offer)
+
+
+@router.delete("/job-offers/{job_offer_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_job_offer(
+    job_offer_id: int,
+    db_session: DbSession,
+    current_recruiter: CurrentRecruiter,
+) -> Response:
+    delete_job_offer_for_user(
+        db_session,
+        user_id=current_recruiter.id,
+        job_offer_id=job_offer_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get(

@@ -145,6 +145,21 @@ def update_job_offer_for_user(
     return job_offer
 
 
+def delete_job_offer_for_user(
+    db_session: Session,
+    *,
+    user_id: int,
+    job_offer_id: int,
+) -> None:
+    job_offer = get_owned_job_offer_or_404(
+        db_session,
+        user_id=user_id,
+        job_offer_id=job_offer_id,
+    )
+    db_session.delete(job_offer)
+    db_session.commit()
+
+
 def list_requirements_for_job_offer(
     db_session: Session,
     *,

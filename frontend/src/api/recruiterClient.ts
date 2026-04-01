@@ -46,6 +46,12 @@ export const recruiterClient = {
     });
   },
 
+  deleteJobOffer(jobOfferId: number): Promise<void> {
+    return apiRequest<void>(`${RECRUITER_BASE_PATH}/job-offers/${jobOfferId}`, {
+      method: "DELETE",
+    });
+  },
+
   listRequirements(jobOfferId: number): Promise<JobOfferRequirementResponse[]> {
     return apiRequest<JobOfferRequirementResponse[]>(
       `${RECRUITER_BASE_PATH}/job-offers/${jobOfferId}/requirements`,
@@ -88,4 +94,3 @@ export const recruiterClient = {
     );
   },
 };
-

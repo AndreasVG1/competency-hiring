@@ -198,3 +198,48 @@ def test_ownership_safe_update_and_delete_behavior(db_session):
     except HTTPException as exc:
         assert exc.status_code == 404
         assert exc.detail == "Seeker competency not found."
+
+
+def test_profile_delete_removes_profile_and_competencies(db_session, monkeypatch):
+    user = create_user(db_session, email="service-profile-delete@example.com")
+    monkeypatch.setattr(
+        service,
+        "get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": "Occupation"},
+    )
+    monkeypatch.setattr(
+        service,
+        "get_competency_detail",
+        lambda *, competency_key: {"key": competency_key, "label": "Competency"},
+    )
+
+    service.upsert_profile(
+        db_session,
+        user_id=user.id,
+        full_name="Alice Example",
+        summary="Summary",
+        location="Tallinn",
+        occupation_key="occ_1",
+    )
+    service.add_competency_for_user(
+        db_session,
+        user_id=user.id,
+        competency_key="comp_1",
+        level=CompetencyLevel.BEGINNER,
+    )
+
+    service.delete_profile_for_user(db_session, user_id=user.id)
+
+    assert service.get_profile_for_user(db_session, user_id=user.id) is None
+    assert service.list_competencies_for_user(db_session, user_id=user.id) == []
+
+
+def test_profile_delete_returns_404_when_profile_missing(db_session):
+    user = create_user(db_session, email="service-profile-delete-missing@example.com")
+
+    try:
+        service.delete_profile_for_user(db_session, user_id=user.id)
+        assert False, "Expected not found for missing seeker profile delete"
+    except HTTPException as exc:
+        assert exc.status_code == 404
+        assert exc.detail == "Seeker profile not found."

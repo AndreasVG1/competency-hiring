@@ -326,8 +326,86 @@ a {
   gap: 0.45rem;
 }
 
+.recruiter-page {
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.recruiter-panel {
+  width: min(74rem, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 1.4rem;
+}
+
+.recruiter-section {
+  border: 1px solid rgba(31, 41, 51, 0.12);
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.86);
+  padding: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.recruiter-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.offer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.offer-select {
+  width: 100%;
+  border: 1px solid rgba(31, 41, 51, 0.2);
+  border-radius: 10px;
+  background-color: #fff;
+  color: inherit;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.offer-select span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.offer-select small {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #46596c;
+}
+
+.offer-select-active {
+  border-color: #1f4ec7;
+  box-shadow: 0 0 0 2px rgba(31, 78, 199, 0.14);
+}
+
+.subsection-header h3 {
+  margin: 0;
+}
+
+.subsection-header p {
+  margin: 0.35rem 0 0;
+  color: #3f4f5f;
+}
+
 @media (max-width: 900px) {
   .seeker-page {
+    padding: 1rem;
+  }
+
+  .recruiter-page {
     padding: 1rem;
   }
 

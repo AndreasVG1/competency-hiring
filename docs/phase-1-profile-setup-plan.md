@@ -77,7 +77,7 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Let the seeker add competencies with levels, edit levels, and remove competencies.
 - Show the saved competency profile clearly as a list/table.
 
-11. [] Build the recruiter job profile UI
+11. [X] Build the recruiter job profile UI
 - Create a recruiter dashboard with a minimal recruiter/company profile form.
 - Add a job offer creation page with title, description, and competency requirements.
 - Add a competency picker that calls the same catalog search endpoint.

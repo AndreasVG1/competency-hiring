@@ -337,3 +337,138 @@ def test_job_offer_delete_returns_404_for_non_owned_or_missing_offer(db_session)
         )
     assert missing_error.value.status_code == 404
     assert missing_error.value.detail == "Job offer not found."
+
+
+def test_publish_transitions_draft_offer_to_published(db_session):
+    user = create_user(db_session, email="service-recruiter-offer-publish@example.com")
+    offer = service.create_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+
+    updated = service.publish_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        job_offer_id=offer.id,
+    )
+
+    assert updated.status == JobOfferStatus.PUBLISHED
+
+
+def test_archive_transitions_published_offer_to_archived(db_session):
+    user = create_user(db_session, email="service-recruiter-offer-archive@example.com")
+    offer = service.create_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+    published = service.publish_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        job_offer_id=offer.id,
+    )
+    assert published.status == JobOfferStatus.PUBLISHED
+
+    archived = service.archive_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        job_offer_id=offer.id,
+    )
+
+    assert archived.status == JobOfferStatus.ARCHIVED
+
+
+def test_publish_returns_409_for_non_draft_offer(db_session):
+    user = create_user(db_session, email="service-recruiter-offer-publish-invalid@example.com")
+    offer = service.create_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+    service.publish_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        job_offer_id=offer.id,
+    )
+
+    with pytest.raises(HTTPException) as error:
+        service.publish_job_offer_for_user(
+            db_session,
+            user_id=user.id,
+            job_offer_id=offer.id,
+        )
+
+    assert error.value.status_code == 409
+    assert error.value.detail == "Invalid job offer status transition. published -> published."
+
+
+def test_archive_returns_409_for_non_published_offer(db_session):
+    user = create_user(db_session, email="service-recruiter-offer-archive-invalid@example.com")
+    offer = service.create_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+
+    with pytest.raises(HTTPException) as draft_error:
+        service.archive_job_offer_for_user(
+            db_session,
+            user_id=user.id,
+            job_offer_id=offer.id,
+        )
+    assert draft_error.value.status_code == 409
+    assert draft_error.value.detail == "Invalid job offer status transition. draft -> archived."
+
+    service.publish_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        job_offer_id=offer.id,
+    )
+    service.archive_job_offer_for_user(
+        db_session,
+        user_id=user.id,
+        job_offer_id=offer.id,
+    )
+
+    with pytest.raises(HTTPException) as archived_error:
+        service.publish_job_offer_for_user(
+            db_session,
+            user_id=user.id,
+            job_offer_id=offer.id,
+        )
+    assert archived_error.value.status_code == 409
+    assert archived_error.value.detail == "Invalid job offer status transition. archived -> published."
+
+
+def test_transition_returns_404_for_non_owned_or_missing_offer(db_session):
+    owner = create_user(db_session, email="service-recruiter-offer-transition-owner@example.com")
+    other = create_user(db_session, email="service-recruiter-offer-transition-other@example.com")
+    offer = service.create_job_offer_for_user(
+        db_session,
+        user_id=owner.id,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+
+    with pytest.raises(HTTPException) as non_owned_error:
+        service.publish_job_offer_for_user(
+            db_session,
+            user_id=other.id,
+            job_offer_id=offer.id,
+        )
+    assert non_owned_error.value.status_code == 404
+    assert non_owned_error.value.detail == "Job offer not found."
+
+    with pytest.raises(HTTPException) as missing_error:
+        service.archive_job_offer_for_user(
+            db_session,
+            user_id=owner.id,
+            job_offer_id=999999,
+        )
+    assert missing_error.value.status_code == 404
+    assert missing_error.value.detail == "Job offer not found."

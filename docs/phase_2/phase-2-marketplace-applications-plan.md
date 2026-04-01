@@ -43,17 +43,16 @@ Goal:
 
 ## Step-by-Step Tasks
 
-1. [ ] Create Phase 2 implementation note and boundaries
+1. [X] Create Phase 2 implementation note and boundaries
 - Add a short implementation note in `docs/phase_2/` describing goals, milestones, and explicit non-goals.
 - Confirm that matching and explanation are deferred to Phase 3.
 - Confirm that this phase is decision-support plumbing, not hiring automation.
 
-2. [ ] Add publish/archive business rules to recruiter job offers (Milestone 2A)
+2. [X] Add publish/archive business rules to recruiter job offers (Milestone 2A)
 - Keep creation and editing in `draft` by default.
 - Add explicit service-layer transitions:
 - `draft -> published`
 - `published -> archived`
-- `archived -> published` (optional but useful for reopening offers)
 - Reject invalid transitions with clear validation errors.
 - Keep route handlers thin; put transition rules in recruiter/domain service functions.
 

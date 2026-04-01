@@ -14,6 +14,13 @@ PROFILE_NOT_FOUND_MESSAGE = "Recruiter profile not found."
 JOB_OFFER_NOT_FOUND_MESSAGE = "Job offer not found."
 REQUIREMENT_NOT_FOUND_MESSAGE = "Job offer requirement not found."
 DUPLICATE_REQUIREMENT_MESSAGE = "Requirement already exists for this job offer."
+INVALID_STATUS_TRANSITION_MESSAGE = "Invalid job offer status transition."
+
+ALLOWED_STATUS_TRANSITIONS: dict[JobOfferStatus, set[JobOfferStatus]] = {
+    JobOfferStatus.DRAFT: {JobOfferStatus.PUBLISHED},
+    JobOfferStatus.PUBLISHED: {JobOfferStatus.ARCHIVED},
+    JobOfferStatus.ARCHIVED: set(),
+}
 
 
 def _validate_competency_key(*, competency_key: str) -> None:
@@ -158,6 +165,60 @@ def delete_job_offer_for_user(
     )
     db_session.delete(job_offer)
     db_session.commit()
+
+
+def _transition_job_offer_status(
+    db_session: Session,
+    *,
+    user_id: int,
+    job_offer_id: int,
+    target_status: JobOfferStatus,
+) -> JobOffer:
+    job_offer = get_owned_job_offer_or_404(
+        db_session,
+        user_id=user_id,
+        job_offer_id=job_offer_id,
+    )
+
+    current_status = job_offer.status
+    if target_status not in ALLOWED_STATUS_TRANSITIONS[current_status]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"{INVALID_STATUS_TRANSITION_MESSAGE} {current_status.value} -> {target_status.value}.",
+        )
+
+    job_offer.status = target_status
+    db_session.commit()
+    db_session.refresh(job_offer)
+    return job_offer
+
+
+def publish_job_offer_for_user(
+    db_session: Session,
+    *,
+    user_id: int,
+    job_offer_id: int,
+) -> JobOffer:
+    return _transition_job_offer_status(
+        db_session,
+        user_id=user_id,
+        job_offer_id=job_offer_id,
+        target_status=JobOfferStatus.PUBLISHED,
+    )
+
+
+def archive_job_offer_for_user(
+    db_session: Session,
+    *,
+    user_id: int,
+    job_offer_id: int,
+) -> JobOffer:
+    return _transition_job_offer_status(
+        db_session,
+        user_id=user_id,
+        job_offer_id=job_offer_id,
+        target_status=JobOfferStatus.ARCHIVED,
+    )
 
 
 def list_requirements_for_job_offer(

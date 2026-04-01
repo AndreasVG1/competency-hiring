@@ -5,10 +5,16 @@ from sqlalchemy.orm import Session
 
 from app.db.models import User
 from app.db.sqlite import get_db_session
+from app.modules.applications.service import (
+    apply_to_published_job_offer,
+    list_applications_for_seeker,
+)
 from app.modules.auth.dependencies import require_job_seeker
 from app.modules.seeker.schemas import (
+    ApplicationCreateResponse,
     PublicJobOfferDetail,
     PublicJobOfferListItem,
+    SeekerApplicationListItem,
     SeekerCompetencyCreateRequest,
     SeekerCompetencyResponse,
     SeekerCompetencyUpdateRequest,
@@ -158,3 +164,35 @@ def read_marketplace_job_offer(
         db_session,
         job_offer_id=job_offer_id,
     )
+
+
+@router.post(
+    "/job-offers/{job_offer_id}/apply",
+    response_model=ApplicationCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def apply_for_job_offer(
+    job_offer_id: int,
+    db_session: DbSession,
+    current_seeker: CurrentSeeker,
+) -> ApplicationCreateResponse:
+    application = apply_to_published_job_offer(
+        db_session,
+        seeker_user=current_seeker,
+        job_offer_id=job_offer_id,
+    )
+    return ApplicationCreateResponse.model_validate(application)
+
+
+@router.get("/applications", response_model=list[SeekerApplicationListItem])
+def list_my_applications(
+    db_session: DbSession,
+    current_seeker: CurrentSeeker,
+) -> list[SeekerApplicationListItem]:
+    return [
+        SeekerApplicationListItem.model_validate(item)
+        for item in list_applications_for_seeker(
+            db_session,
+            seeker_user_id=current_seeker.id,
+        )
+    ]

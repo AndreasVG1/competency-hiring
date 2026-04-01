@@ -100,7 +100,7 @@ Goal:
 - API tests: seeker list/detail only returns published offers.
 - Frontend checks: seeker can browse published offers; recruiter can publish/archive owned offers.
 
-9. [ ] Define application and snapshot domain model (Milestone 2B)
+9. [X] Define application and snapshot domain model (Milestone 2B)
 - Add `applications` table in SQLite with:
 - `id`
 - `job_offer_id` (FK)
@@ -111,7 +111,12 @@ Goal:
 - Add snapshot persistence (preferred: dedicated snapshot table keyed by `application_id`, or JSON snapshot columns with clear schema).
 - Snapshot should represent what recruiter is allowed to see at apply time.
 
-10. [ ] Implement consent-aware application service (Milestone 2B)
+Snapshot JSON contract default (for Milestone 2B services and APIs):
+- `competencies` value shape:
+- `[{ "competency_key": string, "level": "beginner" | "intermediate" | "advanced" }]`
+- Snapshot is write-once at apply time; recruiter views must read this stored snapshot, not live seeker profile/competency state.
+
+10. [X] Implement consent-aware application service (Milestone 2B)
 - Add service function to apply to a published offer:
 - verify seeker role and ownership context
 - verify offer is currently `published`
@@ -121,9 +126,9 @@ Goal:
 - persist snapshot payload of seeker profile + competencies (and optional offer metadata for audit)
 - Keep consent and visibility logic centralized in service layer.
 
-11. [ ] Add seeker application endpoints (Milestone 2B)
+11. [X] Add seeker application endpoints (Milestone 2B)
 - `POST` apply endpoint for a published offer.
-- Optional seeker endpoint to list own applications for UX continuity.
+- Seeker endpoint to list own applications for UX continuity.
 - Return clear conflict response for duplicate apply attempts.
 
 12. [ ] Add recruiter applicants endpoints with strict ownership checks (Milestone 2B)

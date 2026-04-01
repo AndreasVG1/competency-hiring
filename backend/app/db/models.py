@@ -4,7 +4,7 @@ import enum
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -76,6 +76,11 @@ class User(Base):
     job_offers: Mapped[list[JobOffer]] = relationship(
         back_populates="recruiter_user",
         cascade="all, delete-orphan",
+    )
+    applications: Mapped[list[Application]] = relationship(
+        back_populates="seeker_user",
+        cascade="all, delete-orphan",
+        foreign_keys="Application.seeker_user_id",
     )
     refresh_token_sessions: Mapped[list[RefreshTokenSession]] = relationship(
         back_populates="user",
@@ -167,6 +172,10 @@ class JobOffer(TimestampMixin, Base):
         back_populates="job_offer",
         cascade="all, delete-orphan",
     )
+    applications: Mapped[list[Application]] = relationship(
+        back_populates="job_offer",
+        cascade="all, delete-orphan",
+    )
 
 
 class JobOfferRequirement(Base):
@@ -196,6 +205,71 @@ class JobOfferRequirement(Base):
     )
 
     job_offer: Mapped[JobOffer] = relationship(back_populates="requirements")
+
+
+class Application(Base):
+    __tablename__ = "applications"
+    __table_args__ = (
+        UniqueConstraint(
+            "job_offer_id",
+            "seeker_user_id",
+            name="uq_applications_job_offer_id_seeker_user_id",
+        ),
+        Index("ix_applications_job_offer_id", "job_offer_id"),
+        Index("ix_applications_seeker_user_id", "seeker_user_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_offer_id: Mapped[int] = mapped_column(
+        ForeignKey("job_offers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    seeker_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    consent_given_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    job_offer: Mapped[JobOffer] = relationship(back_populates="applications")
+    seeker_user: Mapped[User] = relationship(
+        back_populates="applications",
+        foreign_keys=[seeker_user_id],
+    )
+    snapshot: Mapped[ApplicationSnapshot | None] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+
+
+class ApplicationSnapshot(Base):
+    __tablename__ = "application_snapshots"
+
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text)
+    location: Mapped[str | None] = mapped_column(String(255))
+    occupation_key: Mapped[str | None] = mapped_column(String(255))
+    competencies: Mapped[list[dict[str, str]]] = mapped_column(JSON, nullable=False)
+    audit_metadata: Mapped[dict[str, str] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    application: Mapped[Application] = relationship(back_populates="snapshot")
 
 
 class RefreshTokenSession(Base):

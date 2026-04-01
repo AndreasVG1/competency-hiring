@@ -1,5 +1,8 @@
 from app.db.base import Base
 from app.db.models import (
+    Application,
+    ApplicationSnapshot,
+    CompetencyLevel,
     JobOffer,
     JobOfferRequirement,
     JobOfferStatus,
@@ -10,11 +13,12 @@ from app.db.models import (
     RequirementPriority,
     User,
     UserRole,
-    CompetencyLevel,
 )
 
 __all__ = [
     "Base",
+    "Application",
+    "ApplicationSnapshot",
     "CompetencyLevel",
     "JobOffer",
     "JobOfferRequirement",

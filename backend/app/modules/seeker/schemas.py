@@ -89,3 +89,23 @@ class PublicJobOfferDetail(BaseModel):
     company_name: str
     published_at: datetime
     requirements: list[PublicJobOfferRequirementItem]
+
+
+class ApplicationCreateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    job_offer_id: int
+    seeker_user_id: int
+    consent_given_at: datetime
+    created_at: datetime
+
+
+class SeekerApplicationListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    job_offer_id: int
+    seeker_user_id: int
+    consent_given_at: datetime
+    created_at: datetime

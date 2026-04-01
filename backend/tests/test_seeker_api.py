@@ -6,6 +6,8 @@ REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
 SEEKER_ROUTE = f"{API_PREFIX}/seeker/profile"
 SEEKER_COMPETENCIES_ROUTE = f"{API_PREFIX}/seeker/competencies"
 SEEKER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/seeker/job-offers"
+SEEKER_APPLICATIONS_ROUTE = f"{API_PREFIX}/seeker/applications"
+SEEKER_APPLY_ROUTE = f"{SEEKER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/apply"
 RECRUITER_PROFILE_ROUTE = f"{API_PREFIX}/recruiter/profile"
 RECRUITER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/recruiter/job-offers"
 RECRUITER_REQUIREMENTS_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/requirements"
@@ -21,6 +23,8 @@ SEEKER_PATHS = [
     ("DELETE", f"{SEEKER_COMPETENCIES_ROUTE}/1"),
     ("GET", SEEKER_JOB_OFFERS_ROUTE),
     ("GET", f"{SEEKER_JOB_OFFERS_ROUTE}/1"),
+    ("POST", SEEKER_APPLY_ROUTE.format(job_offer_id=1)),
+    ("GET", SEEKER_APPLICATIONS_ROUTE),
 ]
 
 
@@ -70,7 +74,7 @@ def call_endpoint(client: TestClient, method: str, path: str, *, token: str | No
         "POST": {"competency_key": "comp_1", "level": "beginner"},
         "PATCH": {"level": "advanced"},
     }
-    json = json_by_method.get(method)
+    json = None if path.endswith("/apply") else json_by_method.get(method)
     return client.request(method, path, headers=headers, json=json)
 
 
@@ -735,3 +739,194 @@ def test_job_offer_marketplace_detail_returns_404_for_draft_or_missing_offer(cli
         status_code=404,
         message="Published job offer not found.",
     )
+
+
+def test_apply_to_published_job_offer_creates_application(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-apply-create@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-apply-create@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    profile_response = client.put(
+        SEEKER_ROUTE,
+        headers=auth_headers(seeker_token),
+        json={
+            "full_name": "Alice Example",
+            "summary": "Ready to apply",
+            "location": "Tallinn",
+            "occupation_key": None,
+        },
+    )
+    assert profile_response.status_code == 200
+
+    offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+    publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert publish.status_code == 200
+
+    response = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_token),
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert isinstance(body["id"], int)
+    assert body["job_offer_id"] == offer_id
+    assert body["consent_given_at"]
+    assert body["created_at"]
+
+
+def test_apply_duplicate_returns_structured_409(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-apply-duplicate@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-apply-duplicate@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    profile_response = client.put(
+        SEEKER_ROUTE,
+        headers=auth_headers(seeker_token),
+        json={
+            "full_name": "Alice Example",
+            "summary": "Ready to apply",
+            "location": "Tallinn",
+            "occupation_key": None,
+        },
+    )
+    assert profile_response.status_code == 200
+
+    offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+    publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert publish.status_code == 200
+
+    first = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert_structured_http_error(
+        second,
+        status_code=409,
+        message="Application already exists for this seeker and job offer.",
+    )
+
+
+def test_list_my_applications_returns_only_current_seekers_rows(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-seeker-app-list@example.com",
+        role="recruiter",
+    )
+    seeker_one_token = register_and_get_token(
+        client,
+        email="seeker-app-list-1@example.com",
+        role="job_seeker",
+    )
+    seeker_two_token = register_and_get_token(
+        client,
+        email="seeker-app-list-2@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    for token, name in ((seeker_one_token, "Seeker One"), (seeker_two_token, "Seeker Two")):
+        profile_response = client.put(
+            SEEKER_ROUTE,
+            headers=auth_headers(token),
+            json={
+                "full_name": name,
+                "summary": "Ready to apply",
+                "location": "Tallinn",
+                "occupation_key": None,
+            },
+        )
+        assert profile_response.status_code == 200
+
+    offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+    publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert publish.status_code == 200
+
+    apply_one = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_one_token),
+    )
+    assert apply_one.status_code == 201
+
+    apply_two = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_two_token),
+    )
+    assert apply_two.status_code == 201
+
+    listed_one = client.get(
+        SEEKER_APPLICATIONS_ROUTE,
+        headers=auth_headers(seeker_one_token),
+    )
+    assert listed_one.status_code == 200
+    items_one = listed_one.json()
+    assert len(items_one) == 1
+    assert items_one[0]["job_offer_id"] == offer_id
+
+    listed_two = client.get(
+        SEEKER_APPLICATIONS_ROUTE,
+        headers=auth_headers(seeker_two_token),
+    )
+    assert listed_two.status_code == 200
+    items_two = listed_two.json()
+    assert len(items_two) == 1
+    assert items_two[0]["job_offer_id"] == offer_id
+    assert items_one[0]["id"] != items_two[0]["id"]

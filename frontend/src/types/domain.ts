@@ -1,6 +1,6 @@
 export type CompetencyLevel = "beginner" | "intermediate" | "advanced";
 export type RequirementPriority = "must_have" | "important" | "nice_to_have";
-export type JobOfferStatus = "draft";
+export type JobOfferStatus = "draft" | "published" | "archived";
 
 export interface ApiErrorDetail {
   field?: string;
@@ -104,4 +104,30 @@ export interface JobOfferRequirementResponse {
   job_offer_id: number;
   competency_key: string;
   priority: RequirementPriority;
+}
+
+export interface PublicJobOfferRequirementItem {
+  competency_key: string;
+  priority: RequirementPriority;
+}
+
+export interface PublicJobOfferListItem {
+  id: number;
+  title: string;
+  occupation_key: string;
+  occupation_label: string;
+  short_description: string;
+  company_name: string;
+  published_at: string;
+}
+
+export interface PublicJobOfferDetail {
+  id: number;
+  title: string;
+  occupation_key: string;
+  occupation_label: string;
+  description: string;
+  company_name: string;
+  published_at: string;
+  requirements: PublicJobOfferRequirementItem[];
 }

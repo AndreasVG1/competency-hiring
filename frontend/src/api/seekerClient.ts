@@ -1,5 +1,7 @@
 import { apiRequest } from "./httpClient";
 import type {
+  PublicJobOfferDetail,
+  PublicJobOfferListItem,
   SeekerCompetencyCreateRequest,
   SeekerCompetencyResponse,
   SeekerCompetencyUpdateRequest,
@@ -8,6 +10,13 @@ import type {
 } from "../types/domain";
 
 const SEEKER_BASE_PATH = "/api/v1/seeker";
+
+interface PublishedJobOffersListParams {
+  query?: string;
+  occupation_key?: string;
+  limit?: number;
+  offset?: number;
+}
 
 export const seekerClient = {
   getProfile(): Promise<SeekerProfileResponse> {
@@ -55,5 +64,20 @@ export const seekerClient = {
     return apiRequest<void>(`${SEEKER_BASE_PATH}/competencies/${competencyId}`, {
       method: "DELETE",
     });
+  },
+
+  listPublishedJobOffers(params: PublishedJobOffersListParams = {}): Promise<PublicJobOfferListItem[]> {
+    return apiRequest<PublicJobOfferListItem[]>(`${SEEKER_BASE_PATH}/job-offers`, {
+      query: {
+        query: params.query,
+        occupation_key: params.occupation_key,
+        limit: params.limit,
+        offset: params.offset,
+      },
+    });
+  },
+
+  getPublishedJobOffer(jobOfferId: number): Promise<PublicJobOfferDetail> {
+    return apiRequest<PublicJobOfferDetail>(`${SEEKER_BASE_PATH}/job-offers/${jobOfferId}`);
   },
 };

@@ -2,6 +2,9 @@
   <main class="seeker-page">
     <section class="panel seeker-panel">
       <nav class="page-actions">
+        <RouterLink class="button-primary" to="/seeker/job-offers">
+          Browse published job offers
+        </RouterLink>
         <RouterLink class="button-secondary" to="/seeker/edit">Edit profile</RouterLink>
         <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
           {{ isLoggingOut ? "Signing out..." : "Log out" }}

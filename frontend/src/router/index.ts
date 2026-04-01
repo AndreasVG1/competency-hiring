@@ -13,6 +13,8 @@ import RecruiterLayoutView from "../views/recruiter/RecruiterLayoutView.vue";
 import RecruiterProfileEditView from "../views/recruiter/RecruiterProfileEditView.vue";
 import SeekerEditView from "../views/seeker/SeekerEditView.vue";
 import SeekerHomeView from "../views/seeker/SeekerHomeView.vue";
+import SeekerJobOfferDetailView from "../views/seeker/SeekerJobOfferDetailView.vue";
+import SeekerJobOfferMarketplaceView from "../views/seeker/SeekerJobOfferMarketplaceView.vue";
 import SeekerLayoutView from "../views/seeker/SeekerLayoutView.vue";
 
 const SEEKER_HOME_ROUTE_NAME = "seeker-home";
@@ -78,6 +80,16 @@ export const router = createRouter({
           path: "edit",
           name: "seeker-edit",
           component: SeekerEditView,
+        },
+        {
+          path: "job-offers",
+          name: "seeker-job-offers",
+          component: SeekerJobOfferMarketplaceView,
+        },
+        {
+          path: "job-offers/:id",
+          name: "seeker-job-offer-detail",
+          component: SeekerJobOfferDetailView,
         },
       ],
     },

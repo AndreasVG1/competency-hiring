@@ -40,7 +40,7 @@
             <dt>Title</dt>
             <dd>{{ jobOffer.title }}</dd>
             <dt>Status</dt>
-            <dd>{{ jobOffer.status }}</dd>
+            <dd><JobOfferStatusBadge :status="jobOffer.status" /></dd>
             <dt>Occupation</dt>
             <dd>
               {{ occupationLabel || jobOffer.occupation_key }}
@@ -70,38 +70,32 @@
         <ApiErrorNotice v-if="requirementsLoadError" :error="requirementsLoadError" show-all-messages />
 
         <p v-if="isRequirementsLoading" class="table-note">Loading requirements...</p>
-        <p v-else-if="requirements.length === 0" class="table-note">No requirements saved yet.</p>
-
-        <table v-else class="competency-table">
-          <thead>
-            <tr>
-              <th>Competency</th>
-              <th>Key</th>
-              <th>Priority</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in requirements" :key="item.id">
-              <td>{{ competencyLabel(item.competency_key) }}</td>
-              <td><code>{{ item.competency_key }}</code></td>
-              <td>{{ formatPriority(item.priority) }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <JobOfferRequirementsTable
+          v-else
+          :requirements="tableRequirements"
+          empty-text="No requirements saved yet."
+          :label-resolver="competencyLabel"
+        />
       </section>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { ApiClientError, catalogClient, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
+import JobOfferRequirementsTable from "../../components/JobOfferRequirementsTable.vue";
+import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useLogout } from "../../composables/useLogout";
-import type { JobOfferRequirementResponse, JobOfferResponse, RequirementPriority } from "../../types/domain";
+import type {
+  JobOfferRequirementResponse,
+  JobOfferResponse,
+  PublicJobOfferRequirementItem,
+} from "../../types/domain";
 
 const route = useRoute();
 const router = useRouter();
@@ -130,16 +124,6 @@ function parseOfferId(): number | null {
   return offerId;
 }
 
-function formatPriority(priority: RequirementPriority): string {
-  if (priority === "must_have") {
-    return "Must have";
-  }
-  if (priority === "important") {
-    return "Important";
-  }
-  return "Nice to have";
-}
-
 function competencyLabel(competencyKey: string): string {
   const label = labelCache.getLabel(competencyKey);
   if (label) {
@@ -153,6 +137,13 @@ function competencyLabel(competencyKey: string): string {
 
   return "Loading label...";
 }
+
+const tableRequirements = computed<PublicJobOfferRequirementItem[]>(() => {
+  return requirements.value.map((item) => ({
+    competency_key: item.competency_key,
+    priority: item.priority,
+  }));
+});
 
 async function loadOffer(): Promise<void> {
   const offerId = parseOfferId();

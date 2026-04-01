@@ -58,11 +58,24 @@
         <header class="section-header">
           <h2>Apply</h2>
           <p>
-            Applying with explicit consent will be enabled in Phase 2B.
+            Applying is an explicit consent action. If you apply, your profile snapshot at application time
+            is shared with the recruiter for this offer.
           </p>
         </header>
+        <ApiErrorNotice v-if="applyError" :error="applyError" show-all-messages />
+        <p v-if="applySuccessMessage" class="form-success">{{ applySuccessMessage }}</p>
+        <p class="consent-callout">
+          Consent note: only data captured at the moment you apply is shared for this application.
+        </p>
         <div class="table-actions">
-          <button class="button-primary" type="button" disabled>Apply (available in Phase 2B)</button>
+          <button
+            class="button-primary"
+            type="button"
+            :disabled="isApplying || hasApplied"
+            @click="applyToOffer"
+          >
+            {{ applyButtonLabel }}
+          </button>
         </div>
       </section>
     </section>
@@ -70,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { ApiClientError, seekerClient } from "../../api";
@@ -89,6 +102,10 @@ const offer = ref<PublicJobOfferDetail | null>(null);
 const isOfferLoading = ref(true);
 const isOfferNotFound = ref(false);
 const offerLoadError = ref<unknown | null>(null);
+const isApplying = ref(false);
+const hasApplied = ref(false);
+const applyError = ref<unknown | null>(null);
+const applySuccessMessage = ref<string | null>(null);
 
 function parseOfferId(): number | null {
   const offerId = Number(route.params.id);
@@ -123,6 +140,16 @@ function formatDateTime(value: string): string {
   }).format(new Date(parsed));
 }
 
+const applyButtonLabel = computed(() => {
+  if (isApplying.value) {
+    return "Applying...";
+  }
+  if (hasApplied.value) {
+    return "Application sent";
+  }
+  return "Apply with consent";
+});
+
 async function loadOffer(): Promise<void> {
   const offerId = parseOfferId();
   if (offerId === null) {
@@ -136,6 +163,9 @@ async function loadOffer(): Promise<void> {
   isOfferNotFound.value = false;
   offerLoadError.value = null;
   offer.value = null;
+  hasApplied.value = false;
+  applyError.value = null;
+  applySuccessMessage.value = null;
 
   try {
     const loadedOffer = await seekerClient.getPublishedJobOffer(offerId);
@@ -149,6 +179,29 @@ async function loadOffer(): Promise<void> {
     offerLoadError.value = error;
   } finally {
     isOfferLoading.value = false;
+  }
+}
+
+async function applyToOffer(): Promise<void> {
+  if (!offer.value || isApplying.value || hasApplied.value) {
+    return;
+  }
+
+  isApplying.value = true;
+  applyError.value = null;
+  applySuccessMessage.value = null;
+
+  try {
+    await seekerClient.applyToJobOffer(offer.value.id);
+    hasApplied.value = true;
+    applySuccessMessage.value = "Application submitted. The recruiter now sees your application-time snapshot.";
+  } catch (error) {
+    applyError.value = error;
+    if (error instanceof ApiClientError && error.statusCode === 409) {
+      hasApplied.value = true;
+    }
+  } finally {
+    isApplying.value = false;
   }
 }
 

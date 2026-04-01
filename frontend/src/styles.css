@@ -373,6 +373,15 @@ a {
   font-weight: 600;
 }
 
+.consent-callout {
+  margin: 0;
+  border: 1px solid rgba(31, 78, 199, 0.2);
+  border-radius: 10px;
+  background-color: rgba(234, 241, 255, 0.8);
+  padding: 0.6rem 0.75rem;
+  color: #1f355f;
+}
+
 .table-note {
   margin: 0;
   color: #3f4f5f;
@@ -561,6 +570,28 @@ a {
 .marketplace-offer-summary {
   margin: 0;
   line-height: 1.5;
+}
+
+.applicants-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.applicant-card {
+  border: 1px solid rgba(31, 41, 51, 0.16);
+  border-radius: 12px;
+  background-color: #fff;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.snapshot-note {
+  margin: 0.35rem 0 0;
+  color: #46596c;
 }
 
 @media (max-width: 900px) {

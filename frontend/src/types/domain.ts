@@ -131,3 +131,35 @@ export interface PublicJobOfferDetail {
   published_at: string;
   requirements: PublicJobOfferRequirementItem[];
 }
+
+export interface ApplicationCreateResponse {
+  id: number;
+  job_offer_id: number;
+  seeker_user_id: number;
+  consent_given_at: string;
+  created_at: string;
+}
+
+export interface RecruiterApplicantSnapshotCompetency {
+  competency_key: string;
+  level: CompetencyLevel;
+}
+
+export interface RecruiterApplicantSharedProfile {
+  full_name: string;
+  summary: string | null;
+  location: string | null;
+  occupation_key: string | null;
+  competencies: RecruiterApplicantSnapshotCompetency[];
+}
+
+export interface RecruiterApplicantListItem {
+  application_id: number;
+  job_offer_id: number;
+  seeker_user_id: number;
+  consent_given_at: string;
+  applied_at: string;
+  shared_profile: RecruiterApplicantSharedProfile;
+  audit_metadata: Record<string, string> | null;
+  snapshot_created_at: string;
+}

@@ -137,7 +137,7 @@ Snapshot JSON contract default (for Milestone 2B services and APIs):
 - Recruiters must never see non-applicant seeker data.
 - Recruiters must never access applicants for non-owned offers.
 
-13. [ ] Build apply + applicants frontend flows (Milestone 2B)
+13. [X] Build apply + applicants frontend flows (Milestone 2B)
 - Seeker detail page:
 - add explicit consent text near `Apply`
 - require intentional apply action (no hidden implicit consent)

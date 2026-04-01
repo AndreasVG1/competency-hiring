@@ -1,5 +1,6 @@
 import { apiRequest } from "./httpClient";
 import type {
+  ApplicationCreateResponse,
   PublicJobOfferDetail,
   PublicJobOfferListItem,
   SeekerCompetencyCreateRequest,
@@ -79,5 +80,11 @@ export const seekerClient = {
 
   getPublishedJobOffer(jobOfferId: number): Promise<PublicJobOfferDetail> {
     return apiRequest<PublicJobOfferDetail>(`${SEEKER_BASE_PATH}/job-offers/${jobOfferId}`);
+  },
+
+  applyToJobOffer(jobOfferId: number): Promise<ApplicationCreateResponse> {
+    return apiRequest<ApplicationCreateResponse>(`${SEEKER_BASE_PATH}/job-offers/${jobOfferId}/apply`, {
+      method: "POST",
+    });
   },
 };

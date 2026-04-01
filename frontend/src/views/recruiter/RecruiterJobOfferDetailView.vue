@@ -10,6 +10,13 @@
         >
           Edit offer
         </RouterLink>
+        <RouterLink
+          v-if="jobOffer"
+          class="button-secondary"
+          :to="`/recruiter/job-offers/${jobOffer.id}/applicants`"
+        >
+          View applicants
+        </RouterLink>
         <button class="button-secondary" type="button" :disabled="isLoggingOut" @click="logout">
           {{ isLoggingOut ? "Signing out..." : "Log out" }}
         </button>
@@ -55,6 +62,9 @@
           <div class="table-actions">
             <RouterLink class="button-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/edit`">
               Edit offer
+            </RouterLink>
+            <RouterLink class="button-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/applicants`">
+              View applicants
             </RouterLink>
             <button
               v-if="jobOffer.status === 'draft'"

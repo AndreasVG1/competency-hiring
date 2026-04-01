@@ -6,6 +6,7 @@ import type {
   JobOfferRequirementUpdateRequest,
   JobOfferResponse,
   JobOfferUpdateRequest,
+  RecruiterApplicantListItem,
   RecruiterProfileResponse,
   RecruiterProfileUpsertRequest,
 } from "../types/domain";
@@ -103,6 +104,12 @@ export const recruiterClient = {
       {
         method: "DELETE",
       },
+    );
+  },
+
+  listApplicants(jobOfferId: number): Promise<RecruiterApplicantListItem[]> {
+    return apiRequest<RecruiterApplicantListItem[]>(
+      `${RECRUITER_BASE_PATH}/job-offers/${jobOfferId}/applicants`,
     );
   },
 };

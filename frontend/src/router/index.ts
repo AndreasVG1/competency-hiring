@@ -9,6 +9,7 @@ import RecruiterHomeView from "../views/recruiter/RecruiterHomeView.vue";
 import RecruiterJobOfferCreateView from "../views/recruiter/RecruiterJobOfferCreateView.vue";
 import RecruiterJobOfferDetailView from "../views/recruiter/RecruiterJobOfferDetailView.vue";
 import RecruiterJobOfferEditView from "../views/recruiter/RecruiterJobOfferEditView.vue";
+import RecruiterJobOfferApplicantsView from "../views/recruiter/RecruiterJobOfferApplicantsView.vue";
 import RecruiterLayoutView from "../views/recruiter/RecruiterLayoutView.vue";
 import RecruiterProfileEditView from "../views/recruiter/RecruiterProfileEditView.vue";
 import SeekerEditView from "../views/seeker/SeekerEditView.vue";
@@ -125,6 +126,11 @@ export const router = createRouter({
           path: "job-offers/:id/edit",
           name: "recruiter-job-offer-edit",
           component: RecruiterJobOfferEditView,
+        },
+        {
+          path: "job-offers/:id/applicants",
+          name: "recruiter-job-offer-applicants",
+          component: RecruiterJobOfferApplicantsView,
         },
       ],
     },

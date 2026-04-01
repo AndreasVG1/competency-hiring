@@ -72,16 +72,34 @@
         />
 
         <form class="recruiter-form" @submit.prevent="createJobOffer">
-          <label class="form-field">
-            <span>Title</span>
-            <input
-              v-model="createOfferForm.title"
-              type="text"
-              maxlength="255"
-              required
-              :disabled="isJobOffersLoading || isCreatingJobOffer"
-            />
-          </label>
+          <CatalogSearchPicker
+            :key="createOfferOccupationPickerKey"
+            label="Occupation"
+            placeholder="Search occupations"
+            no-results-text="No occupations found."
+            :disabled="isJobOffersLoading"
+            :busy="isCreatingJobOffer"
+            :search-fn="searchOccupations"
+            @select="selectCreateOfferOccupation"
+          />
+
+          <p class="selected-item">
+            <strong>Selected occupation:</strong>
+            <span v-if="selectedCreateOfferOccupation">
+              {{ selectedCreateOfferOccupation.label }}
+              <small>({{ selectedCreateOfferOccupation.key }})</small>
+            </span>
+            <span v-else>None</span>
+          </p>
+
+          <button
+            class="button-secondary"
+            type="button"
+            :disabled="!selectedCreateOfferOccupation || isJobOffersLoading || isCreatingJobOffer"
+            @click="clearCreateOfferOccupation"
+          >
+            Clear occupation
+          </button>
 
           <label class="form-field">
             <span>Description</span>
@@ -103,7 +121,7 @@
           <button
             class="button-primary"
             type="submit"
-            :disabled="isJobOffersLoading || isCreatingJobOffer"
+            :disabled="isJobOffersLoading || isCreatingJobOffer || !selectedCreateOfferOccupation"
           >
             {{ isCreatingJobOffer ? "Creating offer..." : "Create draft offer" }}
           </button>
@@ -373,6 +391,8 @@ const selectedOfferId = ref<number | null>(null);
 const isCreatingJobOffer = ref(false);
 const createJobOfferError = ref<unknown | null>(null);
 const createJobOfferSuccessMessage = ref<string | null>(null);
+const selectedCreateOfferOccupation = ref<CatalogItem | null>(null);
+const createOfferOccupationPickerKey = ref(0);
 
 const isUpdatingSelectedOffer = ref(false);
 const selectedOfferUpdateError = ref<unknown | null>(null);
@@ -447,6 +467,25 @@ function selectRequirementCompetency(item: CatalogItem): void {
 
 async function searchCompetencies(query: string): Promise<CatalogItem[]> {
   return catalogClient.listCompetencies({ query, limit: 8 });
+}
+
+async function searchOccupations(query: string): Promise<CatalogItem[]> {
+  return catalogClient.listOccupations({ query, limit: 8 });
+}
+
+function selectCreateOfferOccupation(item: CatalogItem): void {
+  selectedCreateOfferOccupation.value = item;
+  createOfferForm.title = item.label;
+  createJobOfferError.value = null;
+  createJobOfferSuccessMessage.value = null;
+}
+
+function clearCreateOfferOccupation(): void {
+  selectedCreateOfferOccupation.value = null;
+  createOfferForm.title = "";
+  createJobOfferError.value = null;
+  createJobOfferSuccessMessage.value = null;
+  createOfferOccupationPickerKey.value += 1;
 }
 
 async function loadProfile(): Promise<void> {
@@ -547,6 +586,11 @@ async function createJobOffer(): Promise<void> {
     return;
   }
 
+  if (!selectedCreateOfferOccupation.value) {
+    createJobOfferError.value = "Choose an occupation before creating the offer.";
+    return;
+  }
+
   isCreatingJobOffer.value = true;
   createJobOfferError.value = null;
   createJobOfferSuccessMessage.value = null;
@@ -561,6 +605,8 @@ async function createJobOffer(): Promise<void> {
     selectedOfferId.value = created.id;
     createOfferForm.title = "";
     createOfferForm.description = "";
+    selectedCreateOfferOccupation.value = null;
+    createOfferOccupationPickerKey.value += 1;
     createJobOfferSuccessMessage.value = "Draft offer created.";
   } catch (error) {
     createJobOfferError.value = error;

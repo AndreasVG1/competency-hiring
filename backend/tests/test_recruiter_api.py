@@ -10,6 +10,9 @@ RECRUITER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/recruiter/job-offers"
 RECRUITER_REQUIREMENTS_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/requirements"
 RECRUITER_PUBLISH_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/publish"
 RECRUITER_ARCHIVE_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/archive"
+RECRUITER_APPLICANTS_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/applicants"
+SEEKER_PROFILE_ROUTE = f"{API_PREFIX}/seeker/profile"
+SEEKER_APPLY_ROUTE = f"{API_PREFIX}/seeker/job-offers/{{job_offer_id}}/apply"
 
 
 RECRUITER_PATHS = [
@@ -22,6 +25,7 @@ RECRUITER_PATHS = [
     ("DELETE", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
     ("POST", RECRUITER_PUBLISH_ROUTE.format(job_offer_id=1)),
     ("POST", RECRUITER_ARCHIVE_ROUTE.format(job_offer_id=1)),
+    ("GET", RECRUITER_APPLICANTS_ROUTE.format(job_offer_id=1)),
     ("GET", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}"),
     ("POST", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}"),
     ("PATCH", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}/1"),
@@ -786,6 +790,111 @@ def test_job_offer_delete_returns_404_for_non_owned_or_missing_offer(client: Tes
     missing = client.delete(
         f"{RECRUITER_JOB_OFFERS_ROUTE}/999999",
         headers=auth_headers(owner),
+    )
+    assert_structured_http_error(
+        missing,
+        status_code=404,
+        message="Job offer not found.",
+    )
+
+
+def test_applicants_list_returns_snapshot_based_rows_for_owned_offer(client: TestClient):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-applicants-owned@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-applicants-owned@example.com",
+        role="job_seeker",
+    )
+
+    offer_id = create_offer(client, recruiter_token, occupation_key="backend_engineer")
+    published = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert published.status_code == 200
+
+    profile_create = client.put(
+        SEEKER_PROFILE_ROUTE,
+        headers=auth_headers(seeker_token),
+        json={
+            "full_name": "Alice Snapshot",
+            "summary": "Initial summary",
+            "location": "Tallinn",
+            "occupation_key": None,
+        },
+    )
+    assert profile_create.status_code == 200
+
+    apply_response = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert apply_response.status_code == 201
+
+    profile_update = client.put(
+        SEEKER_PROFILE_ROUTE,
+        headers=auth_headers(seeker_token),
+        json={
+            "full_name": "Alice Updated",
+            "summary": "Updated summary",
+            "location": "Tartu",
+            "occupation_key": None,
+        },
+    )
+    assert profile_update.status_code == 200
+
+    listed = client.get(
+        RECRUITER_APPLICANTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert listed.status_code == 200
+    items = listed.json()
+    assert len(items) == 1
+    applicant = items[0]
+    assert applicant["job_offer_id"] == offer_id
+    assert applicant["shared_profile"]["full_name"] == "Alice Snapshot"
+    assert applicant["shared_profile"]["summary"] == "Initial summary"
+    assert applicant["shared_profile"]["location"] == "Tallinn"
+    assert applicant["shared_profile"]["competencies"] == []
+    assert applicant["audit_metadata"]["job_offer_id"] == str(offer_id)
+
+
+def test_applicants_list_returns_404_for_non_owned_or_missing_offer(client: TestClient):
+    owner_token = register_and_get_token(
+        client,
+        email="recruiter-applicants-owner@example.com",
+        role="recruiter",
+    )
+    other_token = register_and_get_token(
+        client,
+        email="recruiter-applicants-other@example.com",
+        role="recruiter",
+    )
+
+    offer_id = create_offer(client, owner_token, occupation_key="backend_engineer")
+    publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(owner_token),
+    )
+    assert publish.status_code == 200
+
+    non_owned = client.get(
+        RECRUITER_APPLICANTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(other_token),
+    )
+    assert_structured_http_error(
+        non_owned,
+        status_code=404,
+        message="Job offer not found.",
+    )
+
+    missing = client.get(
+        RECRUITER_APPLICANTS_ROUTE.format(job_offer_id=999999),
+        headers=auth_headers(owner_token),
     )
     assert_structured_http_error(
         missing,

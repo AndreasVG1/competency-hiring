@@ -89,3 +89,22 @@ class JobOfferRequirementResponse(BaseModel):
     job_offer_id: int
     competency_key: str
     priority: RequirementPriority
+
+
+class RecruiterApplicantSharedProfile(BaseModel):
+    full_name: str
+    summary: str | None
+    location: str | None
+    occupation_key: str | None
+    competencies: list[dict[str, str]]
+
+
+class RecruiterApplicantListItem(BaseModel):
+    application_id: int
+    job_offer_id: int
+    seeker_user_id: int
+    consent_given_at: datetime
+    applied_at: datetime
+    shared_profile: RecruiterApplicantSharedProfile
+    audit_metadata: dict[str, str] | None
+    snapshot_created_at: datetime

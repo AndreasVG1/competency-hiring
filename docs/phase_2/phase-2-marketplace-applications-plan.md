@@ -131,7 +131,7 @@ Snapshot JSON contract default (for Milestone 2B services and APIs):
 - Seeker endpoint to list own applications for UX continuity.
 - Return clear conflict response for duplicate apply attempts.
 
-12. [ ] Add recruiter applicants endpoints with strict ownership checks (Milestone 2B)
+12. [X] Add recruiter applicants endpoints with strict ownership checks (Milestone 2B)
 - Add endpoint for recruiter to list applicants for one owned job offer.
 - Response should be derived from application snapshot data, not live seeker profile reads.
 - Recruiters must never see non-applicant seeker data.

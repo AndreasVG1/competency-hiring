@@ -19,6 +19,7 @@ FORBIDDEN_APPLY_MESSAGE = "Only job seekers can apply to job offers."
 PUBLISHED_JOB_OFFER_NOT_FOUND_MESSAGE = "Published job offer not found."
 SEEKER_PROFILE_NOT_FOUND_MESSAGE = "Seeker profile not found."
 DUPLICATE_APPLICATION_MESSAGE = "Application already exists for this seeker and job offer."
+JOB_OFFER_NOT_FOUND_MESSAGE = "Job offer not found."
 
 
 def _build_competencies_snapshot(
@@ -147,3 +148,52 @@ def list_applications_for_seeker(
         .order_by(Application.created_at.desc(), Application.id.desc())
         .all()
     )
+
+
+def list_applicants_for_owned_job_offer(
+    db_session: Session,
+    *,
+    recruiter_user_id: int,
+    job_offer_id: int,
+) -> list[dict[str, object]]:
+    owned_offer = (
+        db_session.query(JobOffer)
+        .filter(
+            JobOffer.id == job_offer_id,
+            JobOffer.recruiter_user_id == recruiter_user_id,
+        )
+        .one_or_none()
+    )
+    if owned_offer is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=JOB_OFFER_NOT_FOUND_MESSAGE,
+        )
+
+    rows = (
+        db_session.query(Application, ApplicationSnapshot)
+        .join(ApplicationSnapshot, ApplicationSnapshot.application_id == Application.id)
+        .filter(Application.job_offer_id == job_offer_id)
+        .order_by(Application.created_at.desc(), Application.id.desc())
+        .all()
+    )
+
+    return [
+        {
+            "application_id": application.id,
+            "job_offer_id": application.job_offer_id,
+            "seeker_user_id": application.seeker_user_id,
+            "consent_given_at": application.consent_given_at,
+            "applied_at": application.created_at,
+            "shared_profile": {
+                "full_name": snapshot.full_name,
+                "summary": snapshot.summary,
+                "location": snapshot.location,
+                "occupation_key": snapshot.occupation_key,
+                "competencies": snapshot.competencies,
+            },
+            "audit_metadata": snapshot.audit_metadata,
+            "snapshot_created_at": snapshot.created_at,
+        }
+        for application, snapshot in rows
+    ]

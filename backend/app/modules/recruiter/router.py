@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import User
 from app.db.sqlite import get_db_session
+from app.modules.applications.service import list_applicants_for_owned_job_offer
 from app.modules.auth.dependencies import require_recruiter
 from app.modules.recruiter.schemas import (
     JobOfferCreateRequest,
@@ -13,6 +14,7 @@ from app.modules.recruiter.schemas import (
     JobOfferRequirementUpdateRequest,
     JobOfferResponse,
     JobOfferUpdateRequest,
+    RecruiterApplicantListItem,
     RecruiterProfileResponse,
     RecruiterProfileUpsertRequest,
 )
@@ -239,3 +241,22 @@ def remove_job_offer_requirement(
         requirement_id=requirement_id,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/job-offers/{job_offer_id}/applicants",
+    response_model=list[RecruiterApplicantListItem],
+)
+def list_job_offer_applicants(
+    job_offer_id: int,
+    db_session: DbSession,
+    current_recruiter: CurrentRecruiter,
+) -> list[RecruiterApplicantListItem]:
+    return [
+        RecruiterApplicantListItem.model_validate(item)
+        for item in list_applicants_for_owned_job_offer(
+            db_session,
+            recruiter_user_id=current_recruiter.id,
+            job_offer_id=job_offer_id,
+        )
+    ]

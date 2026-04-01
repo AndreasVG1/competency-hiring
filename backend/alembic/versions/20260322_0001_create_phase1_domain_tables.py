@@ -115,6 +115,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("recruiter_user_id", sa.Integer(), nullable=False),
         sa.Column("title", sa.String(length=255), nullable=False),
+        sa.Column("occupation_key", sa.String(length=255), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("status", job_offer_status_enum, nullable=False, server_default="draft"),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),

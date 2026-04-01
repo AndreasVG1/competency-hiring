@@ -8,7 +8,7 @@ from app.db.models import (
     RecruiterProfile,
     RequirementPriority,
 )
-from app.modules.catalog.service import get_competency_detail
+from app.modules.catalog.service import get_competency_detail, get_occupation_detail
 
 PROFILE_NOT_FOUND_MESSAGE = "Recruiter profile not found."
 JOB_OFFER_NOT_FOUND_MESSAGE = "Job offer not found."
@@ -18,6 +18,11 @@ DUPLICATE_REQUIREMENT_MESSAGE = "Requirement already exists for this job offer."
 
 def _validate_competency_key(*, competency_key: str) -> None:
     get_competency_detail(competency_key=competency_key)
+
+
+def _resolve_occupation_label(*, occupation_key: str) -> str:
+    occupation = get_occupation_detail(occupation_key=occupation_key)
+    return occupation["label"]
 
 
 def get_profile_for_user(db_session: Session, *, user_id: int) -> RecruiterProfile | None:
@@ -75,12 +80,15 @@ def create_job_offer_for_user(
     db_session: Session,
     *,
     user_id: int,
-    title: str,
+    occupation_key: str,
     description: str,
 ) -> JobOffer:
+    occupation_label = _resolve_occupation_label(occupation_key=occupation_key)
+
     job_offer = JobOffer(
         recruiter_user_id=user_id,
-        title=title,
+        title=occupation_label,
+        occupation_key=occupation_key,
         description=description,
         status=JobOfferStatus.DRAFT,
     )
@@ -117,7 +125,7 @@ def update_job_offer_for_user(
     *,
     user_id: int,
     job_offer_id: int,
-    title: str | None,
+    occupation_key: str | None,
     description: str | None,
 ) -> JobOffer:
     job_offer = get_owned_job_offer_or_404(
@@ -126,8 +134,9 @@ def update_job_offer_for_user(
         job_offer_id=job_offer_id,
     )
 
-    if title is not None:
-        job_offer.title = title
+    if occupation_key is not None:
+        job_offer.occupation_key = occupation_key
+        job_offer.title = _resolve_occupation_label(occupation_key=occupation_key)
     if description is not None:
         job_offer.description = description
 

@@ -151,6 +151,7 @@ class JobOffer(TimestampMixin, Base):
         nullable=False,
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
+    occupation_key: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[JobOfferStatus] = mapped_column(
         enum_column(JobOfferStatus, name="jobofferstatus"),

@@ -70,12 +70,12 @@ export interface RecruiterProfileResponse {
 }
 
 export interface JobOfferCreateRequest {
-  title: string;
+  occupation_key: string;
   description: string;
 }
 
 export interface JobOfferUpdateRequest {
-  title?: string | null;
+  occupation_key?: string | null;
   description?: string | null;
 }
 
@@ -83,6 +83,7 @@ export interface JobOfferResponse {
   id: number;
   recruiter_user_id: number;
   title: string;
+  occupation_key: string;
   description: string;
   status: JobOfferStatus;
   created_at: string;
@@ -104,4 +105,3 @@ export interface JobOfferRequirementResponse {
   competency_key: string;
   priority: RequirementPriority;
 }
-

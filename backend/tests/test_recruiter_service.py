@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+import pytest
 
 from app.db.models import (
     JobOffer,
@@ -9,6 +10,18 @@ from app.db.models import (
     UserRole,
 )
 from app.modules.recruiter import service
+
+
+@pytest.fixture(autouse=True)
+def patch_occupation_detail(monkeypatch):
+    monkeypatch.setattr(
+        service,
+        "get_occupation_detail",
+        lambda *, occupation_key: {
+            "key": occupation_key,
+            "label": occupation_key.replace("_", " ").title(),
+        },
+    )
 
 
 def create_user(db_session, *, email: str) -> User:
@@ -65,10 +78,12 @@ def test_job_offer_create_list_get_and_update_owned_path_behavior(db_session):
     created = service.create_job_offer_for_user(
         db_session,
         user_id=user.id,
-        title="Backend Engineer",
+        occupation_key="backend_engineer",
         description="Build APIs",
     )
     assert created.status == JobOfferStatus.DRAFT
+    assert created.occupation_key == "backend_engineer"
+    assert created.title == "Backend Engineer"
 
     offers = service.list_job_offers_for_user(db_session, user_id=user.id)
     assert len(offers) == 1
@@ -85,10 +100,11 @@ def test_job_offer_create_list_get_and_update_owned_path_behavior(db_session):
         db_session,
         user_id=user.id,
         job_offer_id=created.id,
-        title="Senior Backend Engineer",
+        occupation_key="senior_backend_engineer",
         description="Build and improve APIs",
     )
     assert updated.title == "Senior Backend Engineer"
+    assert updated.occupation_key == "senior_backend_engineer"
     assert updated.description == "Build and improve APIs"
     assert updated.status == JobOfferStatus.DRAFT
 
@@ -98,7 +114,7 @@ def test_requirement_competency_key_validation_behavior(db_session, monkeypatch)
     offer = service.create_job_offer_for_user(
         db_session,
         user_id=user.id,
-        title="Backend Engineer",
+        occupation_key="backend_engineer",
         description="Build APIs",
     )
 
@@ -126,7 +142,7 @@ def test_duplicate_requirement_conflict_behavior(db_session, monkeypatch):
     offer = service.create_job_offer_for_user(
         db_session,
         user_id=user.id,
-        title="Backend Engineer",
+        occupation_key="backend_engineer",
         description="Build APIs",
     )
 
@@ -166,6 +182,7 @@ def test_ownership_safe_requirement_update_and_delete_behavior(db_session):
     offer = JobOffer(
         recruiter_user_id=owner.id,
         title="Backend Engineer",
+        occupation_key="backend_engineer",
         description="Build APIs",
         status=JobOfferStatus.DRAFT,
     )
@@ -228,3 +245,23 @@ def test_ownership_safe_requirement_update_and_delete_behavior(db_session):
     except HTTPException as exc:
         assert exc.status_code == 404
         assert exc.detail == "Job offer not found."
+
+
+def test_unknown_occupation_key_in_create_offer_returns_404(db_session, monkeypatch):
+    user = create_user(db_session, email="service-recruiter-unknown-occ@example.com")
+
+    def raise_not_found(*_args, **_kwargs):
+        raise HTTPException(status_code=404, detail="Occupation not found.")
+
+    monkeypatch.setattr(service, "get_occupation_detail", raise_not_found)
+
+    with pytest.raises(HTTPException) as exc_info:
+        service.create_job_offer_for_user(
+            db_session,
+            user_id=user.id,
+            occupation_key="unknown",
+            description="Build APIs",
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Occupation not found."

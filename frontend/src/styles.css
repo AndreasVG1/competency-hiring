@@ -244,6 +244,74 @@ a {
   font-size: 0.9rem;
 }
 
+.occupation-competency-suggestions {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.suggestions-label {
+  margin: 0;
+  font-weight: 700;
+}
+
+.suggestions-meta {
+  margin: 0;
+  color: #3f4f5f;
+}
+
+.suggestions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(31, 41, 51, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.suggestion-button {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(31, 41, 51, 0.1);
+  padding: 0.65rem 0.7rem;
+  background-color: #fff;
+  color: inherit;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  cursor: pointer;
+}
+
+.suggestions-list li:last-child .suggestion-button {
+  border-bottom: 0;
+}
+
+.suggestion-main {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.suggestion-item-label {
+  font-weight: 600;
+}
+
+.suggestion-item-key {
+  color: #46596c;
+  font-size: 0.9rem;
+}
+
+.suggestion-status {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #31524e;
+}
+
+.suggestion-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .seeker-page {
   min-height: 100vh;
   padding: 2rem;

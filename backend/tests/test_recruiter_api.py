@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+import pytest
 
 
 API_PREFIX = "/api/v1"
@@ -21,6 +22,27 @@ RECRUITER_PATHS = [
     ("PATCH", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}/1"),
     ("DELETE", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}/1"),
 ]
+
+
+def occupation_label_from_key(occupation_key: str) -> str:
+    return occupation_key.replace("_", " ").title()
+
+
+@pytest.fixture(autouse=True)
+def patch_recruiter_occupation_lookup(monkeypatch):
+    def fake_get_occupation_detail(*, occupation_key: str):
+        if occupation_key == "unknown":
+            raise HTTPException(status_code=404, detail="Occupation not found.")
+        return {
+            "key": occupation_key,
+            "label": occupation_label_from_key(occupation_key),
+            "required_competencies": [],
+        }
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        fake_get_occupation_detail,
+    )
 
 
 def assert_structured_http_error(response, *, status_code: int, message: str | None = None) -> None:
@@ -61,24 +83,24 @@ def call_endpoint(client: TestClient, method: str, path: str, *, token: str | No
         }
     elif method == "POST":
         payload = {
-            "title": "Backend Engineer",
+            "occupation_key": "backend_engineer",
             "description": "Build APIs",
         }
     elif method == "PATCH" and "/requirements/" in path:
         payload = {"priority": "important"}
     elif method == "PATCH":
-        payload = {"title": "Updated Role", "description": "Updated Description"}
+        payload = {"occupation_key": "updated_role", "description": "Updated Description"}
     else:
         payload = None
 
     return client.request(method, path, headers=headers, json=payload)
 
 
-def create_offer(client: TestClient, token: str, *, title: str = "Backend Engineer") -> int:
+def create_offer(client: TestClient, token: str, *, occupation_key: str = "backend_engineer") -> int:
     response = client.post(
         RECRUITER_JOB_OFFERS_ROUTE,
         headers=auth_headers(token),
-        json={"title": title, "description": "Build APIs"},
+        json={"occupation_key": occupation_key, "description": "Build APIs"},
     )
     assert response.status_code == 201
     return response.json()["id"]
@@ -198,12 +220,17 @@ def test_job_offer_post_creates_draft_offer(client: TestClient):
     response = client.post(
         RECRUITER_JOB_OFFERS_ROUTE,
         headers=auth_headers(token),
-        json={"title": "Backend Engineer", "description": "Build APIs", "status": "published"},
+        json={
+            "occupation_key": "backend_engineer",
+            "description": "Build APIs",
+            "status": "published",
+        },
     )
 
     assert response.status_code == 201
     body = response.json()
     assert body["title"] == "Backend Engineer"
+    assert body["occupation_key"] == "backend_engineer"
     assert body["description"] == "Build APIs"
     assert body["status"] == "draft"
 
@@ -220,8 +247,8 @@ def test_job_offer_list_and_get_return_only_current_recruiter_records(client: Te
         role="recruiter",
     )
 
-    own_offer_id = create_offer(client, recruiter_one, title="Offer One")
-    create_offer(client, recruiter_two, title="Offer Two")
+    own_offer_id = create_offer(client, recruiter_one, occupation_key="offer_one")
+    create_offer(client, recruiter_two, occupation_key="offer_two")
 
     list_response = client.get(
         RECRUITER_JOB_OFFERS_ROUTE,
@@ -233,6 +260,7 @@ def test_job_offer_list_and_get_return_only_current_recruiter_records(client: Te
     assert len(items) == 1
     assert items[0]["id"] == own_offer_id
     assert items[0]["title"] == "Offer One"
+    assert items[0]["occupation_key"] == "offer_one"
 
     get_response = client.get(
         f"{RECRUITER_JOB_OFFERS_ROUTE}/{own_offer_id}",
@@ -253,12 +281,16 @@ def test_job_offer_patch_updates_own_offer_fields(client: TestClient):
     response = client.patch(
         f"{RECRUITER_JOB_OFFERS_ROUTE}/{offer_id}",
         headers=auth_headers(token),
-        json={"title": "Senior Backend Engineer", "description": "Build and improve APIs"},
+        json={
+            "occupation_key": "senior_backend_engineer",
+            "description": "Build and improve APIs",
+        },
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["title"] == "Senior Backend Engineer"
+    assert body["occupation_key"] == "senior_backend_engineer"
     assert body["description"] == "Build and improve APIs"
     assert body["status"] == "draft"
 
@@ -289,7 +321,7 @@ def test_job_offer_get_and_patch_return_404_for_non_owned_or_missing_offer(clien
     patch_response = client.patch(
         f"{RECRUITER_JOB_OFFERS_ROUTE}/{offer_id}",
         headers=auth_headers(other),
-        json={"title": "Hacked"},
+        json={"description": "Hacked"},
     )
     assert_structured_http_error(
         patch_response,
@@ -323,6 +355,22 @@ def test_requirement_post_creates_row_for_owned_offer(client: TestClient, monkey
     assert body["job_offer_id"] == offer_id
     assert body["competency_key"] == "comp_1"
     assert body["priority"] == "important"
+
+
+def test_unknown_occupation_key_in_offer_write_returns_structured_404(client: TestClient):
+    token = register_and_get_token(
+        client,
+        email="recruiter-offer-unknown-occ@example.com",
+        role="recruiter",
+    )
+
+    response = client.post(
+        RECRUITER_JOB_OFFERS_ROUTE,
+        headers=auth_headers(token),
+        json={"occupation_key": "unknown", "description": "Build APIs"},
+    )
+
+    assert_structured_http_error(response, status_code=404, message="Occupation not found.")
 
 
 def test_duplicate_requirement_post_returns_structured_409(client: TestClient, monkeypatch):
@@ -412,8 +460,8 @@ def test_requirement_list_returns_only_requirements_for_owned_offer(client: Test
         role="recruiter",
     )
 
-    offer_one = create_offer(client, recruiter_one, title="Offer One")
-    offer_two = create_offer(client, recruiter_two, title="Offer Two")
+    offer_one = create_offer(client, recruiter_one, occupation_key="offer_one")
+    offer_two = create_offer(client, recruiter_two, occupation_key="offer_two")
 
     monkeypatch.setattr(
         "app.modules.recruiter.service.get_competency_detail",

@@ -27,10 +27,10 @@ class RecruiterProfileResponse(BaseModel):
 
 
 class JobOfferCreateRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=255)
+    occupation_key: str = Field(min_length=1, max_length=255)
     description: str = Field(min_length=1)
 
-    @field_validator("title", "description")
+    @field_validator("occupation_key", "description")
     @classmethod
     def validate_required_text(cls, value: str) -> str:
         normalized = value.strip()
@@ -40,10 +40,10 @@ class JobOfferCreateRequest(BaseModel):
 
 
 class JobOfferUpdateRequest(BaseModel):
-    title: str | None = Field(default=None, min_length=1, max_length=255)
+    occupation_key: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, min_length=1)
 
-    @field_validator("title", "description")
+    @field_validator("occupation_key", "description")
     @classmethod
     def normalize_optional_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -58,6 +58,7 @@ class JobOfferResponse(BaseModel):
     id: int
     recruiter_user_id: int
     title: str
+    occupation_key: str
     description: str
     status: JobOfferStatus
     created_at: datetime

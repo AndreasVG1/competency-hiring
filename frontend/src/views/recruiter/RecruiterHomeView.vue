@@ -157,16 +157,25 @@
             </p>
           </header>
 
-          <label class="form-field">
-            <span>Title</span>
-            <input
-              v-model="selectedOfferForm.title"
-              type="text"
-              maxlength="255"
-              required
-              :disabled="isUpdatingSelectedOffer"
-            />
-          </label>
+          <CatalogSearchPicker
+            :key="selectedOfferOccupationPickerKey"
+            label="Occupation"
+            placeholder="Search occupations"
+            no-results-text="No occupations found."
+            :disabled="isUpdatingSelectedOffer"
+            :busy="isUpdatingSelectedOffer"
+            :search-fn="searchOccupations"
+            @select="selectSelectedOfferOccupation"
+          />
+
+          <p class="selected-item">
+            <strong>Selected occupation:</strong>
+            <span v-if="selectedOfferForm.occupationKey">
+              {{ selectedOfferForm.occupationLabel || selectedOfferForm.occupationKey }}
+              <small>({{ selectedOfferForm.occupationKey }})</small>
+            </span>
+            <span v-else>None</span>
+          </p>
 
           <label class="form-field">
             <span>Description</span>
@@ -213,6 +222,16 @@
             v-if="requirementsLoadError"
             :error="requirementsLoadError"
             show-all-messages
+          />
+
+          <OccupationCompetencySuggestions
+            :occupation-key="selectedOffer.occupation_key"
+            :selected-keys="existingRequirementKeys"
+            :disabled="isRequirementsLoading"
+            :busy="isAddingRequirement"
+            label="Competencies related to selected occupation"
+            waiting-text="Select an occupation for this offer to see related competencies."
+            @select="addSuggestedRequirement"
           />
 
           <form class="recruiter-form" @submit.prevent="addRequirement">
@@ -324,6 +343,7 @@ import { ApiClientError, catalogClient, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import CatalogSearchPicker from "../../components/CatalogSearchPicker.vue";
 import EnumSelect from "../../components/EnumSelect.vue";
+import OccupationCompetencySuggestions from "../../components/OccupationCompetencySuggestions.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import type {
   CatalogItem,
@@ -338,8 +358,13 @@ interface RecruiterProfileFormState {
   contactName: string;
 }
 
-interface JobOfferFormState {
-  title: string;
+interface CreateJobOfferFormState {
+  description: string;
+}
+
+interface SelectedJobOfferFormState {
+  occupationKey: string | null;
+  occupationLabel: string | null;
   description: string;
 }
 
@@ -364,13 +389,13 @@ const profileForm = reactive<RecruiterProfileFormState>({
   contactName: "",
 });
 
-const createOfferForm = reactive<JobOfferFormState>({
-  title: "",
+const createOfferForm = reactive<CreateJobOfferFormState>({
   description: "",
 });
 
-const selectedOfferForm = reactive<JobOfferFormState>({
-  title: "",
+const selectedOfferForm = reactive<SelectedJobOfferFormState>({
+  occupationKey: null,
+  occupationLabel: null,
   description: "",
 });
 
@@ -397,6 +422,7 @@ const createOfferOccupationPickerKey = ref(0);
 const isUpdatingSelectedOffer = ref(false);
 const selectedOfferUpdateError = ref<unknown | null>(null);
 const selectedOfferUpdateSuccessMessage = ref<string | null>(null);
+const selectedOfferOccupationPickerKey = ref(0);
 
 const requirementRows = ref<RequirementRowState[]>([]);
 const isRequirementsLoading = ref(false);
@@ -416,6 +442,8 @@ const selectedOffer = computed<JobOfferResponse | null>(() => {
   }
   return jobOffers.value.find((offer) => offer.id === selectedOfferId.value) ?? null;
 });
+
+const existingRequirementKeys = computed(() => requirementRows.value.map((row) => row.competencyKey));
 
 function sortOffersDescending(offers: JobOfferResponse[]): JobOfferResponse[] {
   return [...offers].sort((a, b) => {
@@ -445,8 +473,10 @@ function hydrateProfileForm(profile: RecruiterProfileResponse): void {
 }
 
 function hydrateSelectedOfferForm(offer: JobOfferResponse): void {
-  selectedOfferForm.title = offer.title;
+  selectedOfferForm.occupationKey = offer.occupation_key;
+  selectedOfferForm.occupationLabel = offer.title;
   selectedOfferForm.description = offer.description;
+  selectedOfferOccupationPickerKey.value += 1;
 }
 
 function selectJobOffer(offerId: number): void {
@@ -465,6 +495,13 @@ function selectRequirementCompetency(item: CatalogItem): void {
   addRequirementSuccessMessage.value = null;
 }
 
+function selectSelectedOfferOccupation(item: CatalogItem): void {
+  selectedOfferForm.occupationKey = item.key;
+  selectedOfferForm.occupationLabel = item.label;
+  selectedOfferUpdateError.value = null;
+  selectedOfferUpdateSuccessMessage.value = null;
+}
+
 async function searchCompetencies(query: string): Promise<CatalogItem[]> {
   return catalogClient.listCompetencies({ query, limit: 8 });
 }
@@ -475,14 +512,12 @@ async function searchOccupations(query: string): Promise<CatalogItem[]> {
 
 function selectCreateOfferOccupation(item: CatalogItem): void {
   selectedCreateOfferOccupation.value = item;
-  createOfferForm.title = item.label;
   createJobOfferError.value = null;
   createJobOfferSuccessMessage.value = null;
 }
 
 function clearCreateOfferOccupation(): void {
   selectedCreateOfferOccupation.value = null;
-  createOfferForm.title = "";
   createJobOfferError.value = null;
   createJobOfferSuccessMessage.value = null;
   createOfferOccupationPickerKey.value += 1;
@@ -597,13 +632,12 @@ async function createJobOffer(): Promise<void> {
 
   try {
     const created = await recruiterClient.createJobOffer({
-      title: createOfferForm.title.trim(),
+      occupation_key: selectedCreateOfferOccupation.value.key,
       description: createOfferForm.description.trim(),
     });
 
     jobOffers.value = [created, ...jobOffers.value.filter((offer) => offer.id !== created.id)];
     selectedOfferId.value = created.id;
-    createOfferForm.title = "";
     createOfferForm.description = "";
     selectedCreateOfferOccupation.value = null;
     createOfferOccupationPickerKey.value += 1;
@@ -621,13 +655,18 @@ async function saveSelectedOffer(): Promise<void> {
     return;
   }
 
+  if (!selectedOfferForm.occupationKey) {
+    selectedOfferUpdateError.value = "Choose an occupation before saving the offer.";
+    return;
+  }
+
   isUpdatingSelectedOffer.value = true;
   selectedOfferUpdateError.value = null;
   selectedOfferUpdateSuccessMessage.value = null;
 
   try {
     const updated = await recruiterClient.updateJobOffer(offer.id, {
-      title: selectedOfferForm.title.trim(),
+      occupation_key: selectedOfferForm.occupationKey,
       description: selectedOfferForm.description.trim(),
     });
 
@@ -644,6 +683,22 @@ async function saveSelectedOffer(): Promise<void> {
 }
 
 async function addRequirement(): Promise<void> {
+  if (!selectedRequirementCompetency.value) {
+    addRequirementError.value = "Choose a competency before adding.";
+    return;
+  }
+
+  await addRequirementFromItem(selectedRequirementCompetency.value, { resetPicker: true });
+}
+
+function addSuggestedRequirement(item: CatalogItem): void {
+  void addRequirementFromItem(item, { resetPicker: false });
+}
+
+async function addRequirementFromItem(
+  item: CatalogItem,
+  options: { resetPicker: boolean },
+): Promise<void> {
   const offer = selectedOffer.value;
   if (!offer || isRequirementsLoading.value || isAddingRequirement.value) {
     return;
@@ -652,13 +707,7 @@ async function addRequirement(): Promise<void> {
   addRequirementError.value = null;
   addRequirementSuccessMessage.value = null;
 
-  if (!selectedRequirementCompetency.value) {
-    addRequirementError.value = "Choose a competency before adding.";
-    return;
-  }
-
-  const selectedKey = selectedRequirementCompetency.value.key;
-  if (requirementRows.value.some((row) => row.competencyKey === selectedKey)) {
+  if (requirementRows.value.some((row) => row.competencyKey === item.key)) {
     addRequirementError.value = "This competency is already a requirement for the selected offer.";
     return;
   }
@@ -667,16 +716,19 @@ async function addRequirement(): Promise<void> {
 
   try {
     const created = await recruiterClient.addRequirement(offer.id, {
-      competency_key: selectedKey,
+      competency_key: item.key,
       priority: newRequirementPriority.value,
     });
 
     requirementRows.value = [mapRequirementToRow(created), ...requirementRows.value];
-    labelCache.setLabel(selectedRequirementCompetency.value.key, selectedRequirementCompetency.value.label);
+    labelCache.setLabel(item.key, item.label);
 
-    selectedRequirementCompetency.value = null;
-    newRequirementPriority.value = "must_have";
-    requirementPickerKey.value += 1;
+    if (options.resetPicker) {
+      selectedRequirementCompetency.value = null;
+      newRequirementPriority.value = "must_have";
+      requirementPickerKey.value += 1;
+    }
+
     addRequirementSuccessMessage.value = "Requirement added.";
   } catch (error) {
     addRequirementError.value = error;
@@ -754,8 +806,10 @@ watch(selectedOfferId, (offerId) => {
     requirementRows.value = [];
     isRequirementsLoading.value = false;
     requirementsLoadError.value = null;
-    selectedOfferForm.title = "";
+    selectedOfferForm.occupationKey = null;
+    selectedOfferForm.occupationLabel = null;
     selectedOfferForm.description = "";
+    selectedOfferOccupationPickerKey.value += 1;
     return;
   }
 

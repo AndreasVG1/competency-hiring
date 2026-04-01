@@ -107,6 +107,16 @@
           show-all-messages
         />
 
+        <OccupationCompetencySuggestions
+          :occupation-key="profileForm.occupationKey"
+          :selected-keys="existingCompetencyKeys"
+          :disabled="isCompetenciesLoading"
+          :busy="isAddingCompetency"
+          label="Competencies related to selected occupation"
+          waiting-text="Select an occupation in Profile to see related competencies."
+          @select="addSuggestedCompetency"
+        />
+
         <form class="seeker-form" @submit.prevent="addCompetency">
           <CatalogSearchPicker
             :key="competencyPickerKey"
@@ -206,12 +216,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
 import { ApiClientError, catalogClient, seekerClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import CatalogSearchPicker from "../../components/CatalogSearchPicker.vue";
 import EnumSelect from "../../components/EnumSelect.vue";
+import OccupationCompetencySuggestions from "../../components/OccupationCompetencySuggestions.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import type {
   CatalogItem,
@@ -270,6 +281,7 @@ const isAddingCompetency = ref(false);
 const addCompetencyError = ref<unknown | null>(null);
 const addCompetencySuccessMessage = ref<string | null>(null);
 const competencyPickerKey = ref(0);
+const existingCompetencyKeys = computed(() => competencyRows.value.map((row) => row.competencyKey));
 
 function mapResponseToRow(response: SeekerCompetencyResponse): CompetencyRowState {
   return {
@@ -319,6 +331,10 @@ function selectCompetency(item: CatalogItem): void {
   selectedCompetency.value = item;
   addCompetencyError.value = null;
   addCompetencySuccessMessage.value = null;
+}
+
+function addSuggestedCompetency(item: CatalogItem): void {
+  void addCompetencyFromItem(item, { resetPicker: false });
 }
 
 async function loadProfile(): Promise<void> {
@@ -394,6 +410,18 @@ async function saveProfile(): Promise<void> {
 }
 
 async function addCompetency(): Promise<void> {
+  if (!selectedCompetency.value) {
+    addCompetencyError.value = "Choose a competency before adding.";
+    return;
+  }
+
+  await addCompetencyFromItem(selectedCompetency.value, { resetPicker: true });
+}
+
+async function addCompetencyFromItem(
+  item: CatalogItem,
+  options: { resetPicker: boolean },
+): Promise<void> {
   if (isAddingCompetency.value || isCompetenciesLoading.value) {
     return;
   }
@@ -401,13 +429,7 @@ async function addCompetency(): Promise<void> {
   addCompetencyError.value = null;
   addCompetencySuccessMessage.value = null;
 
-  if (!selectedCompetency.value) {
-    addCompetencyError.value = "Choose a competency before adding.";
-    return;
-  }
-
-  const selectedKey = selectedCompetency.value.key;
-  if (competencyRows.value.some((row) => row.competencyKey === selectedKey)) {
+  if (competencyRows.value.some((row) => row.competencyKey === item.key)) {
     addCompetencyError.value = "This competency is already in your profile.";
     return;
   }
@@ -416,16 +438,19 @@ async function addCompetency(): Promise<void> {
 
   try {
     const created = await seekerClient.createCompetency({
-      competency_key: selectedKey,
+      competency_key: item.key,
       level: newCompetencyLevel.value,
     });
 
     competencyRows.value = [mapResponseToRow(created), ...competencyRows.value];
-    labelCache.setLabel(selectedCompetency.value.key, selectedCompetency.value.label);
+    labelCache.setLabel(item.key, item.label);
 
-    selectedCompetency.value = null;
-    newCompetencyLevel.value = "beginner";
-    competencyPickerKey.value += 1;
+    if (options.resetPicker) {
+      selectedCompetency.value = null;
+      newCompetencyLevel.value = "beginner";
+      competencyPickerKey.value += 1;
+    }
+
     addCompetencySuccessMessage.value = "Competency added.";
   } catch (error) {
     addCompetencyError.value = error;

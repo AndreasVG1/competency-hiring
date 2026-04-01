@@ -79,7 +79,7 @@ def create_job_offer(
     job_offer = create_job_offer_for_user(
         db_session,
         user_id=current_recruiter.id,
-        title=payload.title,
+        occupation_key=payload.occupation_key,
         description=payload.description,
     )
     return JobOfferResponse.model_validate(job_offer)
@@ -110,7 +110,7 @@ def patch_job_offer(
         db_session,
         user_id=current_recruiter.id,
         job_offer_id=job_offer_id,
-        title=payload.title,
+        occupation_key=payload.occupation_key,
         description=payload.description,
     )
     return JobOfferResponse.model_validate(job_offer)

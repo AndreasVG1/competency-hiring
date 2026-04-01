@@ -1,12 +1,12 @@
 <template>
   <main class="seeker-page">
     <section class="panel seeker-panel">
-      <nav class="page-actions">
+      <PageActionsBar>
         <RouterLink class="button-secondary" to="/seeker">Back to seeker overview</RouterLink>
         <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
           {{ isLoggingOut ? "Signing out..." : "Log out" }}
         </button>
-      </nav>
+      </PageActionsBar>
 
       <header class="panel-header">
         <p class="eyebrow">Seeker Marketplace</p>
@@ -95,6 +95,7 @@ import { catalogClient, seekerClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import MarketplaceFilterBar from "../../components/MarketplaceFilterBar.vue";
+import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useLogout } from "../../composables/useLogout";
 import type { CatalogItem, PublicJobOfferListItem } from "../../types/domain";
 

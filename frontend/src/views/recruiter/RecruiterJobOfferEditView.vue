@@ -1,7 +1,7 @@
 <template>
   <main class="recruiter-page">
     <section class="panel recruiter-panel">
-      <nav class="page-actions">
+      <PageActionsBar>
         <RouterLink class="button-secondary" to="/recruiter">Back to recruiter</RouterLink>
         <RouterLink
           v-if="jobOffer"
@@ -10,10 +10,10 @@
         >
           View read-only
         </RouterLink>
-        <button class="button-secondary" type="button" :disabled="isLoggingOut" @click="logout">
+        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
           {{ isLoggingOut ? "Signing out..." : "Log out" }}
         </button>
-      </nav>
+      </PageActionsBar>
 
       <header class="panel-header">
         <p class="eyebrow">Recruiter Area</p>
@@ -230,7 +230,9 @@ import CatalogSearchPicker from "../../components/CatalogSearchPicker.vue";
 import EnumSelect from "../../components/EnumSelect.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import OccupationCompetencySuggestions from "../../components/OccupationCompetencySuggestions.vue";
+import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { useLogout } from "../../composables/useLogout";
 import type {
   CatalogItem,
@@ -259,6 +261,7 @@ const route = useRoute();
 const router = useRouter();
 
 const { isLoggingOut, logoutError, logout } = useLogout();
+const { confirm } = useConfirmDialog();
 const labelCache = useCatalogLabelCache();
 
 const requirementPriorityOptions: { value: RequirementPriority; label: string }[] = [
@@ -454,7 +457,13 @@ async function deleteOffer(): Promise<void> {
     return;
   }
 
-  const confirmed = window.confirm("Delete this draft offer and all requirements?");
+  const confirmed = await confirm({
+    title: "Delete offer",
+    message: "Delete this draft offer and all requirements?",
+    confirmLabel: "Delete offer",
+    cancelLabel: "Keep offer",
+    tone: "danger",
+  });
   if (!confirmed) {
     return;
   }
@@ -477,9 +486,13 @@ async function publishOffer(): Promise<void> {
     return;
   }
 
-  const confirmed = window.confirm(
-    "Publish this offer now? After publishing, seekers can discover and view it in the marketplace.",
-  );
+  const confirmed = await confirm({
+    title: "Publish offer",
+    message: "Publish this offer now? After publishing, seekers can discover and view it in the marketplace.",
+    confirmLabel: "Publish offer",
+    cancelLabel: "Keep draft",
+    tone: "primary",
+  });
   if (!confirmed) {
     return;
   }
@@ -510,9 +523,13 @@ async function archiveOffer(): Promise<void> {
     return;
   }
 
-  const confirmed = window.confirm(
-    "Archive this offer now? Archived offers are no longer visible in the seeker marketplace.",
-  );
+  const confirmed = await confirm({
+    title: "Archive offer",
+    message: "Archive this offer now? Archived offers are no longer visible in the seeker marketplace.",
+    confirmLabel: "Archive offer",
+    cancelLabel: "Keep published",
+    tone: "danger",
+  });
   if (!confirmed) {
     return;
   }

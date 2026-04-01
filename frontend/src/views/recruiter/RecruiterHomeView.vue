@@ -1,13 +1,13 @@
 <template>
   <main class="recruiter-page">
     <section class="panel recruiter-panel">
-      <nav class="page-actions">
+      <PageActionsBar>
         <RouterLink class="button-secondary" to="/recruiter/edit">Edit profile</RouterLink>
         <RouterLink class="button-primary" to="/recruiter/job-offers/new">Create job offer</RouterLink>
         <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
           {{ isLoggingOut ? "Signing out..." : "Log out" }}
         </button>
-      </nav>
+      </PageActionsBar>
 
       <header class="panel-header">
         <h1>Recruiter Overview</h1>
@@ -70,6 +70,7 @@ import { onMounted, ref } from "vue";
 import { ApiClientError, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
+import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useLogout } from "../../composables/useLogout";
 import type { JobOfferResponse, RecruiterProfileResponse } from "../../types/domain";
 

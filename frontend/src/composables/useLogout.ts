@@ -3,16 +3,29 @@ import { useRouter } from "vue-router";
 
 import { authClient } from "../api";
 import { useAuthStore } from "../stores/auth";
+import { useConfirmDialog } from "./useConfirmDialog";
 
 export function useLogout() {
   const router = useRouter();
   const authStore = useAuthStore();
+  const { confirm } = useConfirmDialog();
 
   const isLoggingOut = ref(false);
   const logoutError = ref<string | null>(null);
 
   async function logout(): Promise<void> {
     if (isLoggingOut.value) {
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: "Log out",
+      message: "Log out now? You will need to sign in again to access seeker or recruiter features.",
+      confirmLabel: "Log out",
+      cancelLabel: "Stay signed in",
+      tone: "danger",
+    });
+    if (!confirmed) {
       return;
     }
 

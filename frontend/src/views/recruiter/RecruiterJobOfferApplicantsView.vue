@@ -1,12 +1,12 @@
 <template>
   <main class="recruiter-page">
     <section class="panel recruiter-panel">
-      <nav class="page-actions">
+      <PageActionsBar>
         <RouterLink class="button-secondary" :to="backToOfferPath">Back to offer</RouterLink>
-        <button class="button-secondary" type="button" :disabled="isLoggingOut" @click="logout">
+        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
           {{ isLoggingOut ? "Signing out..." : "Log out" }}
         </button>
-      </nav>
+      </PageActionsBar>
 
       <header class="panel-header">
         <p class="eyebrow">Recruiter Area</p>
@@ -113,6 +113,7 @@ import { useRoute } from "vue-router";
 import { ApiClientError, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
+import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useLogout } from "../../composables/useLogout";
 import type { JobOfferResponse, RecruiterApplicantListItem } from "../../types/domain";

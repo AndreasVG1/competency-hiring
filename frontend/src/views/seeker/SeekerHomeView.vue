@@ -1,7 +1,7 @@
 <template>
   <main class="seeker-page">
     <section class="panel seeker-panel">
-      <nav class="page-actions">
+      <PageActionsBar>
         <RouterLink class="button-primary" to="/seeker/job-offers">
           Browse published job offers
         </RouterLink>
@@ -9,7 +9,7 @@
         <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
           {{ isLoggingOut ? "Signing out..." : "Log out" }}
         </button>
-      </nav>
+      </PageActionsBar>
 
       <header class="panel-header">
         <h1>Profile Overview</h1>
@@ -100,11 +100,14 @@ import { onMounted, ref } from "vue";
 
 import { ApiClientError, catalogClient, seekerClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
+import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { useLogout } from "../../composables/useLogout";
 import type { CompetencyLevel, SeekerCompetencyResponse, SeekerProfileResponse } from "../../types/domain";
 
 const { isLoggingOut, logoutError, logout } = useLogout();
+const { confirm } = useConfirmDialog();
 const labelCache = useCatalogLabelCache();
 
 const profile = ref<SeekerProfileResponse | null>(null);
@@ -196,7 +199,13 @@ async function deleteProfile(): Promise<void> {
     return;
   }
 
-  const confirmed = window.confirm("Delete your profile and all saved competencies?");
+  const confirmed = await confirm({
+    title: "Delete profile",
+    message: "Delete your profile and all saved competencies?",
+    confirmLabel: "Delete profile",
+    cancelLabel: "Keep profile",
+    tone: "danger",
+  });
   if (!confirmed) {
     return;
   }

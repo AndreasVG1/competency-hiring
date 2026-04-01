@@ -1,12 +1,12 @@
 <template>
   <main class="seeker-page">
     <section class="panel seeker-panel">
-      <nav class="page-actions">
+      <PageActionsBar>
         <RouterLink class="button-secondary" to="/seeker/job-offers">Back to marketplace</RouterLink>
         <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
           {{ isLoggingOut ? "Signing out..." : "Log out" }}
         </button>
-      </nav>
+      </PageActionsBar>
 
       <header class="panel-header">
         <p class="eyebrow">Seeker Marketplace</p>
@@ -90,12 +90,15 @@ import { ApiClientError, seekerClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferRequirementsTable from "../../components/JobOfferRequirementsTable.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
+import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { useLogout } from "../../composables/useLogout";
 import type { PublicJobOfferDetail } from "../../types/domain";
 
 const route = useRoute();
 const labelCache = useCatalogLabelCache();
+const { confirm } = useConfirmDialog();
 const { isLoggingOut, logoutError, logout } = useLogout();
 
 const offer = ref<PublicJobOfferDetail | null>(null);
@@ -184,6 +187,18 @@ async function loadOffer(): Promise<void> {
 
 async function applyToOffer(): Promise<void> {
   if (!offer.value || isApplying.value || hasApplied.value) {
+    return;
+  }
+
+  const confirmed = await confirm({
+    title: "Apply with consent",
+    message:
+      "Apply to this offer and share your application-time profile snapshot with the recruiter for this offer?",
+    confirmLabel: "Apply with consent",
+    cancelLabel: "Cancel",
+    tone: "primary",
+  });
+  if (!confirmed) {
     return;
   }
 

@@ -520,6 +520,43 @@ a {
   color: #155d1f;
 }
 
+.confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: rgba(16, 24, 32, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.confirm-dialog {
+  width: min(30rem, 100%);
+  border: 1px solid rgba(31, 41, 51, 0.2);
+  border-radius: 14px;
+  background-color: #fff;
+  box-shadow: 0 16px 40px rgba(16, 24, 32, 0.24);
+  padding: 1.1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.confirm-dialog:focus-visible {
+  outline: 2px solid #2463eb;
+  outline-offset: 2px;
+}
+
+.confirm-dialog h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.confirm-dialog p {
+  margin: 0;
+  color: #3f4f5f;
+  line-height: 1.5;
+}
+
 .status-badge-archived {
   background-color: rgba(126, 31, 31, 0.12);
   color: #7d2222;

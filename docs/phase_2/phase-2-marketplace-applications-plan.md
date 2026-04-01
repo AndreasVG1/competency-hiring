@@ -146,7 +146,7 @@ Snapshot JSON contract default (for Milestone 2B services and APIs):
 - add applicants page for each offer (for example `/recruiter/job-offers/{id}/applicants`)
 - show snapshot fields clearly as "shared at application time"
 
-14. [ ] Add Milestone 2B tests (privacy and audit critical)
+14. [X] Add Milestone 2B tests (privacy and audit critical)
 - API tests:
 - seeker cannot apply to `draft`/`archived` offers
 - duplicate apply returns conflict
@@ -158,7 +158,7 @@ Snapshot JSON contract default (for Milestone 2B services and APIs):
 - End-to-end tests:
 - recruiter publishes offer -> seeker discovers -> seeker applies -> recruiter sees applicant
 
-15. [ ] Finalize Phase 2 docs and release checklist
+15. [X] Finalize Phase 2 docs and release checklist
 - Update docs with final endpoint list and route map.
 - Add a short "known limitations" note (no matching yet).
 - Record migration and rollback notes for the new application tables.

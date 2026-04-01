@@ -56,19 +56,19 @@ Goal:
 - Reject invalid transitions with clear validation errors.
 - Keep route handlers thin; put transition rules in recruiter/domain service functions.
 
-3. [ ] Add recruiter publish/archive endpoints (Milestone 2A)
+3. [X] Add recruiter publish/archive endpoints (Milestone 2A)
 - Add action endpoints under recruiter ownership routes.
 - Enforce ownership check before status change.
 - Return structured errors for missing/non-owned offers and invalid transition attempts.
 - Keep existing recruiter CRUD endpoints intact.
 
-4. [ ] Define seeker-facing published offer read models (Milestone 2A)
+4. [X] Define seeker-facing published offer read models (Milestone 2A)
 - Create read models for:
 - list card (id, title, occupation, short description, company_name, published_at)
 - detail view (full description, requirements, recruiter/company display fields allowed for seekers)
 - Expose only fields needed for seeker browsing; avoid leaking internal-only recruiter data.
 
-5. [ ] Implement seeker published-offer list/detail APIs (Milestone 2A)
+5. [X] Implement seeker published-offer list/detail APIs (Milestone 2A)
 - Add list endpoint for published offers only.
 - Add detail endpoint for published offers only.
 - Support basic deterministic filters:

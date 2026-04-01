@@ -1,6 +1,16 @@
 from fastapi import HTTPException
 
-from app.db.models import CompetencyLevel, JobSeekerCompetency, User, UserRole
+from app.db.models import (
+    CompetencyLevel,
+    JobSeekerCompetency,
+    JobOffer,
+    JobOfferRequirement,
+    JobOfferStatus,
+    RecruiterProfile,
+    RequirementPriority,
+    User,
+    UserRole,
+)
 from app.modules.seeker import service
 
 
@@ -243,3 +253,162 @@ def test_profile_delete_returns_404_when_profile_missing(db_session):
     except HTTPException as exc:
         assert exc.status_code == 404
         assert exc.detail == "Seeker profile not found."
+
+
+def create_recruiter_user(db_session, *, email: str) -> User:
+    user = User(
+        email=email,
+        password_hash="hashed",
+        role=UserRole.RECRUITER,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+def test_list_published_job_offers_returns_only_published_with_filters(db_session):
+    recruiter = create_recruiter_user(db_session, email="service-marketplace-list-recruiter@example.com")
+    db_session.add(
+        RecruiterProfile(
+            user_id=recruiter.id,
+            company_name="Acme",
+            contact_name="Alice Recruiter",
+        )
+    )
+
+    published_backend = JobOffer(
+        recruiter_user_id=recruiter.id,
+        title="Backend Engineer",
+        occupation_key="backend_engineer",
+        description="Build Python APIs",
+        status=JobOfferStatus.PUBLISHED,
+    )
+    published_frontend = JobOffer(
+        recruiter_user_id=recruiter.id,
+        title="Frontend Engineer",
+        occupation_key="frontend_engineer",
+        description="Build Vue interfaces",
+        status=JobOfferStatus.PUBLISHED,
+    )
+    draft = JobOffer(
+        recruiter_user_id=recruiter.id,
+        title="Data Analyst",
+        occupation_key="data_analyst",
+        description="Draft only",
+        status=JobOfferStatus.DRAFT,
+    )
+    db_session.add_all([published_backend, published_frontend, draft])
+    db_session.commit()
+
+    listed = service.list_published_job_offers(
+        db_session,
+        query=None,
+        occupation_key=None,
+        limit=20,
+        offset=0,
+    )
+    listed_ids = {item.id for item in listed}
+    assert listed_ids == {published_backend.id, published_frontend.id}
+
+    filtered_query = service.list_published_job_offers(
+        db_session,
+        query="python",
+        occupation_key=None,
+        limit=20,
+        offset=0,
+    )
+    assert len(filtered_query) == 1
+    assert filtered_query[0].id == published_backend.id
+
+    filtered_occupation = service.list_published_job_offers(
+        db_session,
+        query=None,
+        occupation_key="frontend_engineer",
+        limit=20,
+        offset=0,
+    )
+    assert len(filtered_occupation) == 1
+    assert filtered_occupation[0].id == published_frontend.id
+
+    paged = service.list_published_job_offers(
+        db_session,
+        query=None,
+        occupation_key=None,
+        limit=1,
+        offset=1,
+    )
+    assert len(paged) == 1
+
+
+def test_get_published_job_offer_detail_returns_requirements(db_session):
+    recruiter = create_recruiter_user(db_session, email="service-marketplace-detail-recruiter@example.com")
+    db_session.add(
+        RecruiterProfile(
+            user_id=recruiter.id,
+            company_name="Acme",
+            contact_name="Alice Recruiter",
+        )
+    )
+    offer = JobOffer(
+        recruiter_user_id=recruiter.id,
+        title="Backend Engineer",
+        occupation_key="backend_engineer",
+        description="Build APIs",
+        status=JobOfferStatus.PUBLISHED,
+    )
+    db_session.add(offer)
+    db_session.commit()
+    db_session.refresh(offer)
+
+    db_session.add(
+        JobOfferRequirement(
+            job_offer_id=offer.id,
+            competency_key="python",
+            priority=RequirementPriority.MUST_HAVE,
+        )
+    )
+    db_session.commit()
+
+    detail = service.get_published_job_offer_detail_or_404(
+        db_session,
+        job_offer_id=offer.id,
+    )
+
+    assert detail.id == offer.id
+    assert detail.company_name == "Acme"
+    assert detail.requirements[0].competency_key == "python"
+    assert detail.requirements[0].priority == RequirementPriority.MUST_HAVE
+
+
+def test_get_published_job_offer_detail_returns_404_for_non_published_or_missing(db_session):
+    recruiter = create_recruiter_user(db_session, email="service-marketplace-404-recruiter@example.com")
+    offer = JobOffer(
+        recruiter_user_id=recruiter.id,
+        title="Backend Engineer",
+        occupation_key="backend_engineer",
+        description="Draft offer",
+        status=JobOfferStatus.DRAFT,
+    )
+    db_session.add(offer)
+    db_session.commit()
+
+    try:
+        service.get_published_job_offer_detail_or_404(
+            db_session,
+            job_offer_id=offer.id,
+        )
+        assert False, "Expected 404 for non-published offer"
+    except HTTPException as exc:
+        assert exc.status_code == 404
+        assert exc.detail == "Published job offer not found."
+
+    try:
+        service.get_published_job_offer_detail_or_404(
+            db_session,
+            job_offer_id=999999,
+        )
+        assert False, "Expected 404 for missing offer"
+    except HTTPException as exc:
+        assert exc.status_code == 404
+        assert exc.detail == "Published job offer not found."

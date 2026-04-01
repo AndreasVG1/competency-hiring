@@ -18,6 +18,7 @@ from app.modules.recruiter.schemas import (
 )
 from app.modules.recruiter.service import (
     add_requirement_to_job_offer,
+    archive_job_offer_for_user,
     create_job_offer_for_user,
     delete_job_offer_for_user,
     delete_requirement,
@@ -25,6 +26,7 @@ from app.modules.recruiter.service import (
     get_profile_or_404,
     list_job_offers_for_user,
     list_requirements_for_job_offer,
+    publish_job_offer_for_user,
     update_job_offer_for_user,
     update_requirement_priority,
     upsert_profile,
@@ -129,6 +131,34 @@ def remove_job_offer(
         job_offer_id=job_offer_id,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/job-offers/{job_offer_id}/publish", response_model=JobOfferResponse)
+def publish_job_offer(
+    job_offer_id: int,
+    db_session: DbSession,
+    current_recruiter: CurrentRecruiter,
+) -> JobOfferResponse:
+    job_offer = publish_job_offer_for_user(
+        db_session,
+        user_id=current_recruiter.id,
+        job_offer_id=job_offer_id,
+    )
+    return JobOfferResponse.model_validate(job_offer)
+
+
+@router.post("/job-offers/{job_offer_id}/archive", response_model=JobOfferResponse)
+def archive_job_offer(
+    job_offer_id: int,
+    db_session: DbSession,
+    current_recruiter: CurrentRecruiter,
+) -> JobOfferResponse:
+    job_offer = archive_job_offer_for_user(
+        db_session,
+        user_id=current_recruiter.id,
+        job_offer_id=job_offer_id,
+    )
+    return JobOfferResponse.model_validate(job_offer)
 
 
 @router.get(

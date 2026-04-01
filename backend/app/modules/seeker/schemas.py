@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.db.models import CompetencyLevel
+from app.db.models import CompetencyLevel, RequirementPriority
 
 
 class SeekerProfileUpsertRequest(BaseModel):
@@ -63,3 +63,29 @@ class SeekerCompetencyResponse(BaseModel):
     id: int
     competency_key: str
     level: CompetencyLevel
+
+
+class PublicJobOfferRequirementItem(BaseModel):
+    competency_key: str
+    priority: RequirementPriority
+
+
+class PublicJobOfferListItem(BaseModel):
+    id: int
+    title: str
+    occupation_key: str
+    occupation_label: str
+    short_description: str
+    company_name: str
+    published_at: datetime
+
+
+class PublicJobOfferDetail(BaseModel):
+    id: int
+    title: str
+    occupation_key: str
+    occupation_label: str
+    description: str
+    company_name: str
+    published_at: datetime
+    requirements: list[PublicJobOfferRequirementItem]

@@ -1,12 +1,14 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.models import User
 from app.db.sqlite import get_db_session
 from app.modules.auth.dependencies import require_job_seeker
 from app.modules.seeker.schemas import (
+    PublicJobOfferDetail,
+    PublicJobOfferListItem,
     SeekerCompetencyCreateRequest,
     SeekerCompetencyResponse,
     SeekerCompetencyUpdateRequest,
@@ -15,9 +17,11 @@ from app.modules.seeker.schemas import (
 )
 from app.modules.seeker.service import (
     add_competency_for_user,
+    get_published_job_offer_detail_or_404,
     delete_profile_for_user,
     delete_competency_for_user,
     get_profile_or_404,
+    list_published_job_offers,
     list_competencies_for_user,
     update_competency_level_for_user,
     upsert_profile,
@@ -122,3 +126,35 @@ def remove_seeker_competency(
         competency_id=competency_id,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/job-offers", response_model=list[PublicJobOfferListItem])
+def list_marketplace_job_offers(
+    db_session: DbSession,
+    current_seeker: CurrentSeeker,
+    query: str | None = Query(default=None),
+    occupation_key: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> list[PublicJobOfferListItem]:
+    del current_seeker
+    return list_published_job_offers(
+        db_session,
+        query=query,
+        occupation_key=occupation_key,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/job-offers/{job_offer_id}", response_model=PublicJobOfferDetail)
+def read_marketplace_job_offer(
+    job_offer_id: int,
+    db_session: DbSession,
+    current_seeker: CurrentSeeker,
+) -> PublicJobOfferDetail:
+    del current_seeker
+    return get_published_job_offer_detail_or_404(
+        db_session,
+        job_offer_id=job_offer_id,
+    )

@@ -8,6 +8,8 @@ REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
 RECRUITER_PROFILE_ROUTE = f"{API_PREFIX}/recruiter/profile"
 RECRUITER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/recruiter/job-offers"
 RECRUITER_REQUIREMENTS_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/requirements"
+RECRUITER_PUBLISH_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/publish"
+RECRUITER_ARCHIVE_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/archive"
 
 
 RECRUITER_PATHS = [
@@ -18,6 +20,8 @@ RECRUITER_PATHS = [
     ("GET", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
     ("PATCH", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
     ("DELETE", f"{RECRUITER_JOB_OFFERS_ROUTE}/1"),
+    ("POST", RECRUITER_PUBLISH_ROUTE.format(job_offer_id=1)),
+    ("POST", RECRUITER_ARCHIVE_ROUTE.format(job_offer_id=1)),
     ("GET", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}"),
     ("POST", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}"),
     ("PATCH", f"{RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=1)}/1"),
@@ -82,6 +86,11 @@ def call_endpoint(client: TestClient, method: str, path: str, *, token: str | No
             "competency_key": "comp_1",
             "priority": "must_have",
         }
+    elif method == "POST" and (
+        path == RECRUITER_PUBLISH_ROUTE.format(job_offer_id=1)
+        or path == RECRUITER_ARCHIVE_ROUTE.format(job_offer_id=1)
+    ):
+        payload = None
     elif method == "POST":
         payload = {
             "occupation_key": "backend_engineer",
@@ -326,6 +335,116 @@ def test_job_offer_get_and_patch_return_404_for_non_owned_or_missing_offer(clien
     )
     assert_structured_http_error(
         patch_response,
+        status_code=404,
+        message="Job offer not found.",
+    )
+
+
+def test_job_offer_publish_updates_status_to_published(client: TestClient):
+    token = register_and_get_token(
+        client,
+        email="recruiter-offer-publish@example.com",
+        role="recruiter",
+    )
+    offer_id = create_offer(client, token)
+
+    response = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "published"
+
+
+def test_job_offer_archive_updates_status_to_archived(client: TestClient):
+    token = register_and_get_token(
+        client,
+        email="recruiter-offer-archive@example.com",
+        role="recruiter",
+    )
+    offer_id = create_offer(client, token)
+
+    published = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(token),
+    )
+    assert published.status_code == 200
+    assert published.json()["status"] == "published"
+
+    archived = client.post(
+        RECRUITER_ARCHIVE_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(token),
+    )
+    assert archived.status_code == 200
+    assert archived.json()["status"] == "archived"
+
+
+def test_job_offer_publish_and_archive_return_409_for_invalid_transitions(client: TestClient):
+    token = register_and_get_token(
+        client,
+        email="recruiter-offer-invalid-transition@example.com",
+        role="recruiter",
+    )
+    offer_id = create_offer(client, token)
+
+    draft_archive = client.post(
+        RECRUITER_ARCHIVE_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(token),
+    )
+    assert_structured_http_error(
+        draft_archive,
+        status_code=409,
+        message="Invalid job offer status transition. draft -> archived.",
+    )
+
+    first_publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(token),
+    )
+    assert first_publish.status_code == 200
+    assert first_publish.json()["status"] == "published"
+
+    second_publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(token),
+    )
+    assert_structured_http_error(
+        second_publish,
+        status_code=409,
+        message="Invalid job offer status transition. published -> published.",
+    )
+
+
+def test_job_offer_publish_and_archive_return_404_for_non_owned_or_missing_offer(client: TestClient):
+    owner = register_and_get_token(
+        client,
+        email="recruiter-offer-transition-owner@example.com",
+        role="recruiter",
+    )
+    other = register_and_get_token(
+        client,
+        email="recruiter-offer-transition-other@example.com",
+        role="recruiter",
+    )
+    offer_id = create_offer(client, owner)
+
+    non_owned_publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(other),
+    )
+    assert_structured_http_error(
+        non_owned_publish,
+        status_code=404,
+        message="Job offer not found.",
+    )
+
+    missing_archive = client.post(
+        RECRUITER_ARCHIVE_ROUTE.format(job_offer_id=999999),
+        headers=auth_headers(owner),
+    )
+    assert_structured_http_error(
+        missing_archive,
         status_code=404,
         message="Job offer not found.",
     )

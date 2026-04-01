@@ -5,6 +5,11 @@ API_PREFIX = "/api/v1"
 REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
 SEEKER_ROUTE = f"{API_PREFIX}/seeker/profile"
 SEEKER_COMPETENCIES_ROUTE = f"{API_PREFIX}/seeker/competencies"
+SEEKER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/seeker/job-offers"
+RECRUITER_PROFILE_ROUTE = f"{API_PREFIX}/recruiter/profile"
+RECRUITER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/recruiter/job-offers"
+RECRUITER_REQUIREMENTS_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/requirements"
+RECRUITER_PUBLISH_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/publish"
 
 SEEKER_PATHS = [
     ("GET", SEEKER_ROUTE),
@@ -14,6 +19,8 @@ SEEKER_PATHS = [
     ("POST", SEEKER_COMPETENCIES_ROUTE),
     ("PATCH", f"{SEEKER_COMPETENCIES_ROUTE}/1"),
     ("DELETE", f"{SEEKER_COMPETENCIES_ROUTE}/1"),
+    ("GET", SEEKER_JOB_OFFERS_ROUTE),
+    ("GET", f"{SEEKER_JOB_OFFERS_ROUTE}/1"),
 ]
 
 
@@ -38,6 +45,16 @@ def register_and_get_token(client: TestClient, *, email: str, role: str) -> str:
 
 def auth_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
+
+
+def create_recruiter_offer(client: TestClient, token: str, *, occupation_key: str, description: str) -> int:
+    response = client.post(
+        RECRUITER_JOB_OFFERS_ROUTE,
+        headers=auth_headers(token),
+        json={"occupation_key": occupation_key, "description": description},
+    )
+    assert response.status_code == 201
+    return response.json()["id"]
 
 
 def call_endpoint(client: TestClient, method: str, path: str, *, token: str | None = None):
@@ -520,4 +537,201 @@ def test_profile_delete_returns_404_when_profile_is_missing(client: TestClient):
         response,
         status_code=404,
         message="Seeker profile not found.",
+    )
+
+
+def test_job_offer_marketplace_list_returns_only_published_with_filters_and_pagination(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-marketplace-list@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-marketplace-list@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    recruiter_profile = client.put(
+        RECRUITER_PROFILE_ROUTE,
+        headers=auth_headers(recruiter_token),
+        json={"company_name": "Acme", "contact_name": "Alice Recruiter"},
+    )
+    assert recruiter_profile.status_code == 200
+
+    backend_offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Build Python APIs for the platform",
+    )
+    frontend_offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="frontend_engineer",
+        description="Build Vue interfaces",
+    )
+    draft_offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="data_analyst",
+        description="Analyze marketplace trends",
+    )
+    assert draft_offer_id > 0
+
+    publish_one = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=backend_offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    publish_two = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=frontend_offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert publish_one.status_code == 200
+    assert publish_two.status_code == 200
+
+    listed = client.get(SEEKER_JOB_OFFERS_ROUTE, headers=auth_headers(seeker_token))
+    assert listed.status_code == 200
+    items = listed.json()
+    listed_ids = {item["id"] for item in items}
+    assert listed_ids == {backend_offer_id, frontend_offer_id}
+    assert all(item["company_name"] == "Acme" for item in items)
+    assert all(item["published_at"] for item in items)
+
+    filtered_by_query = client.get(
+        SEEKER_JOB_OFFERS_ROUTE,
+        headers=auth_headers(seeker_token),
+        params={"query": "python"},
+    )
+    assert filtered_by_query.status_code == 200
+    query_items = filtered_by_query.json()
+    assert len(query_items) == 1
+    assert query_items[0]["id"] == backend_offer_id
+
+    filtered_by_occupation = client.get(
+        SEEKER_JOB_OFFERS_ROUTE,
+        headers=auth_headers(seeker_token),
+        params={"occupation_key": "frontend_engineer"},
+    )
+    assert filtered_by_occupation.status_code == 200
+    occupation_items = filtered_by_occupation.json()
+    assert len(occupation_items) == 1
+    assert occupation_items[0]["id"] == frontend_offer_id
+
+    paged = client.get(
+        SEEKER_JOB_OFFERS_ROUTE,
+        headers=auth_headers(seeker_token),
+        params={"limit": 1, "offset": 1},
+    )
+    assert paged.status_code == 200
+    assert len(paged.json()) == 1
+
+
+def test_job_offer_marketplace_detail_returns_published_offer_with_requirements(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-marketplace-detail@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-marketplace-detail@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_competency_detail",
+        lambda *, competency_key: {"key": competency_key, "label": competency_key.replace("_", " ").title()},
+    )
+
+    recruiter_profile = client.put(
+        RECRUITER_PROFILE_ROUTE,
+        headers=auth_headers(recruiter_token),
+        json={"company_name": "Acme", "contact_name": "Alice Recruiter"},
+    )
+    assert recruiter_profile.status_code == 200
+
+    offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+
+    requirement = client.post(
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+        json={"competency_key": "python", "priority": "must_have"},
+    )
+    assert requirement.status_code == 201
+
+    published = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert published.status_code == 200
+
+    response = client.get(
+        f"{SEEKER_JOB_OFFERS_ROUTE}/{offer_id}",
+        headers=auth_headers(seeker_token),
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == offer_id
+    assert body["company_name"] == "Acme"
+    assert body["description"] == "Build APIs"
+    assert body["requirements"] == [{"competency_key": "python", "priority": "must_have"}]
+
+
+def test_job_offer_marketplace_detail_returns_404_for_draft_or_missing_offer(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-marketplace-detail-404@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-marketplace-detail-404@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    draft_offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Draft only",
+    )
+
+    draft_response = client.get(
+        f"{SEEKER_JOB_OFFERS_ROUTE}/{draft_offer_id}",
+        headers=auth_headers(seeker_token),
+    )
+    assert_structured_http_error(
+        draft_response,
+        status_code=404,
+        message="Published job offer not found.",
+    )
+
+    missing_response = client.get(
+        f"{SEEKER_JOB_OFFERS_ROUTE}/999999",
+        headers=auth_headers(seeker_token),
+    )
+    assert_structured_http_error(
+        missing_response,
+        status_code=404,
+        message="Published job offer not found.",
     )

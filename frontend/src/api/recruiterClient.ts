@@ -52,6 +52,18 @@ export const recruiterClient = {
     });
   },
 
+  publishJobOffer(jobOfferId: number): Promise<JobOfferResponse> {
+    return apiRequest<JobOfferResponse>(`${RECRUITER_BASE_PATH}/job-offers/${jobOfferId}/publish`, {
+      method: "POST",
+    });
+  },
+
+  archiveJobOffer(jobOfferId: number): Promise<JobOfferResponse> {
+    return apiRequest<JobOfferResponse>(`${RECRUITER_BASE_PATH}/job-offers/${jobOfferId}/archive`, {
+      method: "POST",
+    });
+  },
+
   listRequirements(jobOfferId: number): Promise<JobOfferRequirementResponse[]> {
     return apiRequest<JobOfferRequirementResponse[]>(
       `${RECRUITER_BASE_PATH}/job-offers/${jobOfferId}/requirements`,

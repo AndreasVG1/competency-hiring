@@ -18,7 +18,7 @@
       <header class="panel-header">
         <p class="eyebrow">Recruiter Area</p>
         <h1>Job Offer Details</h1>
-        <p class="content">Read-only view for a single draft offer and its requirements.</p>
+        <p class="content">Read-only view for a single offer and its requirements.</p>
       </header>
 
       <ApiErrorNotice v-if="logoutError" :error="logoutError" />
@@ -27,10 +27,12 @@
       <section class="recruiter-section">
         <header class="section-header">
           <h2>Offer</h2>
-          <p>Read-only summary of this draft offer.</p>
+          <p>Read-only summary and publication controls for this offer.</p>
         </header>
 
         <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
+        <ApiErrorNotice v-if="transitionError" :error="transitionError" show-all-messages />
+        <p v-if="transitionSuccessMessage" class="form-success">{{ transitionSuccessMessage }}</p>
 
         <p v-if="isOfferLoading" class="section-note">Loading offer...</p>
         <p v-else-if="isOfferNotFound" class="section-note">Job offer not found.</p>
@@ -54,7 +56,30 @@
             <RouterLink class="button-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/edit`">
               Edit offer
             </RouterLink>
-            <button class="button-danger" type="button" :disabled="isDeletingOffer" @click="deleteOffer">
+            <button
+              v-if="jobOffer.status === 'draft'"
+              class="button-primary"
+              type="button"
+              :disabled="isTransitioning || isDeletingOffer"
+              @click="publishOffer"
+            >
+              {{ isTransitioning ? "Publishing..." : "Publish offer" }}
+            </button>
+            <button
+              v-else-if="jobOffer.status === 'published'"
+              class="button-secondary"
+              type="button"
+              :disabled="isTransitioning || isDeletingOffer"
+              @click="archiveOffer"
+            >
+              {{ isTransitioning ? "Archiving..." : "Archive offer" }}
+            </button>
+            <button
+              class="button-danger"
+              type="button"
+              :disabled="isDeletingOffer || isTransitioning"
+              @click="deleteOffer"
+            >
               {{ isDeletingOffer ? "Deleting..." : "Delete offer" }}
             </button>
           </div>
@@ -111,10 +136,13 @@ const isOfferLoading = ref(true);
 const isRequirementsLoading = ref(false);
 const isOfferNotFound = ref(false);
 const isDeletingOffer = ref(false);
+const isTransitioning = ref(false);
 
 const offerLoadError = ref<unknown | null>(null);
 const requirementsLoadError = ref<unknown | null>(null);
 const deleteOfferError = ref<unknown | null>(null);
+const transitionError = ref<unknown | null>(null);
+const transitionSuccessMessage = ref<string | null>(null);
 
 function parseOfferId(): number | null {
   const offerId = Number(route.params.id);
@@ -158,6 +186,8 @@ async function loadOffer(): Promise<void> {
   isOfferNotFound.value = false;
   offerLoadError.value = null;
   requirementsLoadError.value = null;
+  transitionError.value = null;
+  transitionSuccessMessage.value = null;
   requirements.value = [];
   occupationLabel.value = null;
 
@@ -202,7 +232,7 @@ async function loadRequirements(offerId: number): Promise<void> {
 }
 
 async function deleteOffer(): Promise<void> {
-  if (!jobOffer.value || isDeletingOffer.value) {
+  if (!jobOffer.value || isDeletingOffer.value || isTransitioning.value) {
     return;
   }
 
@@ -221,6 +251,65 @@ async function deleteOffer(): Promise<void> {
     deleteOfferError.value = error;
   } finally {
     isDeletingOffer.value = false;
+  }
+}
+
+async function publishOffer(): Promise<void> {
+  if (!jobOffer.value || jobOffer.value.status !== "draft" || isTransitioning.value || isDeletingOffer.value) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Publish this offer now? After publishing, seekers can discover and view it in the marketplace.",
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  isTransitioning.value = true;
+  transitionError.value = null;
+  transitionSuccessMessage.value = null;
+
+  try {
+    const updatedOffer = await recruiterClient.publishJobOffer(jobOffer.value.id);
+    jobOffer.value = updatedOffer;
+    transitionSuccessMessage.value = "Offer published.";
+  } catch (error) {
+    transitionError.value = error;
+  } finally {
+    isTransitioning.value = false;
+  }
+}
+
+async function archiveOffer(): Promise<void> {
+  if (
+    !jobOffer.value ||
+    jobOffer.value.status !== "published" ||
+    isTransitioning.value ||
+    isDeletingOffer.value
+  ) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Archive this offer now? Archived offers are no longer visible in the seeker marketplace.",
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  isTransitioning.value = true;
+  transitionError.value = null;
+  transitionSuccessMessage.value = null;
+
+  try {
+    const updatedOffer = await recruiterClient.archiveJobOffer(jobOffer.value.id);
+    jobOffer.value = updatedOffer;
+    transitionSuccessMessage.value = "Offer archived.";
+  } catch (error) {
+    transitionError.value = error;
+  } finally {
+    isTransitioning.value = false;
   }
 }
 

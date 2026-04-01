@@ -77,7 +77,7 @@ Goal:
 - optional pagination parameters (`limit`, `offset`) for stable scaling
 - Ensure seeker role enforcement on these endpoints.
 
-6. [ ] Build seeker marketplace UI (Milestone 2A)
+6. [X] Build seeker marketplace UI (Milestone 2A)
 - Add seeker routes:
 - `/seeker/job-offers`
 - `/seeker/job-offers/{id}`
@@ -88,14 +88,14 @@ Goal:
 - Implement detail page with requirements and clear CTA area for future apply action.
 - Keep UI language transparent and avoid implied "fit score" messaging in this phase.
 
-7. [ ] Update recruiter UI for publish/archive control (Milestone 2A)
+7. [X] Update recruiter UI for publish/archive control (Milestone 2A)
 - Show offer status clearly (`draft`, `published`, `archived`) in recruiter list/detail views.
 - Add publish/archive actions in offer detail/edit pages with confirmation for risky transitions.
 - Keep edit behavior predictable:
 - allow editing draft offers
 - define and enforce policy for published/archived edits (recommended: edit in any state, but explicit re-publish if required by policy)
 
-8. [ ] Add Milestone 2A backend/frontend tests and acceptance checks
+8. [X] Add Milestone 2A backend/frontend tests and acceptance checks
 - API tests: status transitions, invalid transitions, ownership checks.
 - API tests: seeker list/detail only returns published offers.
 - Frontend checks: seeker can browse published offers; recruiter can publish/archive owned offers.

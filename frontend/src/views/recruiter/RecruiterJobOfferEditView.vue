@@ -18,7 +18,7 @@
       <header class="panel-header">
         <p class="eyebrow">Recruiter Area</p>
         <h1>Edit Job Offer</h1>
-        <p class="content">Update offer fields and manage competency requirements for this draft.</p>
+        <p class="content">Update offer fields, manage requirements, and control publication state.</p>
       </header>
 
       <ApiErrorNotice v-if="logoutError" :error="logoutError" />
@@ -27,15 +27,43 @@
       <section class="recruiter-section">
         <header class="section-header">
           <h2>Offer</h2>
-          <p>Editable offer fields.</p>
+          <p>Editable offer fields and explicit status transitions.</p>
         </header>
 
         <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
+        <ApiErrorNotice v-if="transitionError" :error="transitionError" show-all-messages />
+        <p v-if="transitionSuccessMessage" class="form-success">{{ transitionSuccessMessage }}</p>
 
         <p v-if="isOfferLoading" class="section-note">Loading offer...</p>
         <p v-else-if="isOfferNotFound" class="section-note">Job offer not found.</p>
 
         <form v-else-if="jobOffer" class="recruiter-form" @submit.prevent="saveOffer">
+          <p class="selected-item">
+            <strong>Current status:</strong>
+            <JobOfferStatusBadge :status="jobOffer.status" />
+          </p>
+
+          <div class="table-actions">
+            <button
+              v-if="jobOffer.status === 'draft'"
+              class="button-primary"
+              type="button"
+              :disabled="isTransitioning || isDeletingOffer"
+              @click="publishOffer"
+            >
+              {{ isTransitioning ? "Publishing..." : "Publish offer" }}
+            </button>
+            <button
+              v-else-if="jobOffer.status === 'published'"
+              class="button-secondary"
+              type="button"
+              :disabled="isTransitioning || isDeletingOffer"
+              @click="archiveOffer"
+            >
+              {{ isTransitioning ? "Archiving..." : "Archive offer" }}
+            </button>
+          </div>
+
           <CatalogSearchPicker
             :key="offerOccupationPickerKey"
             label="Occupation"
@@ -73,7 +101,12 @@
             <button class="button-primary" type="submit" :disabled="isUpdatingOffer">
               {{ isUpdatingOffer ? "Saving offer..." : "Save offer" }}
             </button>
-            <button class="button-danger" type="button" :disabled="isDeletingOffer" @click="deleteOffer">
+            <button
+              class="button-danger"
+              type="button"
+              :disabled="isDeletingOffer || isTransitioning"
+              @click="deleteOffer"
+            >
               {{ isDeletingOffer ? "Deleting..." : "Delete offer" }}
             </button>
           </div>
@@ -195,6 +228,7 @@ import { ApiClientError, catalogClient, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import CatalogSearchPicker from "../../components/CatalogSearchPicker.vue";
 import EnumSelect from "../../components/EnumSelect.vue";
+import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import OccupationCompetencySuggestions from "../../components/OccupationCompetencySuggestions.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useLogout } from "../../composables/useLogout";
@@ -245,10 +279,13 @@ const isOfferLoading = ref(true);
 const isOfferNotFound = ref(false);
 const isUpdatingOffer = ref(false);
 const isDeletingOffer = ref(false);
+const isTransitioning = ref(false);
 const offerLoadError = ref<unknown | null>(null);
 const offerUpdateError = ref<unknown | null>(null);
 const offerUpdateSuccessMessage = ref<string | null>(null);
 const deleteOfferError = ref<unknown | null>(null);
+const transitionError = ref<unknown | null>(null);
+const transitionSuccessMessage = ref<string | null>(null);
 const offerOccupationPickerKey = ref(0);
 
 const requirementRows = ref<RequirementRowState[]>([]);
@@ -346,6 +383,8 @@ async function loadOffer(): Promise<void> {
   offerUpdateError.value = null;
   offerUpdateSuccessMessage.value = null;
   deleteOfferError.value = null;
+  transitionError.value = null;
+  transitionSuccessMessage.value = null;
   requirementRows.value = [];
 
   try {
@@ -411,7 +450,7 @@ async function saveOffer(): Promise<void> {
 }
 
 async function deleteOffer(): Promise<void> {
-  if (!jobOffer.value || isDeletingOffer.value) {
+  if (!jobOffer.value || isDeletingOffer.value || isTransitioning.value) {
     return;
   }
 
@@ -430,6 +469,67 @@ async function deleteOffer(): Promise<void> {
     deleteOfferError.value = error;
   } finally {
     isDeletingOffer.value = false;
+  }
+}
+
+async function publishOffer(): Promise<void> {
+  if (!jobOffer.value || jobOffer.value.status !== "draft" || isTransitioning.value || isDeletingOffer.value) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Publish this offer now? After publishing, seekers can discover and view it in the marketplace.",
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  isTransitioning.value = true;
+  transitionError.value = null;
+  transitionSuccessMessage.value = null;
+
+  try {
+    const updatedOffer = await recruiterClient.publishJobOffer(jobOffer.value.id);
+    jobOffer.value = updatedOffer;
+    hydrateOfferForm(updatedOffer);
+    transitionSuccessMessage.value = "Offer published.";
+  } catch (error) {
+    transitionError.value = error;
+  } finally {
+    isTransitioning.value = false;
+  }
+}
+
+async function archiveOffer(): Promise<void> {
+  if (
+    !jobOffer.value ||
+    jobOffer.value.status !== "published" ||
+    isTransitioning.value ||
+    isDeletingOffer.value
+  ) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Archive this offer now? Archived offers are no longer visible in the seeker marketplace.",
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  isTransitioning.value = true;
+  transitionError.value = null;
+  transitionSuccessMessage.value = null;
+
+  try {
+    const updatedOffer = await recruiterClient.archiveJobOffer(jobOffer.value.id);
+    jobOffer.value = updatedOffer;
+    hydrateOfferForm(updatedOffer);
+    transitionSuccessMessage.value = "Offer archived.";
+  } catch (error) {
+    transitionError.value = error;
+  } finally {
+    isTransitioning.value = false;
   }
 }
 

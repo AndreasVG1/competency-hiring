@@ -40,7 +40,7 @@
       <section class="recruiter-section">
         <header class="section-header">
           <h2>Job Offers</h2>
-          <p>Open a draft offer to view details or continue editing.</p>
+          <p>Open an offer to review details, status, and available actions.</p>
         </header>
 
         <ApiErrorNotice v-if="jobOffersLoadError" :error="jobOffersLoadError" show-all-messages />
@@ -53,7 +53,7 @@
             <RouterLink class="offer-select" :to="`/recruiter/job-offers/${offer.id}`">
               <span>
                 <strong>{{ offer.title }}</strong>
-                <small>{{ offer.status }}</small>
+                <JobOfferStatusBadge :status="offer.status" />
               </span>
               <code>#{{ offer.id }}</code>
             </RouterLink>
@@ -69,6 +69,7 @@ import { onMounted, ref } from "vue";
 
 import { ApiClientError, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
+import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import { useLogout } from "../../composables/useLogout";
 import type { JobOfferResponse, RecruiterProfileResponse } from "../../types/domain";
 

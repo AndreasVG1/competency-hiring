@@ -3,9 +3,6 @@
     <section class="panel seeker-panel">
       <PageActionsBar>
         <RouterLink class="button-secondary" to="/seeker">Back to profile</RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
@@ -13,8 +10,6 @@
         <h1>Edit Profile</h1>
         <p class="content">Update your private profile and competency data.</p>
       </header>
-
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
 
       <section class="seeker-section">
         <header class="section-header">
@@ -234,7 +229,6 @@ import EnumSelect from "../../components/EnumSelect.vue";
 import OccupationCompetencySuggestions from "../../components/OccupationCompetencySuggestions.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
-import { useLogout } from "../../composables/useLogout";
 import type {
   CatalogItem,
   CompetencyLevel,
@@ -271,7 +265,6 @@ const profileForm = reactive<ProfileFormState>({
   location: "",
   occupationKey: null,
 });
-const { isLoggingOut, logoutError, logout } = useLogout();
 
 const labelCache = useCatalogLabelCache();
 

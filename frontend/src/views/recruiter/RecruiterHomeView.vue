@@ -4,17 +4,12 @@
       <PageActionsBar>
         <RouterLink class="button-secondary" to="/recruiter/edit">Edit profile</RouterLink>
         <RouterLink class="button-primary" to="/recruiter/job-offers/new">Create job offer</RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
         <h1>Recruiter Overview</h1>
         <p class="content">Review your profile information and draft job offers.</p>
       </header>
-
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
 
       <section class="recruiter-section">
         <header class="section-header">
@@ -71,10 +66,7 @@ import { ApiClientError, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
-import { useLogout } from "../../composables/useLogout";
 import type { JobOfferResponse, RecruiterProfileResponse } from "../../types/domain";
-
-const { isLoggingOut, logoutError, logout } = useLogout();
 
 const profile = ref<RecruiterProfileResponse | null>(null);
 const isFirstTimeProfile = ref(false);

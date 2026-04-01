@@ -3,9 +3,6 @@
     <section class="panel recruiter-panel">
       <PageActionsBar>
         <RouterLink class="button-secondary" :to="backToOfferPath">Back to offer</RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
@@ -15,8 +12,6 @@
           Applicants appear only after explicit seeker consent through application.
         </p>
       </header>
-
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
 
       <section class="recruiter-section">
         <header class="section-header">
@@ -115,11 +110,9 @@ import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
-import { useLogout } from "../../composables/useLogout";
 import type { JobOfferResponse, RecruiterApplicantListItem } from "../../types/domain";
 
 const route = useRoute();
-const { isLoggingOut, logoutError, logout } = useLogout();
 const labelCache = useCatalogLabelCache();
 
 const jobOffer = ref<JobOfferResponse | null>(null);

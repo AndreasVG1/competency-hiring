@@ -10,9 +10,6 @@
         >
           View read-only
         </RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
@@ -21,7 +18,6 @@
         <p class="content">Update offer fields, manage requirements, and control publication state.</p>
       </header>
 
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
       <ApiErrorNotice v-if="deleteOfferError" :error="deleteOfferError" show-all-messages />
 
       <section class="recruiter-section">
@@ -233,7 +229,6 @@ import OccupationCompetencySuggestions from "../../components/OccupationCompeten
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
-import { useLogout } from "../../composables/useLogout";
 import type {
   CatalogItem,
   JobOfferRequirementResponse,
@@ -260,7 +255,6 @@ interface RequirementRowState {
 const route = useRoute();
 const router = useRouter();
 
-const { isLoggingOut, logoutError, logout } = useLogout();
 const { confirm } = useConfirmDialog();
 const labelCache = useCatalogLabelCache();
 

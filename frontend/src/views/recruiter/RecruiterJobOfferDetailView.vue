@@ -17,9 +17,6 @@
         >
           View applicants
         </RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
@@ -28,7 +25,6 @@
         <p class="content">Read-only view for a single offer and its requirements.</p>
       </header>
 
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
       <ApiErrorNotice v-if="deleteOfferError" :error="deleteOfferError" show-all-messages />
 
       <section class="recruiter-section">
@@ -127,7 +123,6 @@ import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
-import { useLogout } from "../../composables/useLogout";
 import type {
   JobOfferRequirementResponse,
   JobOfferResponse,
@@ -137,7 +132,6 @@ import type {
 const route = useRoute();
 const router = useRouter();
 
-const { isLoggingOut, logoutError, logout } = useLogout();
 const { confirm } = useConfirmDialog();
 const labelCache = useCatalogLabelCache();
 

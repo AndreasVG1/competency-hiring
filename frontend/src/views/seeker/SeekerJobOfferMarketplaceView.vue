@@ -3,9 +3,6 @@
     <section class="panel seeker-panel">
       <PageActionsBar>
         <RouterLink class="button-secondary" to="/seeker">Back to seeker overview</RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
@@ -17,7 +14,6 @@
         <JobOfferStatusBadge status="published" />
       </header>
 
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
       <ApiErrorNotice v-if="occupationsLoadError" :error="occupationsLoadError" show-all-messages />
 
       <section class="seeker-section">
@@ -96,13 +92,10 @@ import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import MarketplaceFilterBar from "../../components/MarketplaceFilterBar.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
-import { useLogout } from "../../composables/useLogout";
 import type { CatalogItem, PublicJobOfferListItem } from "../../types/domain";
 
 const DEFAULT_LIMIT = 10;
 const OCCUPATION_FILTER_LIMIT = 100;
-
-const { isLoggingOut, logoutError, logout } = useLogout();
 
 const occupationOptions = ref<CatalogItem[]>([]);
 const offers = ref<PublicJobOfferListItem[]>([]);

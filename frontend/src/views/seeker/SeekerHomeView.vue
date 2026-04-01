@@ -6,9 +6,6 @@
           Browse published job offers
         </RouterLink>
         <RouterLink class="button-secondary" to="/seeker/edit">Edit profile</RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
@@ -16,7 +13,6 @@
         <p class="content">Review what is currently saved in your private profile.</p>
       </header>
 
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
       <ApiErrorNotice v-if="deleteProfileError" :error="deleteProfileError" show-all-messages />
 
       <section class="seeker-section">
@@ -103,10 +99,8 @@ import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
-import { useLogout } from "../../composables/useLogout";
 import type { CompetencyLevel, SeekerCompetencyResponse, SeekerProfileResponse } from "../../types/domain";
 
-const { isLoggingOut, logoutError, logout } = useLogout();
 const { confirm } = useConfirmDialog();
 const labelCache = useCatalogLabelCache();
 

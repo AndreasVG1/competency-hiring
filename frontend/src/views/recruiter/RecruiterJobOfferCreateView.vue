@@ -3,9 +3,7 @@
     <section class="panel recruiter-panel">
       <PageActionsBar>
         <RouterLink class="button-secondary" to="/recruiter">Back to recruiter</RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
+      
       </PageActionsBar>
 
       <header class="panel-header">
@@ -13,8 +11,6 @@
         <h1>Create Draft Job Offer</h1>
         <p class="content">Choose an occupation and description. After creation, you will be redirected to edit details.</p>
       </header>
-
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
 
       <section class="recruiter-section">
         <header class="section-header">
@@ -80,11 +76,9 @@ import { catalogClient, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import CatalogSearchPicker from "../../components/CatalogSearchPicker.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
-import { useLogout } from "../../composables/useLogout";
 import type { CatalogItem } from "../../types/domain";
 
 const router = useRouter();
-const { isLoggingOut, logoutError, logout } = useLogout();
 
 const selectedOccupation = ref<CatalogItem | null>(null);
 const occupationPickerKey = ref(0);

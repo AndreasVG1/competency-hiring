@@ -3,9 +3,6 @@
     <section class="panel seeker-panel">
       <PageActionsBar>
         <RouterLink class="button-secondary" to="/seeker/job-offers">Back to marketplace</RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
@@ -14,7 +11,6 @@
         <p class="content">Review published information before deciding whether to apply.</p>
       </header>
 
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
       <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
 
       <section class="seeker-section">
@@ -93,13 +89,11 @@ import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
-import { useLogout } from "../../composables/useLogout";
 import type { PublicJobOfferDetail } from "../../types/domain";
 
 const route = useRoute();
 const labelCache = useCatalogLabelCache();
 const { confirm } = useConfirmDialog();
-const { isLoggingOut, logoutError, logout } = useLogout();
 
 const offer = ref<PublicJobOfferDetail | null>(null);
 const isOfferLoading = ref(true);

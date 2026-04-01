@@ -3,9 +3,6 @@
     <section class="panel recruiter-panel">
       <PageActionsBar>
         <RouterLink class="button-secondary" to="/recruiter">Back to recruiter</RouterLink>
-        <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
       </PageActionsBar>
 
       <header class="panel-header">
@@ -13,8 +10,6 @@
         <h1>Edit Recruiter Profile</h1>
         <p class="content">Update company and contact information.</p>
       </header>
-
-      <ApiErrorNotice v-if="logoutError" :error="logoutError" />
 
       <section class="recruiter-section">
         <header class="section-header">
@@ -69,15 +64,12 @@ import { onMounted, reactive, ref } from "vue";
 import { ApiClientError, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
-import { useLogout } from "../../composables/useLogout";
 import type { RecruiterProfileResponse } from "../../types/domain";
 
 interface RecruiterProfileFormState {
   companyName: string;
   contactName: string;
 }
-
-const { isLoggingOut, logoutError, logout } = useLogout();
 
 const profileForm = reactive<RecruiterProfileFormState>({
   companyName: "",

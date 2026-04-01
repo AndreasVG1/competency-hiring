@@ -56,7 +56,7 @@
 
           <CatalogSearchPicker
             label="Occupation"
-            placeholder="Search occupations"
+            placeholder="Search occupations: 'Sterilisatsioonitehnik'"
             no-results-text="No occupations found."
             :disabled="isProfileLoading"
             :busy="isProfileSaving"

@@ -75,7 +75,7 @@
           <CatalogSearchPicker
             :key="createOfferOccupationPickerKey"
             label="Occupation"
-            placeholder="Search occupations"
+            placeholder="Search occupations: 'Sterilisatsioonitehnik'"
             no-results-text="No occupations found."
             :disabled="isJobOffersLoading"
             :busy="isCreatingJobOffer"

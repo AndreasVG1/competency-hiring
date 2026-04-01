@@ -84,7 +84,7 @@ This slice should establish the long-term project shape: FastAPI backend, SQLAlc
 - Let the recruiter add requirements with priority, edit priority, and remove requirements.
 - Show saved job offers and allow editing of draft entries.
 
-12. [] Finish with validation, tests, and acceptance checks
+12. [X] Finish with validation, tests, and acceptance checks
 - Add backend unit and API tests before expanding the scope further.
 - Manually verify the two end-to-end flows in the browser against the running API.
 - Only after both creation flows are stable should matching and explanation work begin.

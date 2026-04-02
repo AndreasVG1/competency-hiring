@@ -182,11 +182,11 @@ Goal:
 
 ## Step-by-Step Tasks
 
-1. [ ] Create Phase 3 implementation note and boundaries
+1. [X] Create Phase 3 implementation note and boundaries
 - Add/update `docs/phase_3` note that states exact-match-only scope.
 - Record that semantic/graph inference remains out of scope for official Phase 3 MVP.
 
-2. [ ] Add matching module skeleton under backend modular monolith
+2. [X] Add matching module skeleton under backend modular monolith
 - Create `backend/app/modules/matching/`.
 - Add `engine.py` (pure calculation), `service.py` (data orchestration), `schemas.py`.
 - Keep route handlers thin by delegating to matching service.
@@ -207,7 +207,7 @@ Goal:
 - Return private analysis only to current seeker.
 
 6. [ ] Add shared matching snapshot persistence model
-- Add new SQLite table (recommended) for application-time matching snapshot:
+- Add new SQLite table for application-time matching snapshot:
   - `application_id` (PK/FK to `applications`)
   - `algorithm_version`
   - `score`

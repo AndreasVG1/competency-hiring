@@ -224,7 +224,7 @@ No endpoint should fail solely because explanation renderer is unknown.
 
 ## Backend Implementation Plan
 
-### [ ] Milestone 4A: Explanation module foundation
+### [X] Milestone 4A: Explanation module foundation
 
 1. Create explanation schemas and template constants.
 2. Add pure service function:

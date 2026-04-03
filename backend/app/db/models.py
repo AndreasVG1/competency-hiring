@@ -4,7 +4,19 @@ import enum
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -248,6 +260,11 @@ class Application(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    matching_snapshot: Mapped[ApplicationMatchingSnapshot | None] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
 
 class ApplicationSnapshot(Base):
@@ -270,6 +287,28 @@ class ApplicationSnapshot(Base):
     )
 
     application: Mapped[Application] = relationship(back_populates="snapshot")
+
+
+class ApplicationMatchingSnapshot(Base):
+    __tablename__ = "application_matching_snapshots"
+
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    algorithm_version: Mapped[str] = mapped_column(String(255), nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    result_payload: Mapped[dict[str, object]] = mapped_column(
+        JSON(none_as_null=True),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    application: Mapped[Application] = relationship(back_populates="matching_snapshot")
 
 
 class RefreshTokenSession(Base):

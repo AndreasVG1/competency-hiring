@@ -228,7 +228,7 @@ Goal:
 - Enforce seeker role and published-offer-only visibility.
 - Return private analysis only to current seeker.
 
-6. [ ] Add shared matching snapshot persistence model
+6. [X] Add shared matching snapshot persistence model
 - Add new SQLite table for application-time matching snapshot:
   - `application_id` (PK/FK to `applications`)
   - `algorithm_version`

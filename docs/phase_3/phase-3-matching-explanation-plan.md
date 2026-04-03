@@ -191,7 +191,7 @@ Goal:
 - Add `engine.py` (pure calculation), `service.py` (data orchestration), `schemas.py`.
 - Keep route handlers thin by delegating to matching service.
 
-3. [ ] Implement pure deterministic matching engine
+3. [X] Implement pure deterministic matching engine
 - Input: normalized requirement and seeker competency arrays.
 - Output: score + explainability payload.
 - Enforce stable ordering and deterministic rounding.

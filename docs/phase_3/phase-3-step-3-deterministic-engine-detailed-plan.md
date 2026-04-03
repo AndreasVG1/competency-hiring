@@ -110,6 +110,92 @@ All list outputs that represent requirement outcomes must be stable using this k
 2. `point_loss` descending
 3. `competency_key` ascending
 
+## Algorithm Walkthrough (Worked Example)
+
+This walkthrough demonstrates the exact deterministic behavior with concrete input and output values.
+
+### Input
+
+Job offer requirements:
+
+1. `comp_api` with priority `must_have`
+2. `comp_sql` with priority `important`
+3. `comp_docs` with priority `nice_to_have`
+
+Seeker competencies:
+
+1. `comp_api` at level `intermediate`
+2. `comp_sql` at level `beginner`
+3. `comp_docs` is not present
+
+### Step A: Resolve static values per requirement
+
+From the fixed mappings:
+
+- `must_have`: `max_points = 5`, expected level = `intermediate` (`2`)
+- `important`: `max_points = 3`, expected level = `intermediate` (`2`)
+- `nice_to_have`: `max_points = 1`, expected level = `beginner` (`1`)
+
+### Step B: Evaluate each requirement
+
+#### Requirement 1: `comp_api` (`must_have`)
+
+- seeker has competency at `intermediate` (`2`)
+- ratio = `min(2 / 2, 1.0) = 1.0`
+- earned points = `5 * 1.0 = 5.0`
+- status = `matched`
+- reason = `meets_expected_level`
+- point loss = `5.0 - 5.0 = 0.0`
+
+#### Requirement 2: `comp_sql` (`important`)
+
+- seeker has competency at `beginner` (`1`)
+- ratio = `min(1 / 2, 1.0) = 0.5`
+- earned points = `3 * 0.5 = 1.5`
+- status = `insufficient`
+- reason = `level_below_expected`
+- point loss = `3.0 - 1.5 = 1.5`
+
+#### Requirement 3: `comp_docs` (`nice_to_have`)
+
+- seeker competency is missing
+- earned points = `0.0`
+- status = `missing`
+- reason = `missing_competency`
+- point loss = `1.0 - 0.0 = 1.0`
+
+### Step C: Totals and score
+
+- total earned points = `5.0 + 1.5 + 0.0 = 6.5`
+- total max points = `5.0 + 3.0 + 1.0 = 9.0`
+- score = `round(100 * 6.5 / 9.0, 1) = round(72.222..., 1) = 72.2`
+- status = `ok` (because `total_max_points > 0`)
+
+### Step D: Deterministic ordering of output lists
+
+Sort key: `(priority rank, -point_loss, competency_key)`.
+
+Sorted `breakdown` order for this example:
+
+1. `comp_api` (`must_have`, loss `0.0`, matched)
+2. `comp_sql` (`important`, loss `1.5`, insufficient)
+3. `comp_docs` (`nice_to_have`, loss `1.0`, missing)
+
+Derived lists:
+
+- `missing_competencies`: `comp_docs`
+- `insufficient_competencies`: `comp_sql`
+- `development_targets`: `comp_sql`, `comp_docs`
+  - `comp_sql` gain if reached = `1.5`
+  - `comp_docs` gain if reached = `1.0`
+
+### Step E: Final payload highlights
+
+- `algorithm_version = "v1_exact_priority_level"`
+- `scope = "private_preview"`
+- `totals`: matched `1`, insufficient `1`, missing `1`, requirements `3`
+- explanation sections are consistent with one shared evaluated row set (no recomputation drift)
+
 ## Output Construction Requirements
 
 The function returns `MatchingResultPayload` with:

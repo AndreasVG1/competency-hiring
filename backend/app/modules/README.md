@@ -6,5 +6,6 @@ Feature modules will be added here as the backend grows, for example:
 - `profiles`
 - `job_offers`
 - `matching`
+- `explanation`
 - `applications`
 - `knowledge_adapter`

@@ -869,6 +869,9 @@ def test_applicants_list_returns_snapshot_based_rows_for_owned_offer(client: Tes
     assert isinstance(applicant["shared_matching"]["score"], float)
     assert applicant["shared_matching"]["result_payload"]["scope"] == "shared_application_snapshot"
     assert applicant["shared_matching"]["snapshot_created_at"]
+    assert applicant["shared_matching"]["explanation"] is not None
+    assert applicant["shared_matching"]["explanation"]["audience"] == "recruiter"
+    assert applicant["shared_matching"]["explanation"]["development_roadmap"] is None
 
 
 def test_applicants_list_hides_withdrawn_application(client: TestClient):

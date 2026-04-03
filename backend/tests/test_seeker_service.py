@@ -587,3 +587,40 @@ def test_private_job_offer_analysis_with_explanation_propagates_matching_http_er
             assert exc.detail == "Published job offer not found."
     finally:
         service.get_private_matching_analysis_for_seeker = original_matching
+
+
+def test_private_job_offer_analysis_with_explanation_uses_fallback_for_unknown_algorithm(
+    db_session,
+):
+    payload = calculate_exact_match_result(
+        job_offer_id=999,
+        seeker_user_id=77,
+        requirements=[
+            MatchingRequirementInput(
+                competency_key="comp_api",
+                priority=RequirementPriority.MUST_HAVE,
+            ),
+        ],
+        seeker_competencies=[],
+    ).model_copy(update={"algorithm_version": "v999_unknown_algorithm"})
+
+    def _stub_matching(*_args, **_kwargs):
+        return payload
+
+    original_matching = service.get_private_matching_analysis_for_seeker
+    service.get_private_matching_analysis_for_seeker = _stub_matching
+    try:
+        result = service.get_private_job_offer_analysis_with_explanation(
+            db_session,
+            seeker_user_id=77,
+            job_offer_id=999,
+        )
+    finally:
+        service.get_private_matching_analysis_for_seeker = original_matching
+
+    assert result.explanation.audience == "seeker"
+    assert result.explanation.algorithm_version == "v999_unknown_algorithm"
+    assert result.explanation.highlights == []
+    assert result.explanation.gaps == []
+    assert result.explanation.development_roadmap == []
+    assert "Detailed explanation templates are unavailable" in result.explanation.transparency_notes[-1]

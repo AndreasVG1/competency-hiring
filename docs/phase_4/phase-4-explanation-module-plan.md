@@ -239,14 +239,14 @@ No endpoint should fail solely because explanation renderer is unknown.
 2. Return combined response (matching + explanation).
 3. Keep existing access checks and published-offer validation unchanged.
 
-### [ ] Milestone 4C: Recruiter integration
+### [X] Milestone 4C: Recruiter integration
 
 1. In recruiter applicants read flow, generate explanation from each `shared_matching.result_payload`.
 2. Use `audience = recruiter`.
 3. Attach explanation to `shared_matching` object only when snapshot exists.
 4. Preserve null-safe behavior for legacy rows with no matching snapshot.
 
-### [ ] Milestone 4D: Robustness and docs
+### [X] Milestone 4D: Robustness and docs
 
 1. Add explanation-focused unit and API tests.
 2. Add Phase 4 implementation note.
@@ -360,6 +360,11 @@ Phase 4 is complete when:
 6. raw payload remains visible via collapsible section for transparency
 7. matching formula and privacy boundaries remain unchanged
 8. unknown algorithm versions return safe fallback explanation instead of failing
+
+Status:
+
+- [X] all acceptance criteria above are implemented on backend
+- [ ] frontend structured explanation cards/tables remain pending (Phase 4 frontend pass)
 
 ## Assumptions and Defaults
 

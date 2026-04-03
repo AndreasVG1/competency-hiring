@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.db.models import JobOfferStatus, RequirementPriority
+from app.modules.explanation.schemas import MatchingExplanation
 
 
 class RecruiterProfileUpsertRequest(BaseModel):
@@ -104,6 +105,7 @@ class RecruiterApplicantSharedMatching(BaseModel):
     score: float
     snapshot_created_at: datetime
     result_payload: dict[str, object]
+    explanation: MatchingExplanation | None = None
 
 
 class RecruiterApplicantListItem(BaseModel):

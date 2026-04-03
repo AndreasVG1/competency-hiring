@@ -15,6 +15,10 @@ from app.db.models import (
     User,
     UserRole,
 )
+from app.modules.explanation import (
+    ExplanationInputValidationError,
+    build_explanation,
+)
 from app.modules.matching.engine import MatchingInputValidationError
 from app.modules.matching.service import calculate_matching_for_job_offer_and_seeker
 
@@ -46,6 +50,30 @@ def _normalize_consent_timestamp(*, consent_given_at: datetime | None) -> dateti
     if consent_given_at.tzinfo is None:
         return consent_given_at
     return consent_given_at.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _build_shared_matching_for_recruiter(
+    *,
+    matching_snapshot: ApplicationMatchingSnapshot,
+) -> dict[str, object]:
+    explanation = None
+    try:
+        explanation = build_explanation(
+            matching_snapshot.result_payload,
+            "recruiter",
+        ).model_dump(mode="json")
+    except ExplanationInputValidationError:
+        # Keep applicant list readable even if an old/invalid snapshot payload cannot
+        # be normalized for explanation rendering.
+        explanation = None
+
+    return {
+        "algorithm_version": matching_snapshot.algorithm_version,
+        "score": matching_snapshot.score,
+        "snapshot_created_at": matching_snapshot.created_at,
+        "result_payload": matching_snapshot.result_payload,
+        "explanation": explanation,
+    }
 
 
 def apply_to_published_job_offer(
@@ -251,12 +279,9 @@ def list_applicants_for_owned_job_offer(
             "audit_metadata": snapshot.audit_metadata,
             "snapshot_created_at": snapshot.created_at,
             "shared_matching": (
-                {
-                    "algorithm_version": matching_snapshot.algorithm_version,
-                    "score": matching_snapshot.score,
-                    "snapshot_created_at": matching_snapshot.created_at,
-                    "result_payload": matching_snapshot.result_payload,
-                }
+                _build_shared_matching_for_recruiter(
+                    matching_snapshot=matching_snapshot,
+                )
                 if matching_snapshot is not None
                 else None
             ),

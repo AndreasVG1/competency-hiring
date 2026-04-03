@@ -708,6 +708,9 @@ def test_list_applicants_for_owned_job_offer_returns_snapshot_only(db_session):
     assert isinstance(item["shared_matching"]["score"], float)
     assert item["shared_matching"]["result_payload"]["scope"] == "shared_application_snapshot"
     assert item["shared_matching"]["snapshot_created_at"] is not None
+    assert item["shared_matching"]["explanation"] is not None
+    assert item["shared_matching"]["explanation"]["audience"] == "recruiter"
+    assert item["shared_matching"]["explanation"]["development_roadmap"] is None
 
 
 def test_list_applicants_for_owned_job_offer_returns_null_shared_matching_when_snapshot_missing(
@@ -752,6 +755,103 @@ def test_list_applicants_for_owned_job_offer_returns_null_shared_matching_when_s
     item = listed[0]
     assert item["application_id"] == created.id
     assert item["shared_matching"] is None
+
+
+def test_list_applicants_for_owned_job_offer_keeps_row_when_explanation_payload_invalid(
+    db_session,
+):
+    _enable_sqlite_foreign_keys(db_session)
+    recruiter = _create_user(
+        db_session,
+        email="application-service-applicants-invalid-payload-recruiter@example.com",
+        role=UserRole.RECRUITER,
+    )
+    seeker = _create_user(
+        db_session,
+        email="application-service-applicants-invalid-payload-seeker@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    offer = _create_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        offer_status=JobOfferStatus.PUBLISHED,
+    )
+    _create_profile(db_session, seeker_user_id=seeker.id)
+
+    created = service.apply_to_published_job_offer(
+        db_session,
+        seeker_user=seeker,
+        job_offer_id=offer.id,
+    )
+    snapshot = (
+        db_session.query(ApplicationMatchingSnapshot)
+        .filter(ApplicationMatchingSnapshot.application_id == created.id)
+        .one()
+    )
+    snapshot.result_payload = {"unexpected": "shape"}
+    db_session.commit()
+
+    listed = service.list_applicants_for_owned_job_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        job_offer_id=offer.id,
+    )
+    assert len(listed) == 1
+    item = listed[0]
+    assert item["application_id"] == created.id
+    assert item["shared_matching"] is not None
+    assert item["shared_matching"]["explanation"] is None
+
+
+def test_list_applicants_for_owned_job_offer_uses_fallback_for_unknown_algorithm_version(
+    db_session,
+):
+    _enable_sqlite_foreign_keys(db_session)
+    recruiter = _create_user(
+        db_session,
+        email="application-service-applicants-unknown-algo-recruiter@example.com",
+        role=UserRole.RECRUITER,
+    )
+    seeker = _create_user(
+        db_session,
+        email="application-service-applicants-unknown-algo-seeker@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    offer = _create_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        offer_status=JobOfferStatus.PUBLISHED,
+    )
+    _create_profile(db_session, seeker_user_id=seeker.id)
+
+    created = service.apply_to_published_job_offer(
+        db_session,
+        seeker_user=seeker,
+        job_offer_id=offer.id,
+    )
+    snapshot = (
+        db_session.query(ApplicationMatchingSnapshot)
+        .filter(ApplicationMatchingSnapshot.application_id == created.id)
+        .one()
+    )
+    payload = dict(snapshot.result_payload)
+    payload["algorithm_version"] = "v999_unknown_algorithm"
+    snapshot.result_payload = payload
+    db_session.commit()
+
+    listed = service.list_applicants_for_owned_job_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        job_offer_id=offer.id,
+    )
+    assert len(listed) == 1
+    explanation = listed[0]["shared_matching"]["explanation"]
+    assert explanation is not None
+    assert explanation["audience"] == "recruiter"
+    assert explanation["development_roadmap"] is None
+    assert explanation["highlights"] == []
+    assert explanation["gaps"] == []
+    assert "Detailed explanation templates are unavailable" in explanation["transparency_notes"][-1]
 
 
 def test_list_applicants_for_owned_job_offer_returns_404_for_non_owned_offer(db_session):

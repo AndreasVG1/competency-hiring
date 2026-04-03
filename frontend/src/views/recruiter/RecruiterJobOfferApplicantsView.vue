@@ -111,6 +111,17 @@
                   <dd>{{ formatDateTime(applicant.shared_matching.snapshot_created_at) }}</dd>
                 </dl>
 
+                <MatchingExplanationPanel
+                  v-if="applicant.shared_matching.explanation"
+                  summary-title="Shared match explanation"
+                  :explanation="applicant.shared_matching.explanation"
+                  :competency-label="competencyLabel"
+                  :show-roadmap="false"
+                />
+                <p v-else class="section-note">
+                  Structured explanation is unavailable for this shared matching snapshot.
+                </p>
+
                 <details class="matching-disclosure">
                   <summary class="matching-disclosure-summary">
                     <span class="matching-disclosure-closed-label">Show matching payload</span>
@@ -140,6 +151,7 @@ import { ApiClientError, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import JsonPayloadViewer from "../../components/JsonPayloadViewer.vue";
+import MatchingExplanationPanel from "../../components/MatchingExplanationPanel.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import type { JobOfferResponse, RecruiterApplicantListItem } from "../../types/domain";
@@ -202,6 +214,31 @@ function formatScore(value: number): string {
   return value.toFixed(1);
 }
 
+function collectApplicantCompetencyKeys(loadedApplicants: RecruiterApplicantListItem[]): string[] {
+  const keys = new Set<string>();
+
+  for (const applicant of loadedApplicants) {
+    for (const competency of applicant.shared_profile.competencies) {
+      keys.add(competency.competency_key);
+    }
+
+    const explanation = applicant.shared_matching?.explanation;
+    if (!explanation) {
+      continue;
+    }
+
+    for (const item of explanation.highlights) {
+      keys.add(item.competency_key);
+    }
+
+    for (const item of explanation.gaps) {
+      keys.add(item.competency_key);
+    }
+  }
+
+  return [...keys];
+}
+
 async function loadApplicants(): Promise<void> {
   const offerId = parseOfferId();
   if (offerId === null) {
@@ -236,10 +273,10 @@ async function loadApplicants(): Promise<void> {
   try {
     const loadedApplicants = await recruiterClient.listApplicants(offerId);
     applicants.value = loadedApplicants;
-    const competencyKeys = loadedApplicants.flatMap((item) =>
-      item.shared_profile.competencies.map((competency) => competency.competency_key),
-    );
-    void labelCache.hydrateKeys(competencyKeys);
+    const competencyKeys = collectApplicantCompetencyKeys(loadedApplicants);
+    if (competencyKeys.length > 0) {
+      void labelCache.hydrateKeys(competencyKeys);
+    }
   } catch (error) {
     applicantsLoadError.value = error;
   } finally {

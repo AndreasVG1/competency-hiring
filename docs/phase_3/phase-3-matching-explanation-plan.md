@@ -256,7 +256,7 @@ Goal:
 - In `/recruiter/job-offers/{id}/applicants`, show snapshot matching result per applicant.
 - Label clearly as “shared at application time”.
 
-11. [ ] Keep explanation logic centralized
+11. [X] Keep explanation logic centralized
 - For now, explanation payload is produced directly by matching service output contract.
 - If a separate explanation module is later introduced, it should consume this structured payload without changing core scoring.
 

@@ -99,6 +99,13 @@ class RecruiterApplicantSharedProfile(BaseModel):
     competencies: list[dict[str, str]]
 
 
+class RecruiterApplicantSharedMatching(BaseModel):
+    algorithm_version: str
+    score: float
+    snapshot_created_at: datetime
+    result_payload: dict[str, object]
+
+
 class RecruiterApplicantListItem(BaseModel):
     application_id: int
     job_offer_id: int
@@ -108,3 +115,4 @@ class RecruiterApplicantListItem(BaseModel):
     shared_profile: RecruiterApplicantSharedProfile
     audit_metadata: dict[str, str] | None
     snapshot_created_at: datetime
+    shared_matching: RecruiterApplicantSharedMatching | None

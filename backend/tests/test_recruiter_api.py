@@ -2,6 +2,8 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 import pytest
 
+from app.db.models import ApplicationMatchingSnapshot
+
 
 API_PREFIX = "/api/v1"
 REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
@@ -861,6 +863,70 @@ def test_applicants_list_returns_snapshot_based_rows_for_owned_offer(client: Tes
     assert applicant["shared_profile"]["location"] == "Tallinn"
     assert applicant["shared_profile"]["competencies"] == []
     assert applicant["audit_metadata"]["job_offer_id"] == str(offer_id)
+    assert applicant["shared_matching"] is not None
+    assert applicant["shared_matching"]["algorithm_version"] == "v2_exact_priority_level_dual_signal"
+    assert isinstance(applicant["shared_matching"]["score"], float)
+    assert applicant["shared_matching"]["result_payload"]["scope"] == "shared_application_snapshot"
+    assert applicant["shared_matching"]["snapshot_created_at"]
+
+
+def test_applicants_list_returns_null_shared_matching_for_legacy_rows(
+    client: TestClient,
+    db_session,
+):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-applicants-missing-matching@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-applicants-missing-matching@example.com",
+        role="job_seeker",
+    )
+
+    offer_id = create_offer(client, recruiter_token, occupation_key="backend_engineer")
+    published = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert published.status_code == 200
+
+    profile_create = client.put(
+        SEEKER_PROFILE_ROUTE,
+        headers=auth_headers(seeker_token),
+        json={
+            "full_name": "Legacy Snapshot",
+            "summary": "Initial summary",
+            "location": "Tallinn",
+            "occupation_key": None,
+        },
+    )
+    assert profile_create.status_code == 200
+
+    apply_response = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert apply_response.status_code == 201
+    application_id = apply_response.json()["id"]
+
+    (
+        db_session.query(ApplicationMatchingSnapshot)
+        .filter(ApplicationMatchingSnapshot.application_id == application_id)
+        .delete()
+    )
+    db_session.commit()
+
+    listed = client.get(
+        RECRUITER_APPLICANTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert listed.status_code == 200
+    items = listed.json()
+    assert len(items) == 1
+    assert items[0]["application_id"] == application_id
+    assert items[0]["shared_matching"] is None
 
 
 def test_applicants_list_returns_404_for_non_owned_or_missing_offer(client: TestClient):

@@ -242,7 +242,7 @@ Goal:
 - Persist matching snapshot in same transaction as application + profile snapshot.
 - Ensure rollback safety on failure.
 
-8. [ ] Extend recruiter applicant read model
+8. [X] Extend recruiter applicant read model
 - Include shared matching snapshot fields in recruiter applicant responses.
 - Keep ownership checks unchanged and mandatory.
 - Never expose private pre-apply analyses.

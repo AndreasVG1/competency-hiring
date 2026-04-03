@@ -548,6 +548,55 @@ def test_list_applicants_for_owned_job_offer_returns_snapshot_only(db_session):
     assert item["application_id"] == created.id
     assert item["seeker_user_id"] == seeker.id
     assert item["shared_profile"]["full_name"] == "Alice Example"
+    assert item["shared_matching"] is not None
+    assert item["shared_matching"]["algorithm_version"] == "v2_exact_priority_level_dual_signal"
+    assert isinstance(item["shared_matching"]["score"], float)
+    assert item["shared_matching"]["result_payload"]["scope"] == "shared_application_snapshot"
+    assert item["shared_matching"]["snapshot_created_at"] is not None
+
+
+def test_list_applicants_for_owned_job_offer_returns_null_shared_matching_when_snapshot_missing(
+    db_session,
+):
+    _enable_sqlite_foreign_keys(db_session)
+    recruiter = _create_user(
+        db_session,
+        email="application-service-applicants-missing-matching-recruiter@example.com",
+        role=UserRole.RECRUITER,
+    )
+    seeker = _create_user(
+        db_session,
+        email="application-service-applicants-missing-matching-seeker@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    offer = _create_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        offer_status=JobOfferStatus.PUBLISHED,
+    )
+    _create_profile(db_session, seeker_user_id=seeker.id)
+
+    created = service.apply_to_published_job_offer(
+        db_session,
+        seeker_user=seeker,
+        job_offer_id=offer.id,
+    )
+    (
+        db_session.query(ApplicationMatchingSnapshot)
+        .filter(ApplicationMatchingSnapshot.application_id == created.id)
+        .delete()
+    )
+    db_session.commit()
+
+    listed = service.list_applicants_for_owned_job_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        job_offer_id=offer.id,
+    )
+    assert len(listed) == 1
+    item = listed[0]
+    assert item["application_id"] == created.id
+    assert item["shared_matching"] is None
 
 
 def test_list_applicants_for_owned_job_offer_returns_404_for_non_owned_offer(db_session):

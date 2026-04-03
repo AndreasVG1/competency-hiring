@@ -162,4 +162,12 @@ export interface RecruiterApplicantListItem {
   shared_profile: RecruiterApplicantSharedProfile;
   audit_metadata: Record<string, string> | null;
   snapshot_created_at: string;
+  shared_matching: RecruiterApplicantSharedMatching | null;
+}
+
+export interface RecruiterApplicantSharedMatching {
+  algorithm_version: string;
+  score: number;
+  snapshot_created_at: string;
+  result_payload: Record<string, unknown>;
 }

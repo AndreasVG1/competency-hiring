@@ -198,8 +198,12 @@ def list_applicants_for_owned_job_offer(
         )
 
     rows = (
-        db_session.query(Application, ApplicationSnapshot)
+        db_session.query(Application, ApplicationSnapshot, ApplicationMatchingSnapshot)
         .join(ApplicationSnapshot, ApplicationSnapshot.application_id == Application.id)
+        .outerjoin(
+            ApplicationMatchingSnapshot,
+            ApplicationMatchingSnapshot.application_id == Application.id,
+        )
         .filter(Application.job_offer_id == job_offer_id)
         .order_by(Application.created_at.desc(), Application.id.desc())
         .all()
@@ -221,6 +225,16 @@ def list_applicants_for_owned_job_offer(
             },
             "audit_metadata": snapshot.audit_metadata,
             "snapshot_created_at": snapshot.created_at,
+            "shared_matching": (
+                {
+                    "algorithm_version": matching_snapshot.algorithm_version,
+                    "score": matching_snapshot.score,
+                    "snapshot_created_at": matching_snapshot.created_at,
+                    "result_payload": matching_snapshot.result_payload,
+                }
+                if matching_snapshot is not None
+                else None
+            ),
         }
-        for application, snapshot in rows
+        for application, snapshot, matching_snapshot in rows
     ]

@@ -43,6 +43,15 @@ PRIORITY_SORT_RANK = {
 }
 
 
+class MatchingInputValidationError(Exception):
+    """Raised when matching input fails pre-evaluation validation."""
+
+    def __init__(self, *, code: str, message: str) -> None:
+        self.code = code
+        self.message = message
+        super().__init__(message)
+
+
 @dataclass(frozen=True)
 class _EvaluatedRequirement:
     """Normalized per-requirement result reused across all output sections."""
@@ -68,6 +77,101 @@ def _sort_key(row: _EvaluatedRequirement) -> tuple[int, float, str]:
     )
 
 
+def _raise_input_error(*, code: str, message: str) -> None:
+    raise MatchingInputValidationError(code=code, message=message)
+
+
+def _validate_competency_key(
+    *,
+    competency_key: str,
+    source: str,
+    index: int,
+) -> None:
+    if competency_key.strip():
+        return
+    _raise_input_error(
+        code="blank_competency_key",
+        message=f"{source}[{index}].competency_key must not be blank or whitespace-only.",
+    )
+
+
+def _validate_requirements(requirements: list[MatchingRequirementInput]) -> None:
+    seen_keys: set[str] = set()
+
+    for index, requirement in enumerate(requirements):
+        _validate_competency_key(
+            competency_key=requirement.competency_key,
+            source="requirements",
+            index=index,
+        )
+
+        if requirement.priority not in PRIORITY_WEIGHTS:
+            unsupported_value = getattr(
+                requirement.priority,
+                "value",
+                requirement.priority,
+            )
+            _raise_input_error(
+                code="unknown_requirement_priority",
+                message=(
+                    f"requirements[{index}].priority has unsupported value: "
+                    f"{unsupported_value!r}."
+                ),
+            )
+
+        if requirement.competency_key in seen_keys:
+            _raise_input_error(
+                code="duplicate_requirement_competency_key",
+                message=(
+                    f"Duplicate requirement competency_key: "
+                    f"{requirement.competency_key!r}."
+                ),
+            )
+        seen_keys.add(requirement.competency_key)
+
+
+def _validate_seeker_competencies(
+    seeker_competencies: list[SeekerCompetencyInput],
+) -> None:
+    seen_keys: set[str] = set()
+
+    for index, competency in enumerate(seeker_competencies):
+        _validate_competency_key(
+            competency_key=competency.competency_key,
+            source="seeker_competencies",
+            index=index,
+        )
+
+        if competency.level not in LEVEL_NUMERIC:
+            unsupported_value = getattr(competency.level, "value", competency.level)
+            _raise_input_error(
+                code="unknown_competency_level",
+                message=(
+                    f"seeker_competencies[{index}].level has unsupported value: "
+                    f"{unsupported_value!r}."
+                ),
+            )
+
+        if competency.competency_key in seen_keys:
+            _raise_input_error(
+                code="duplicate_seeker_competency_key",
+                message=(
+                    f"Duplicate seeker competency_key: "
+                    f"{competency.competency_key!r}."
+                ),
+            )
+        seen_keys.add(competency.competency_key)
+
+
+def _validate_matching_inputs(
+    *,
+    requirements: list[MatchingRequirementInput],
+    seeker_competencies: list[SeekerCompetencyInput],
+) -> None:
+    _validate_requirements(requirements)
+    _validate_seeker_competencies(seeker_competencies)
+
+
 def calculate_exact_match_result(
     *,
     job_offer_id: int,
@@ -84,10 +188,14 @@ def calculate_exact_match_result(
     - if present: earned = max_points * min(seeker_level_numeric / expected_level_numeric, 1.0)
     - point_loss = max_points - earned
     """
+    _validate_matching_inputs(
+        requirements=requirements,
+        seeker_competencies=seeker_competencies,
+    )
+
     seeker_lookup: dict[str, CompetencyLevel] = {}
     for seeker_competency in seeker_competencies:
-        # Default duplicate behavior: first occurrence wins.
-        seeker_lookup.setdefault(seeker_competency.competency_key, seeker_competency.level)
+        seeker_lookup[seeker_competency.competency_key] = seeker_competency.level
 
     evaluated_rows: list[_EvaluatedRequirement] = []
     for requirement in requirements:

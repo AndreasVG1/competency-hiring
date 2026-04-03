@@ -218,7 +218,7 @@ Goal:
 - Output: score + explainability payload.
 - Enforce stable ordering and deterministic rounding.
 
-4. [ ] Add strict validation and edge-case handling
+4. [X] Add strict validation and edge-case handling
 - Empty requirement set behavior.
 - Duplicate guard assumptions (already constrained in DB) and safe fallback.
 - Unknown enum value defense with explicit errors.

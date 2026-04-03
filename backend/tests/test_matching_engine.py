@@ -1,5 +1,10 @@
+import pytest
+
 from app.db.models import CompetencyLevel, RequirementPriority
-from app.modules.matching.engine import calculate_exact_match_result
+from app.modules.matching.engine import (
+    MatchingInputValidationError,
+    calculate_exact_match_result,
+)
 from app.modules.matching.schemas import MatchingRequirementInput, SeekerCompetencyInput
 
 
@@ -279,3 +284,105 @@ def test_must_have_insufficient_without_missing_is_not_critical_gap():
     assert result.must_have_coverage.insufficient_count == 1
     assert result.must_have_coverage.missing_count == 0
     assert result.must_have_coverage.coverage_ratio == 0.0
+
+
+def test_duplicate_requirement_competency_key_raises_validation_error():
+    with pytest.raises(MatchingInputValidationError) as exc_info:
+        calculate_exact_match_result(
+            job_offer_id=109,
+            seeker_user_id=25,
+            requirements=[
+                _requirement("comp_api", RequirementPriority.MUST_HAVE),
+                _requirement("comp_api", RequirementPriority.IMPORTANT),
+            ],
+            seeker_competencies=[],
+        )
+
+    assert exc_info.value.code == "duplicate_requirement_competency_key"
+    assert exc_info.value.message == "Duplicate requirement competency_key: 'comp_api'."
+
+
+def test_duplicate_seeker_competency_key_raises_validation_error():
+    with pytest.raises(MatchingInputValidationError) as exc_info:
+        calculate_exact_match_result(
+            job_offer_id=110,
+            seeker_user_id=26,
+            requirements=[_requirement("comp_api", RequirementPriority.MUST_HAVE)],
+            seeker_competencies=[
+                _competency("comp_api", CompetencyLevel.BEGINNER),
+                _competency("comp_api", CompetencyLevel.INTERMEDIATE),
+            ],
+        )
+
+    assert exc_info.value.code == "duplicate_seeker_competency_key"
+    assert exc_info.value.message == "Duplicate seeker competency_key: 'comp_api'."
+
+
+def test_unknown_requirement_priority_raises_validation_error():
+    invalid_requirement = MatchingRequirementInput.model_construct(
+        competency_key="comp_api",
+        priority="critical",
+    )
+
+    with pytest.raises(MatchingInputValidationError) as exc_info:
+        calculate_exact_match_result(
+            job_offer_id=111,
+            seeker_user_id=27,
+            requirements=[invalid_requirement],
+            seeker_competencies=[],
+        )
+
+    assert exc_info.value.code == "unknown_requirement_priority"
+    assert (
+        exc_info.value.message
+        == "requirements[0].priority has unsupported value: 'critical'."
+    )
+
+
+def test_unknown_competency_level_raises_validation_error():
+    invalid_competency = SeekerCompetencyInput.model_construct(
+        competency_key="comp_api",
+        level="expert",
+    )
+
+    with pytest.raises(MatchingInputValidationError) as exc_info:
+        calculate_exact_match_result(
+            job_offer_id=112,
+            seeker_user_id=28,
+            requirements=[_requirement("comp_api", RequirementPriority.MUST_HAVE)],
+            seeker_competencies=[invalid_competency],
+        )
+
+    assert exc_info.value.code == "unknown_competency_level"
+    assert (
+        exc_info.value.message
+        == "seeker_competencies[0].level has unsupported value: 'expert'."
+    )
+
+
+@pytest.mark.parametrize(
+    ("requirements", "seeker_competencies"),
+    [
+        ([_requirement("   ", RequirementPriority.MUST_HAVE)], []),
+        (
+            [_requirement("comp_api", RequirementPriority.MUST_HAVE)],
+            [_competency("   ", CompetencyLevel.BEGINNER)],
+        ),
+    ],
+)
+def test_whitespace_only_competency_key_raises_validation_error(
+    requirements,
+    seeker_competencies,
+):
+    with pytest.raises(MatchingInputValidationError) as exc_info:
+        calculate_exact_match_result(
+            job_offer_id=113,
+            seeker_user_id=29,
+            requirements=requirements,
+            seeker_competencies=seeker_competencies,
+        )
+
+    assert exc_info.value.code == "blank_competency_key"
+    assert exc_info.value.message.endswith(
+        ".competency_key must not be blank or whitespace-only."
+    )

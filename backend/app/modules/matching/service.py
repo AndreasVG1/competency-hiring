@@ -2,7 +2,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.models import JobOffer, JobOfferRequirement, JobOfferStatus, JobSeekerCompetency
-from app.modules.matching.engine import calculate_exact_match_result
+from app.modules.matching.engine import (
+    MatchingInputValidationError,
+    calculate_exact_match_result,
+)
 from app.modules.matching.schemas import (
     MatchingRequirementInput,
     MatchingResultPayload,
@@ -90,9 +93,15 @@ def get_private_analysis_for_seeker(
         seeker_user_id=seeker_user_id,
     )
 
-    return calculate_exact_match_result(
-        job_offer_id=job_offer_id,
-        seeker_user_id=seeker_user_id,
-        requirements=requirements,
-        seeker_competencies=competencies,
-    )
+    try:
+        return calculate_exact_match_result(
+            job_offer_id=job_offer_id,
+            seeker_user_id=seeker_user_id,
+            requirements=requirements,
+            seeker_competencies=competencies,
+        )
+    except MatchingInputValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Invalid matching input: {exc.code}: {exc.message}",
+        ) from exc

@@ -94,6 +94,37 @@
                 </tbody>
               </table>
             </section>
+
+            <section>
+              <header class="subsection-header">
+                <h3>Shared matching result</h3>
+                <p>This result was shared at application time as part of consent.</p>
+              </header>
+
+              <template v-if="applicant.shared_matching">
+                <dl class="summary-grid">
+                  <dt>Score</dt>
+                  <dd>{{ formatScore(applicant.shared_matching.score) }}</dd>
+                  <dt>Algorithm version</dt>
+                  <dd>{{ applicant.shared_matching.algorithm_version }}</dd>
+                  <dt>Matching snapshot created at</dt>
+                  <dd>{{ formatDateTime(applicant.shared_matching.snapshot_created_at) }}</dd>
+                </dl>
+
+                <details class="matching-disclosure">
+                  <summary class="matching-disclosure-summary">
+                    <span class="matching-disclosure-closed-label">Show matching payload</span>
+                    <span class="matching-disclosure-open-label">Hide matching payload</span>
+                  </summary>
+
+                  <JsonPayloadViewer
+                    title="Snapshot matching payload"
+                    :payload="applicant.shared_matching.result_payload"
+                  />
+                </details>
+              </template>
+              <p v-else class="section-note">No shared matching snapshot is available for this application.</p>
+            </section>
           </li>
         </ul>
       </section>
@@ -108,6 +139,7 @@ import { useRoute } from "vue-router";
 import { ApiClientError, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
+import JsonPayloadViewer from "../../components/JsonPayloadViewer.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import type { JobOfferResponse, RecruiterApplicantListItem } from "../../types/domain";
@@ -164,6 +196,10 @@ function formatDateTime(value: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(parsed));
+}
+
+function formatScore(value: number): string {
+  return value.toFixed(1);
 }
 
 async function loadApplicants(): Promise<void> {

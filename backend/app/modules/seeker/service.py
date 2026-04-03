@@ -13,7 +13,12 @@ from app.db.models import (
     RecruiterProfile,
 )
 from app.modules.catalog.service import get_competency_detail, get_occupation_detail
+from app.modules.explanation import build_explanation
+from app.modules.matching.service import (
+    get_private_analysis_for_seeker as get_private_matching_analysis_for_seeker,
+)
 from app.modules.seeker.schemas import (
+    PrivateJobOfferAnalysisResponse,
     PublicJobOfferDetail,
     PublicJobOfferListItem,
     PublicJobOfferRequirementItem,
@@ -331,4 +336,22 @@ def get_published_job_offer_detail_or_404(
             )
             for requirement in requirements
         ],
+    )
+
+
+def get_private_job_offer_analysis_with_explanation(
+    db_session: Session,
+    *,
+    seeker_user_id: int,
+    job_offer_id: int,
+) -> PrivateJobOfferAnalysisResponse:
+    matching_result = get_private_matching_analysis_for_seeker(
+        db_session,
+        seeker_user_id=seeker_user_id,
+        job_offer_id=job_offer_id,
+    )
+    explanation = build_explanation(matching_result, "seeker")
+    return PrivateJobOfferAnalysisResponse(
+        **matching_result.model_dump(mode="python"),
+        explanation=explanation,
     )

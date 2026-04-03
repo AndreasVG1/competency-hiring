@@ -233,7 +233,7 @@ No endpoint should fail solely because explanation renderer is unknown.
 3. Add renderer registry keyed by `algorithm_version`.
 4. Implement fallback renderer for unknown versions.
 
-### [ ] Milestone 4B: Seeker integration
+### [X] Milestone 4B: Seeker integration
 
 1. In seeker analysis service flow, generate explanation from private matching payload.
 2. Return combined response (matching + explanation).

@@ -3,6 +3,8 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.db.models import CompetencyLevel, RequirementPriority
+from app.modules.explanation.schemas import MatchingExplanation
+from app.modules.matching.schemas import MatchingResultPayload
 
 
 class SeekerProfileUpsertRequest(BaseModel):
@@ -113,3 +115,7 @@ class SeekerApplicationListItem(BaseModel):
     seeker_user_id: int
     consent_given_at: datetime
     created_at: datetime
+
+
+class PrivateJobOfferAnalysisResponse(MatchingResultPayload):
+    explanation: MatchingExplanation

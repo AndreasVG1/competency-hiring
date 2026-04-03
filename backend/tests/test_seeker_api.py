@@ -827,6 +827,12 @@ def test_private_job_offer_analysis_returns_current_seekers_result(client: TestC
     assert seeker_one_body["score"] == 62.5
     assert seeker_one_body["totals"]["matched_count"] == 1
     assert seeker_one_body["totals"]["missing_count"] == 1
+    assert seeker_one_body["explanation"]["audience"] == "seeker"
+    assert (
+        seeker_one_body["explanation"]["summary"]["decision_support_notice"]
+        == "This analysis supports your decision and does not make hiring decisions."
+    )
+    assert seeker_one_body["explanation"]["development_roadmap"] is not None
 
     seeker_two_analysis = client.get(
         SEEKER_ANALYSIS_ROUTE.format(job_offer_id=offer_id),
@@ -842,6 +848,12 @@ def test_private_job_offer_analysis_returns_current_seekers_result(client: TestC
     assert seeker_two_body["critical_gap_present"] is True
     assert seeker_two_body["totals"]["matched_count"] == 0
     assert seeker_two_body["totals"]["missing_count"] == 2
+    assert seeker_two_body["explanation"]["audience"] == "seeker"
+    assert (
+        seeker_two_body["explanation"]["summary"]["must_have_notice"]
+        == "At least one must-have competency is currently missing."
+    )
+    assert seeker_two_body["explanation"]["development_roadmap"] is not None
 
     assert seeker_one_body["seeker_user_id"] != seeker_two_body["seeker_user_id"]
 

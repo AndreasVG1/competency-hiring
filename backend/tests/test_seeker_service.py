@@ -14,6 +14,8 @@ from app.db.models import (
     User,
     UserRole,
 )
+from app.modules.matching.engine import calculate_exact_match_result
+from app.modules.matching.schemas import MatchingRequirementInput, SeekerCompetencyInput
 from app.modules.seeker import service
 
 
@@ -518,3 +520,70 @@ def test_get_published_job_offer_detail_returns_404_for_non_published_or_missing
     except HTTPException as exc:
         assert exc.status_code == 404
         assert exc.detail == "Published job offer not found."
+
+
+def test_private_job_offer_analysis_with_explanation_wraps_matching_result(db_session):
+    matching_payload = calculate_exact_match_result(
+        job_offer_id=777,
+        seeker_user_id=55,
+        requirements=[
+            MatchingRequirementInput(
+                competency_key="comp_api",
+                priority=RequirementPriority.MUST_HAVE,
+            ),
+            MatchingRequirementInput(
+                competency_key="comp_sql",
+                priority=RequirementPriority.IMPORTANT,
+            ),
+        ],
+        seeker_competencies=[
+            SeekerCompetencyInput(
+                competency_key="comp_api",
+                level=CompetencyLevel.INTERMEDIATE,
+            ),
+        ],
+    )
+
+    def _stub_matching(*_args, **_kwargs):
+        return matching_payload
+
+    original_matching = service.get_private_matching_analysis_for_seeker
+    service.get_private_matching_analysis_for_seeker = _stub_matching
+    try:
+        result = service.get_private_job_offer_analysis_with_explanation(
+            db_session,
+            seeker_user_id=55,
+            job_offer_id=777,
+        )
+    finally:
+        service.get_private_matching_analysis_for_seeker = original_matching
+
+    assert result.job_offer_id == 777
+    assert result.seeker_user_id == 55
+    assert result.algorithm_version == "v2_exact_priority_level_dual_signal"
+    assert result.explanation.audience == "seeker"
+    assert result.explanation.summary.decision_support_notice == (
+        "This analysis supports your decision and does not make hiring decisions."
+    )
+    assert result.explanation.development_roadmap is not None
+
+
+def test_private_job_offer_analysis_with_explanation_propagates_matching_http_errors(db_session):
+    def _raise_matching_http_error(*_args, **_kwargs):
+        raise HTTPException(status_code=404, detail="Published job offer not found.")
+
+    original_matching = service.get_private_matching_analysis_for_seeker
+    service.get_private_matching_analysis_for_seeker = _raise_matching_http_error
+    try:
+        try:
+            service.get_private_job_offer_analysis_with_explanation(
+                db_session,
+                seeker_user_id=66,
+                job_offer_id=888,
+            )
+            assert False, "Expected matching HTTPException to propagate"
+        except HTTPException as exc:
+            assert exc.status_code == 404
+            assert exc.detail == "Published job offer not found."
+    finally:
+        service.get_private_matching_analysis_for_seeker = original_matching

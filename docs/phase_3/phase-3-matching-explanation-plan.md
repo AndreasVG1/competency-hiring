@@ -247,7 +247,7 @@ Goal:
 - Keep ownership checks unchanged and mandatory.
 - Never expose private pre-apply analyses.
 
-9. [ ] Add seeker UI analysis section in offer detail page
+9. [X] Add seeker UI analysis section in offer detail page
 - In `/seeker/job-offers/{id}`, add “Run private analysis” section.
 - Display score and breakdown with explicit explanation labels.
 - Keep language decision-supporting, not decision-making.

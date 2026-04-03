@@ -71,11 +71,23 @@
             {{ analysisButtonLabel }}
           </button>
         </div>
-        <JsonPayloadViewer
-          title="Current analysis result"
-          :payload="analysisResult"
-          empty-text="No analysis run yet. Use the button above to fetch your private analysis."
-        />
+        <p v-if="analysisResult === null" class="section-note">
+          No analysis run yet. Use the button above to fetch your private analysis.
+        </p>
+        <template v-else>
+          <MatchingExplanationPanel
+            summary-title="Current analysis explanation"
+            :explanation="analysisResult.explanation"
+            :competency-label="competencyLabel"
+          />
+          <details class="matching-disclosure">
+            <summary class="matching-disclosure-summary">
+              <span class="matching-disclosure-closed-label">Show raw analysis payload</span>
+              <span class="matching-disclosure-open-label">Hide raw analysis payload</span>
+            </summary>
+            <JsonPayloadViewer title="Raw analysis payload" :payload="analysisResult" />
+          </details>
+        </template>
       </section>
 
       <section v-if="offer && !isOfferNotFound" class="seeker-section">
@@ -125,6 +137,7 @@ import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferRequirementsTable from "../../components/JobOfferRequirementsTable.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import JsonPayloadViewer from "../../components/JsonPayloadViewer.vue";
+import MatchingExplanationPanel from "../../components/MatchingExplanationPanel.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
@@ -320,12 +333,35 @@ async function runPrivateAnalysis(): Promise<void> {
   analysisError.value = null;
 
   try {
-    analysisResult.value = await seekerClient.getPrivateJobOfferAnalysis(offer.value.id);
+    const result = await seekerClient.getPrivateJobOfferAnalysis(offer.value.id);
+    analysisResult.value = result;
+    const explanationCompetencyKeys = collectExplanationCompetencyKeys(result);
+    if (explanationCompetencyKeys.length > 0) {
+      void labelCache.hydrateKeys(explanationCompetencyKeys);
+    }
   } catch (error) {
     analysisError.value = error;
   } finally {
     isAnalysisLoading.value = false;
   }
+}
+
+function collectExplanationCompetencyKeys(result: PrivateMatchingAnalysisResponse): string[] {
+  const keys = new Set<string>();
+
+  for (const item of result.explanation.highlights) {
+    keys.add(item.competency_key);
+  }
+
+  for (const item of result.explanation.gaps) {
+    keys.add(item.competency_key);
+  }
+
+  for (const item of result.explanation.development_roadmap ?? []) {
+    keys.add(item.competency_key);
+  }
+
+  return [...keys];
 }
 
 watch(

@@ -206,6 +206,53 @@ export interface DevelopmentTargetItem {
   point_gain_if_reached: number;
 }
 
+export type ExplanationAudience = "seeker" | "recruiter";
+export type ExplanationHighlightKind = "strength";
+export type ExplanationGapKind = "missing" | "insufficient";
+
+export interface ExplanationSummary {
+  headline: string;
+  status_label: string;
+  decision_support_notice: string;
+  must_have_notice: string | null;
+  no_requirements_notice: string | null;
+}
+
+export interface ExplanationHighlightItem {
+  kind: ExplanationHighlightKind;
+  competency_key: string;
+  priority: RequirementPriority;
+  text: string;
+}
+
+export interface ExplanationGapItem {
+  kind: ExplanationGapKind;
+  competency_key: string;
+  priority: RequirementPriority;
+  reason_code: string;
+  expected_level: CompetencyLevel | null;
+  current_level: CompetencyLevel | null;
+  text: string;
+}
+
+export interface ExplanationRoadmapItem {
+  competency_key: string;
+  priority: RequirementPriority;
+  target_level: CompetencyLevel;
+  estimated_point_gain: number;
+  text: string;
+}
+
+export interface MatchingExplanation {
+  audience: ExplanationAudience;
+  algorithm_version: string;
+  summary: ExplanationSummary;
+  highlights: ExplanationHighlightItem[];
+  gaps: ExplanationGapItem[];
+  development_roadmap: ExplanationRoadmapItem[] | null;
+  transparency_notes: string[];
+}
+
 export interface PrivateMatchingAnalysisResponse {
   algorithm_version: string;
   scope: string;
@@ -221,6 +268,7 @@ export interface PrivateMatchingAnalysisResponse {
   missing_competencies: MissingCompetencyItem[];
   insufficient_competencies: InsufficientCompetencyItem[];
   development_targets: DevelopmentTargetItem[];
+  explanation: MatchingExplanation;
 }
 
 export interface RecruiterApplicantSnapshotCompetency {
@@ -253,4 +301,5 @@ export interface RecruiterApplicantSharedMatching {
   score: number;
   snapshot_created_at: string;
   result_payload: Record<string, unknown>;
+  explanation?: MatchingExplanation | null;
 }

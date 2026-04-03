@@ -667,6 +667,88 @@ a {
   display: none;
 }
 
+.explanation-panel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.explanation-summary-card {
+  border: 1px solid rgba(31, 41, 51, 0.14);
+  border-radius: 10px;
+  background-color: rgba(244, 246, 248, 0.75);
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.explanation-headline {
+  margin: 0;
+  font-weight: 700;
+  color: #1f2933;
+}
+
+.explanation-status {
+  margin: 0;
+  color: #2f4154;
+}
+
+.explanation-notice {
+  margin: 0;
+  border-left: 3px solid rgba(31, 41, 51, 0.2);
+  padding-left: 0.55rem;
+}
+
+.explanation-notice-warning {
+  border-left-color: rgba(143, 29, 29, 0.65);
+  color: #7d2222;
+}
+
+.explanation-notice-info {
+  border-left-color: rgba(33, 97, 158, 0.65);
+  color: #1d4e89;
+}
+
+.explanation-notice-decision {
+  border-left-color: rgba(34, 107, 60, 0.65);
+  color: #1c5d30;
+}
+
+.explanation-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.explanation-table th,
+.explanation-table td {
+  border: 1px solid rgba(31, 41, 51, 0.14);
+  padding: 0.65rem;
+  vertical-align: top;
+}
+
+.explanation-table th {
+  text-align: left;
+  background-color: rgba(244, 246, 248, 0.85);
+}
+
+.explanation-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.competency-cell-main {
+  display: block;
+  font-weight: 600;
+}
+
+.competency-cell-key {
+  display: block;
+  margin-top: 0.12rem;
+  color: #46596c;
+  font-size: 0.85rem;
+}
+
 .json-payload-viewer {
   display: grid;
   gap: 0.55rem;
@@ -700,6 +782,10 @@ a {
   }
 
   .competency-table {
+    font-size: 0.95rem;
+  }
+
+  .explanation-table {
     font-size: 0.95rem;
   }
 

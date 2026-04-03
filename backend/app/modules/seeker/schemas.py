@@ -78,6 +78,8 @@ class PublicJobOfferListItem(BaseModel):
     short_description: str
     company_name: str
     published_at: datetime
+    applied: bool
+    application_id: int | None
 
 
 class PublicJobOfferDetail(BaseModel):
@@ -89,6 +91,8 @@ class PublicJobOfferDetail(BaseModel):
     company_name: str
     published_at: datetime
     requirements: list[PublicJobOfferRequirementItem]
+    applied: bool
+    application_id: int | None
 
 
 class ApplicationCreateResponse(BaseModel):

@@ -1,8 +1,9 @@
 from fastapi import HTTPException, status
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.db.models import (
+    Application,
     CompetencyLevel,
     JobOffer,
     JobOfferRequirement,
@@ -207,14 +208,27 @@ def _build_short_description(*, description: str, max_length: int = 160) -> str:
 def list_published_job_offers(
     db_session: Session,
     *,
+    seeker_user_id: int,
     query: str | None,
     occupation_key: str | None,
+    applied: bool | None,
     limit: int,
     offset: int,
 ) -> list[PublicJobOfferListItem]:
     statement = (
-        db_session.query(JobOffer, RecruiterProfile.company_name)
+        db_session.query(
+            JobOffer,
+            RecruiterProfile.company_name,
+            Application.id.label("application_id"),
+        )
         .outerjoin(RecruiterProfile, RecruiterProfile.user_id == JobOffer.recruiter_user_id)
+        .outerjoin(
+            Application,
+            and_(
+                Application.job_offer_id == JobOffer.id,
+                Application.seeker_user_id == seeker_user_id,
+            ),
+        )
         .filter(JobOffer.status == JobOfferStatus.PUBLISHED)
     )
 
@@ -232,6 +246,11 @@ def list_published_job_offers(
     if normalized_occupation_key:
         statement = statement.filter(JobOffer.occupation_key == normalized_occupation_key)
 
+    if applied is True:
+        statement = statement.filter(Application.id.isnot(None))
+    elif applied is False:
+        statement = statement.filter(Application.id.is_(None))
+
     rows = (
         statement.order_by(JobOffer.updated_at.desc(), JobOffer.id.asc())
         .offset(offset)
@@ -248,19 +267,33 @@ def list_published_job_offers(
             short_description=_build_short_description(description=job_offer.description),
             company_name=company_name or "",
             published_at=job_offer.updated_at,
+            applied=application_id is not None,
+            application_id=application_id,
         )
-        for job_offer, company_name in rows
+        for job_offer, company_name, application_id in rows
     ]
 
 
 def get_published_job_offer_detail_or_404(
     db_session: Session,
     *,
+    seeker_user_id: int,
     job_offer_id: int,
 ) -> PublicJobOfferDetail:
     row = (
-        db_session.query(JobOffer, RecruiterProfile.company_name)
+        db_session.query(
+            JobOffer,
+            RecruiterProfile.company_name,
+            Application.id.label("application_id"),
+        )
         .outerjoin(RecruiterProfile, RecruiterProfile.user_id == JobOffer.recruiter_user_id)
+        .outerjoin(
+            Application,
+            and_(
+                Application.job_offer_id == JobOffer.id,
+                Application.seeker_user_id == seeker_user_id,
+            ),
+        )
         .filter(
             JobOffer.id == job_offer_id,
             JobOffer.status == JobOfferStatus.PUBLISHED,
@@ -273,7 +306,7 @@ def get_published_job_offer_detail_or_404(
             detail=PUBLISHED_JOB_OFFER_NOT_FOUND_MESSAGE,
         )
 
-    job_offer, company_name = row
+    job_offer, company_name, application_id = row
     requirements = (
         db_session.query(JobOfferRequirement)
         .filter(JobOfferRequirement.job_offer_id == job_offer.id)
@@ -289,6 +322,8 @@ def get_published_job_offer_detail_or_404(
         description=job_offer.description,
         company_name=company_name or "",
         published_at=job_offer.updated_at,
+        applied=application_id is not None,
+        application_id=application_id,
         requirements=[
             PublicJobOfferRequirementItem(
                 competency_key=requirement.competency_key,

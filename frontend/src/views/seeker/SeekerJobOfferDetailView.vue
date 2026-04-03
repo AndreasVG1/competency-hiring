@@ -35,6 +35,8 @@
             <dd>{{ offer.occupation_label }}</dd>
             <dt>Published</dt>
             <dd>{{ formatDateTime(offer.published_at) }}</dd>
+            <dt>Application status</dt>
+            <dd>{{ offer.applied ? "Applied" : "Not applied" }}</dd>
             <dt>Description</dt>
             <dd>{{ offer.description }}</dd>
           </dl>
@@ -91,12 +93,22 @@
         </p>
         <div class="table-actions">
           <button
+            v-if="!hasApplied"
             class="button-primary"
             type="button"
-            :disabled="isApplying || hasApplied"
+            :disabled="isApplying"
             @click="applyToOffer"
           >
             {{ applyButtonLabel }}
+          </button>
+          <button
+            v-else
+            class="button-secondary"
+            type="button"
+            :disabled="isWithdrawing || currentApplicationId === null"
+            @click="withdrawApplication"
+          >
+            {{ withdrawButtonLabel }}
           </button>
         </div>
       </section>
@@ -127,12 +139,14 @@ const isOfferLoading = ref(true);
 const isOfferNotFound = ref(false);
 const offerLoadError = ref<unknown | null>(null);
 const isApplying = ref(false);
-const hasApplied = ref(false);
+const isWithdrawing = ref(false);
 const applyError = ref<unknown | null>(null);
 const applySuccessMessage = ref<string | null>(null);
 const analysisResult = ref<PrivateMatchingAnalysisResponse | null>(null);
 const analysisError = ref<unknown | null>(null);
 const isAnalysisLoading = ref(false);
+const hasApplied = computed(() => offer.value?.applied ?? false);
+const currentApplicationId = computed(() => offer.value?.application_id ?? null);
 
 function parseOfferId(): number | null {
   const offerId = Number(route.params.id);
@@ -171,10 +185,14 @@ const applyButtonLabel = computed(() => {
   if (isApplying.value) {
     return "Applying...";
   }
-  if (hasApplied.value) {
-    return "Application sent";
-  }
   return "Apply with consent";
+});
+
+const withdrawButtonLabel = computed(() => {
+  if (isWithdrawing.value) {
+    return "Withdrawing...";
+  }
+  return "Withdraw application";
 });
 
 const analysisButtonLabel = computed(() => {
@@ -189,7 +207,6 @@ async function loadOffer(): Promise<void> {
   isOfferNotFound.value = false;
   offerLoadError.value = null;
   offer.value = null;
-  hasApplied.value = false;
   applyError.value = null;
   applySuccessMessage.value = null;
   analysisResult.value = null;
@@ -241,16 +258,56 @@ async function applyToOffer(): Promise<void> {
   applySuccessMessage.value = null;
 
   try {
-    await seekerClient.applyToJobOffer(offer.value.id);
-    hasApplied.value = true;
+    const created = await seekerClient.applyToJobOffer(offer.value.id);
+    offer.value.applied = true;
+    offer.value.application_id = created.id;
     applySuccessMessage.value = "Application submitted. The recruiter now sees your application-time snapshot.";
   } catch (error) {
-    applyError.value = error;
     if (error instanceof ApiClientError && error.statusCode === 409) {
-      hasApplied.value = true;
+      applySuccessMessage.value = "Application already submitted for this offer.";
+      try {
+        offer.value = await seekerClient.getPublishedJobOffer(offer.value.id);
+      } catch {
+        // Keep the page usable even if refresh fails.
+      }
+    } else {
+      applyError.value = error;
     }
   } finally {
     isApplying.value = false;
+  }
+}
+
+async function withdrawApplication(): Promise<void> {
+  if (!offer.value || isWithdrawing.value || !hasApplied.value || currentApplicationId.value === null) {
+    return;
+  }
+
+  const confirmed = await confirm({
+    title: "Withdraw application",
+    message:
+      "Withdraw this application and remove recruiter access to the application-time snapshot for this offer?",
+    confirmLabel: "Withdraw application",
+    cancelLabel: "Cancel",
+    tone: "danger",
+  });
+  if (!confirmed) {
+    return;
+  }
+
+  isWithdrawing.value = true;
+  applyError.value = null;
+  applySuccessMessage.value = null;
+
+  try {
+    await seekerClient.deleteApplication(currentApplicationId.value);
+    offer.value.applied = false;
+    offer.value.application_id = null;
+    applySuccessMessage.value = "Application withdrawn. Recruiter access to this application is removed.";
+  } catch (error) {
+    applyError.value = error;
+  } finally {
+    isWithdrawing.value = false;
   }
 }
 

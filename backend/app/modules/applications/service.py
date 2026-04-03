@@ -23,6 +23,7 @@ PUBLISHED_JOB_OFFER_NOT_FOUND_MESSAGE = "Published job offer not found."
 SEEKER_PROFILE_NOT_FOUND_MESSAGE = "Seeker profile not found."
 DUPLICATE_APPLICATION_MESSAGE = "Application already exists for this seeker and job offer."
 JOB_OFFER_NOT_FOUND_MESSAGE = "Job offer not found."
+APPLICATION_NOT_FOUND_MESSAGE = "Application not found."
 SHARED_APPLICATION_SNAPSHOT_SCOPE = "shared_application_snapshot"
 
 
@@ -175,6 +176,30 @@ def list_applications_for_seeker(
         .order_by(Application.created_at.desc(), Application.id.desc())
         .all()
     )
+
+
+def delete_application_for_seeker(
+    db_session: Session,
+    *,
+    seeker_user_id: int,
+    application_id: int,
+) -> None:
+    application = (
+        db_session.query(Application)
+        .filter(
+            Application.id == application_id,
+            Application.seeker_user_id == seeker_user_id,
+        )
+        .one_or_none()
+    )
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=APPLICATION_NOT_FOUND_MESSAGE,
+        )
+
+    db_session.delete(application)
+    db_session.commit()
 
 
 def list_applicants_for_owned_job_offer(

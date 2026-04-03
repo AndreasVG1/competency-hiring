@@ -19,6 +19,14 @@
       @update:model-value="onOccupationChange"
     />
 
+    <EnumSelect
+      label="Application status"
+      :model-value="appliedState"
+      :options="appliedOptions"
+      :disabled="disabled"
+      @update:model-value="onAppliedStateChange"
+    />
+
     <div class="table-actions">
       <button class="button-primary" type="submit" :disabled="disabled">Apply filters</button>
       <button class="button-secondary" type="button" :disabled="disabled" @click="emitClear">
@@ -37,6 +45,7 @@ import EnumSelect from "./EnumSelect.vue";
 interface Props {
   query: string;
   occupationKey: string;
+  appliedState: string;
   occupationOptions: CatalogItem[];
   disabled?: boolean;
 }
@@ -48,6 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   "update:query": [value: string];
   "update:occupationKey": [value: string];
+  "update:appliedState": [value: string];
   apply: [];
   clear: [];
 }>();
@@ -62,6 +72,12 @@ const occupationOptionsWithDefault = computed(() => {
   ];
 });
 
+const appliedOptions = [
+  { value: "", label: "All offers" },
+  { value: "applied", label: "Applied" },
+  { value: "not_applied", label: "Not applied" },
+];
+
 function onQueryInput(event: Event): void {
   const target = event.target as HTMLInputElement;
   emit("update:query", target.value);
@@ -69,6 +85,10 @@ function onQueryInput(event: Event): void {
 
 function onOccupationChange(value: string): void {
   emit("update:occupationKey", value);
+}
+
+function onAppliedStateChange(value: string): void {
+  emit("update:appliedState", value);
 }
 
 function emitApply(): void {

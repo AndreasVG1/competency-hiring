@@ -16,6 +16,7 @@ const SEEKER_BASE_PATH = "/api/v1/seeker";
 interface PublishedJobOffersListParams {
   query?: string;
   occupation_key?: string;
+  applied?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -73,6 +74,7 @@ export const seekerClient = {
       query: {
         query: params.query,
         occupation_key: params.occupation_key,
+        applied: params.applied,
         limit: params.limit,
         offset: params.offset,
       },
@@ -92,6 +94,12 @@ export const seekerClient = {
   applyToJobOffer(jobOfferId: number): Promise<ApplicationCreateResponse> {
     return apiRequest<ApplicationCreateResponse>(`${SEEKER_BASE_PATH}/job-offers/${jobOfferId}/apply`, {
       method: "POST",
+    });
+  },
+
+  deleteApplication(applicationId: number): Promise<void> {
+    return apiRequest<void>(`${SEEKER_BASE_PATH}/applications/${applicationId}`, {
+      method: "DELETE",
     });
   },
 };

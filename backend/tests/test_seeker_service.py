@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from fastapi import HTTPException
 
 from app.db.models import (
+    Application,
     CompetencyLevel,
     JobSeekerCompetency,
     JobOffer,
@@ -269,6 +272,7 @@ def create_recruiter_user(db_session, *, email: str) -> User:
 
 def test_list_published_job_offers_returns_only_published_with_filters(db_session):
     recruiter = create_recruiter_user(db_session, email="service-marketplace-list-recruiter@example.com")
+    seeker = create_user(db_session, email="service-marketplace-list-seeker@example.com")
     db_session.add(
         RecruiterProfile(
             user_id=recruiter.id,
@@ -300,49 +304,138 @@ def test_list_published_job_offers_returns_only_published_with_filters(db_sessio
     )
     db_session.add_all([published_backend, published_frontend, draft])
     db_session.commit()
+    applied_application = Application(
+        job_offer_id=published_backend.id,
+        seeker_user_id=seeker.id,
+        consent_given_at=datetime(2026, 4, 1, 10, 0, 0),
+    )
+    db_session.add(applied_application)
+    db_session.commit()
 
     listed = service.list_published_job_offers(
         db_session,
+        seeker_user_id=seeker.id,
         query=None,
         occupation_key=None,
+        applied=None,
         limit=20,
         offset=0,
     )
     listed_ids = {item.id for item in listed}
     assert listed_ids == {published_backend.id, published_frontend.id}
+    listed_by_id = {item.id: item for item in listed}
+    assert listed_by_id[published_backend.id].applied is True
+    assert listed_by_id[published_backend.id].application_id == applied_application.id
+    assert listed_by_id[published_frontend.id].applied is False
+    assert listed_by_id[published_frontend.id].application_id is None
 
     filtered_query = service.list_published_job_offers(
         db_session,
+        seeker_user_id=seeker.id,
         query="python",
         occupation_key=None,
+        applied=None,
         limit=20,
         offset=0,
     )
     assert len(filtered_query) == 1
     assert filtered_query[0].id == published_backend.id
+    assert filtered_query[0].applied is True
 
     filtered_occupation = service.list_published_job_offers(
         db_session,
+        seeker_user_id=seeker.id,
         query=None,
         occupation_key="frontend_engineer",
+        applied=None,
         limit=20,
         offset=0,
     )
     assert len(filtered_occupation) == 1
     assert filtered_occupation[0].id == published_frontend.id
+    assert filtered_occupation[0].applied is False
 
     paged = service.list_published_job_offers(
         db_session,
+        seeker_user_id=seeker.id,
         query=None,
         occupation_key=None,
+        applied=None,
         limit=1,
         offset=1,
     )
     assert len(paged) == 1
 
 
+def test_list_published_job_offers_filters_by_applied_state(db_session):
+    recruiter = create_recruiter_user(db_session, email="service-marketplace-applied-filter-recruiter@example.com")
+    seeker = create_user(db_session, email="service-marketplace-applied-filter-seeker@example.com")
+    db_session.add(
+        RecruiterProfile(
+            user_id=recruiter.id,
+            company_name="Acme",
+            contact_name="Alice Recruiter",
+        )
+    )
+
+    applied_offer = JobOffer(
+        recruiter_user_id=recruiter.id,
+        title="Applied Offer",
+        occupation_key="applied_offer",
+        description="Applied description",
+        status=JobOfferStatus.PUBLISHED,
+    )
+    not_applied_offer = JobOffer(
+        recruiter_user_id=recruiter.id,
+        title="Not Applied Offer",
+        occupation_key="not_applied_offer",
+        description="Not applied description",
+        status=JobOfferStatus.PUBLISHED,
+    )
+    db_session.add_all([applied_offer, not_applied_offer])
+    db_session.commit()
+
+    db_session.add(
+        Application(
+            job_offer_id=applied_offer.id,
+            seeker_user_id=seeker.id,
+            consent_given_at=datetime(2026, 4, 1, 10, 0, 0),
+        )
+    )
+    db_session.commit()
+
+    applied_items = service.list_published_job_offers(
+        db_session,
+        seeker_user_id=seeker.id,
+        query=None,
+        occupation_key=None,
+        applied=True,
+        limit=20,
+        offset=0,
+    )
+    assert len(applied_items) == 1
+    assert applied_items[0].id == applied_offer.id
+    assert applied_items[0].applied is True
+    assert applied_items[0].application_id is not None
+
+    not_applied_items = service.list_published_job_offers(
+        db_session,
+        seeker_user_id=seeker.id,
+        query=None,
+        occupation_key=None,
+        applied=False,
+        limit=20,
+        offset=0,
+    )
+    assert len(not_applied_items) == 1
+    assert not_applied_items[0].id == not_applied_offer.id
+    assert not_applied_items[0].applied is False
+    assert not_applied_items[0].application_id is None
+
+
 def test_get_published_job_offer_detail_returns_requirements(db_session):
     recruiter = create_recruiter_user(db_session, email="service-marketplace-detail-recruiter@example.com")
+    seeker = create_user(db_session, email="service-marketplace-detail-seeker@example.com")
     db_session.add(
         RecruiterProfile(
             user_id=recruiter.id,
@@ -369,9 +462,17 @@ def test_get_published_job_offer_detail_returns_requirements(db_session):
         )
     )
     db_session.commit()
+    application = Application(
+        job_offer_id=offer.id,
+        seeker_user_id=seeker.id,
+        consent_given_at=datetime(2026, 4, 1, 10, 0, 0),
+    )
+    db_session.add(application)
+    db_session.commit()
 
     detail = service.get_published_job_offer_detail_or_404(
         db_session,
+        seeker_user_id=seeker.id,
         job_offer_id=offer.id,
     )
 
@@ -379,10 +480,13 @@ def test_get_published_job_offer_detail_returns_requirements(db_session):
     assert detail.company_name == "Acme"
     assert detail.requirements[0].competency_key == "python"
     assert detail.requirements[0].priority == RequirementPriority.MUST_HAVE
+    assert detail.applied is True
+    assert detail.application_id == application.id
 
 
 def test_get_published_job_offer_detail_returns_404_for_non_published_or_missing(db_session):
     recruiter = create_recruiter_user(db_session, email="service-marketplace-404-recruiter@example.com")
+    seeker = create_user(db_session, email="service-marketplace-404-seeker@example.com")
     offer = JobOffer(
         recruiter_user_id=recruiter.id,
         title="Backend Engineer",
@@ -396,6 +500,7 @@ def test_get_published_job_offer_detail_returns_404_for_non_published_or_missing
     try:
         service.get_published_job_offer_detail_or_404(
             db_session,
+            seeker_user_id=seeker.id,
             job_offer_id=offer.id,
         )
         assert False, "Expected 404 for non-published offer"
@@ -406,6 +511,7 @@ def test_get_published_job_offer_detail_returns_404_for_non_published_or_missing
     try:
         service.get_published_job_offer_detail_or_404(
             db_session,
+            seeker_user_id=seeker.id,
             job_offer_id=999999,
         )
         assert False, "Expected 404 for missing offer"

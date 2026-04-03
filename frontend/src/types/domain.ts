@@ -119,6 +119,8 @@ export interface PublicJobOfferListItem {
   short_description: string;
   company_name: string;
   published_at: string;
+  applied: boolean;
+  application_id: number | null;
 }
 
 export interface PublicJobOfferDetail {
@@ -130,6 +132,8 @@ export interface PublicJobOfferDetail {
   company_name: string;
   published_at: string;
   requirements: PublicJobOfferRequirementItem[];
+  applied: boolean;
+  application_id: number | null;
 }
 
 export interface ApplicationCreateResponse {

@@ -7,6 +7,7 @@ from app.db.models import User
 from app.db.sqlite import get_db_session
 from app.modules.applications.service import (
     apply_to_published_job_offer,
+    delete_application_for_seeker,
     list_applications_for_seeker,
 )
 from app.modules.auth.dependencies import require_job_seeker
@@ -142,14 +143,16 @@ def list_marketplace_job_offers(
     current_seeker: CurrentSeeker,
     query: str | None = Query(default=None),
     occupation_key: str | None = Query(default=None),
+    applied: bool | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> list[PublicJobOfferListItem]:
-    del current_seeker
     return list_published_job_offers(
         db_session,
+        seeker_user_id=current_seeker.id,
         query=query,
         occupation_key=occupation_key,
+        applied=applied,
         limit=limit,
         offset=offset,
     )
@@ -161,9 +164,9 @@ def read_marketplace_job_offer(
     db_session: DbSession,
     current_seeker: CurrentSeeker,
 ) -> PublicJobOfferDetail:
-    del current_seeker
     return get_published_job_offer_detail_or_404(
         db_session,
+        seeker_user_id=current_seeker.id,
         job_offer_id=job_offer_id,
     )
 
@@ -211,3 +214,17 @@ def list_my_applications(
             seeker_user_id=current_seeker.id,
         )
     ]
+
+
+@router.delete("/applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_my_application(
+    application_id: int,
+    db_session: DbSession,
+    current_seeker: CurrentSeeker,
+) -> Response:
+    delete_application_for_seeker(
+        db_session,
+        seeker_user_id=current_seeker.id,
+        application_id=application_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -7,6 +7,7 @@ SEEKER_ROUTE = f"{API_PREFIX}/seeker/profile"
 SEEKER_COMPETENCIES_ROUTE = f"{API_PREFIX}/seeker/competencies"
 SEEKER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/seeker/job-offers"
 SEEKER_APPLICATIONS_ROUTE = f"{API_PREFIX}/seeker/applications"
+SEEKER_APPLICATION_DELETE_ROUTE = f"{SEEKER_APPLICATIONS_ROUTE}/{{application_id}}"
 SEEKER_APPLY_ROUTE = f"{SEEKER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/apply"
 SEEKER_ANALYSIS_ROUTE = f"{SEEKER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/analysis"
 RECRUITER_PROFILE_ROUTE = f"{API_PREFIX}/recruiter/profile"
@@ -27,6 +28,7 @@ SEEKER_PATHS = [
     ("GET", SEEKER_ANALYSIS_ROUTE.format(job_offer_id=1)),
     ("POST", SEEKER_APPLY_ROUTE.format(job_offer_id=1)),
     ("GET", SEEKER_APPLICATIONS_ROUTE),
+    ("DELETE", SEEKER_APPLICATION_DELETE_ROUTE.format(application_id=1)),
 ]
 
 
@@ -608,6 +610,8 @@ def test_job_offer_marketplace_list_returns_only_published_with_filters_and_pagi
     assert listed_ids == {backend_offer_id, frontend_offer_id}
     assert all(item["company_name"] == "Acme" for item in items)
     assert all(item["published_at"] for item in items)
+    assert all(item["applied"] is False for item in items)
+    assert all(item["application_id"] is None for item in items)
 
     filtered_by_query = client.get(
         SEEKER_JOB_OFFERS_ROUTE,
@@ -628,6 +632,8 @@ def test_job_offer_marketplace_list_returns_only_published_with_filters_and_pagi
     occupation_items = filtered_by_occupation.json()
     assert len(occupation_items) == 1
     assert occupation_items[0]["id"] == frontend_offer_id
+    assert occupation_items[0]["applied"] is False
+    assert occupation_items[0]["application_id"] is None
 
     paged = client.get(
         SEEKER_JOB_OFFERS_ROUTE,
@@ -696,6 +702,8 @@ def test_job_offer_marketplace_detail_returns_published_offer_with_requirements(
     assert body["company_name"] == "Acme"
     assert body["description"] == "Build APIs"
     assert body["requirements"] == [{"competency_key": "python", "priority": "must_have"}]
+    assert body["applied"] is False
+    assert body["application_id"] is None
 
 
 def test_job_offer_marketplace_detail_returns_404_for_draft_or_missing_offer(client: TestClient, monkeypatch):
@@ -1072,3 +1080,244 @@ def test_list_my_applications_returns_only_current_seekers_rows(client: TestClie
     assert len(items_two) == 1
     assert items_two[0]["job_offer_id"] == offer_id
     assert items_one[0]["id"] != items_two[0]["id"]
+
+
+def test_job_offer_marketplace_applied_fields_and_filter_behavior(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-marketplace-applied-filter@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-marketplace-applied-filter@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    profile_response = client.put(
+        SEEKER_ROUTE,
+        headers=auth_headers(seeker_token),
+        json={
+            "full_name": "Alice Example",
+            "summary": "Ready to apply",
+            "location": "Tallinn",
+            "occupation_key": None,
+        },
+    )
+    assert profile_response.status_code == 200
+
+    offer_one = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Offer one",
+    )
+    offer_two = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="frontend_engineer",
+        description="Offer two",
+    )
+    for offer_id in (offer_one, offer_two):
+        publish = client.post(
+            RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+            headers=auth_headers(recruiter_token),
+        )
+        assert publish.status_code == 200
+
+    apply_response = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_one),
+        headers=auth_headers(seeker_token),
+    )
+    assert apply_response.status_code == 201
+    application_id = apply_response.json()["id"]
+
+    listed = client.get(SEEKER_JOB_OFFERS_ROUTE, headers=auth_headers(seeker_token))
+    assert listed.status_code == 200
+    listed_by_id = {item["id"]: item for item in listed.json()}
+    assert listed_by_id[offer_one]["applied"] is True
+    assert listed_by_id[offer_one]["application_id"] == application_id
+    assert listed_by_id[offer_two]["applied"] is False
+    assert listed_by_id[offer_two]["application_id"] is None
+
+    applied_only = client.get(
+        SEEKER_JOB_OFFERS_ROUTE,
+        headers=auth_headers(seeker_token),
+        params={"applied": True},
+    )
+    assert applied_only.status_code == 200
+    applied_items = applied_only.json()
+    assert len(applied_items) == 1
+    assert applied_items[0]["id"] == offer_one
+    assert applied_items[0]["applied"] is True
+
+    not_applied_only = client.get(
+        SEEKER_JOB_OFFERS_ROUTE,
+        headers=auth_headers(seeker_token),
+        params={"applied": False},
+    )
+    assert not_applied_only.status_code == 200
+    not_applied_items = not_applied_only.json()
+    assert len(not_applied_items) == 1
+    assert not_applied_items[0]["id"] == offer_two
+    assert not_applied_items[0]["applied"] is False
+
+    detail = client.get(
+        f"{SEEKER_JOB_OFFERS_ROUTE}/{offer_one}",
+        headers=auth_headers(seeker_token),
+    )
+    assert detail.status_code == 200
+    detail_body = detail.json()
+    assert detail_body["applied"] is True
+    assert detail_body["application_id"] == application_id
+
+
+def test_delete_my_application_removes_own_application_and_allows_reapply(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-application-delete-reapply@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-application-delete-reapply@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    profile_response = client.put(
+        SEEKER_ROUTE,
+        headers=auth_headers(seeker_token),
+        json={
+            "full_name": "Alice Example",
+            "summary": "Ready to apply",
+            "location": "Tallinn",
+            "occupation_key": None,
+        },
+    )
+    assert profile_response.status_code == 200
+
+    offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+    publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert publish.status_code == 200
+
+    first = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert first.status_code == 201
+    first_application_id = first.json()["id"]
+
+    deleted = client.delete(
+        SEEKER_APPLICATION_DELETE_ROUTE.format(application_id=first_application_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert deleted.status_code == 204
+    assert deleted.content == b""
+
+    listed_after_delete = client.get(SEEKER_APPLICATIONS_ROUTE, headers=auth_headers(seeker_token))
+    assert listed_after_delete.status_code == 200
+    assert listed_after_delete.json() == []
+
+    second = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert second.status_code == 201
+    listed_after_reapply = client.get(SEEKER_APPLICATIONS_ROUTE, headers=auth_headers(seeker_token))
+    assert listed_after_reapply.status_code == 200
+    items_after_reapply = listed_after_reapply.json()
+    assert len(items_after_reapply) == 1
+    assert items_after_reapply[0]["job_offer_id"] == offer_id
+
+
+def test_delete_my_application_returns_404_for_non_owned_or_missing(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-application-delete-ownership@example.com",
+        role="recruiter",
+    )
+    owner_token = register_and_get_token(
+        client,
+        email="seeker-application-delete-owner@example.com",
+        role="job_seeker",
+    )
+    other_token = register_and_get_token(
+        client,
+        email="seeker-application-delete-other@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    for token, name in ((owner_token, "Owner"), (other_token, "Other")):
+        profile_response = client.put(
+            SEEKER_ROUTE,
+            headers=auth_headers(token),
+            json={
+                "full_name": name,
+                "summary": "Ready to apply",
+                "location": "Tallinn",
+                "occupation_key": None,
+            },
+        )
+        assert profile_response.status_code == 200
+
+    offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+    publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert publish.status_code == 200
+
+    created = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(owner_token),
+    )
+    assert created.status_code == 201
+    application_id = created.json()["id"]
+
+    non_owned_delete = client.delete(
+        SEEKER_APPLICATION_DELETE_ROUTE.format(application_id=application_id),
+        headers=auth_headers(other_token),
+    )
+    assert_structured_http_error(
+        non_owned_delete,
+        status_code=404,
+        message="Application not found.",
+    )
+
+    missing_delete = client.delete(
+        SEEKER_APPLICATION_DELETE_ROUTE.format(application_id=999999),
+        headers=auth_headers(owner_token),
+    )
+    assert_structured_http_error(
+        missing_delete,
+        status_code=404,
+        message="Application not found.",
+    )

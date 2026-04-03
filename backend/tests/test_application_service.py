@@ -510,6 +510,161 @@ def test_list_applications_for_seeker_returns_only_own_rows(db_session):
     assert listed[0].id == created_latest.id
 
 
+def test_delete_application_for_seeker_deletes_own_application_and_snapshots(db_session):
+    _enable_sqlite_foreign_keys(db_session)
+    recruiter = _create_user(
+        db_session,
+        email="application-service-delete-recruiter@example.com",
+        role=UserRole.RECRUITER,
+    )
+    seeker = _create_user(
+        db_session,
+        email="application-service-delete-seeker@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    offer = _create_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        offer_status=JobOfferStatus.PUBLISHED,
+    )
+    _create_profile(db_session, seeker_user_id=seeker.id)
+
+    created = service.apply_to_published_job_offer(
+        db_session,
+        seeker_user=seeker,
+        job_offer_id=offer.id,
+    )
+    assert (
+        db_session.query(ApplicationSnapshot)
+        .filter(ApplicationSnapshot.application_id == created.id)
+        .count()
+        == 1
+    )
+    assert (
+        db_session.query(ApplicationMatchingSnapshot)
+        .filter(ApplicationMatchingSnapshot.application_id == created.id)
+        .count()
+        == 1
+    )
+
+    service.delete_application_for_seeker(
+        db_session,
+        seeker_user_id=seeker.id,
+        application_id=created.id,
+    )
+
+    assert db_session.query(Application).filter(Application.id == created.id).one_or_none() is None
+    assert (
+        db_session.query(ApplicationSnapshot)
+        .filter(ApplicationSnapshot.application_id == created.id)
+        .count()
+        == 0
+    )
+    assert (
+        db_session.query(ApplicationMatchingSnapshot)
+        .filter(ApplicationMatchingSnapshot.application_id == created.id)
+        .count()
+        == 0
+    )
+
+
+def test_delete_application_for_seeker_rejects_missing_or_non_owned_application(db_session):
+    _enable_sqlite_foreign_keys(db_session)
+    recruiter = _create_user(
+        db_session,
+        email="application-service-delete-ownership-recruiter@example.com",
+        role=UserRole.RECRUITER,
+    )
+    owner = _create_user(
+        db_session,
+        email="application-service-delete-ownership-owner@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    other = _create_user(
+        db_session,
+        email="application-service-delete-ownership-other@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    offer = _create_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        offer_status=JobOfferStatus.PUBLISHED,
+    )
+    _create_profile(db_session, seeker_user_id=owner.id)
+
+    created = service.apply_to_published_job_offer(
+        db_session,
+        seeker_user=owner,
+        job_offer_id=offer.id,
+    )
+
+    with pytest.raises(HTTPException) as non_owned:
+        service.delete_application_for_seeker(
+            db_session,
+            seeker_user_id=other.id,
+            application_id=created.id,
+        )
+    assert non_owned.value.status_code == 404
+    assert non_owned.value.detail == "Application not found."
+
+    with pytest.raises(HTTPException) as missing:
+        service.delete_application_for_seeker(
+            db_session,
+            seeker_user_id=owner.id,
+            application_id=999999,
+        )
+    assert missing.value.status_code == 404
+    assert missing.value.detail == "Application not found."
+
+
+def test_delete_application_for_seeker_allows_reapply_to_same_offer(db_session):
+    _enable_sqlite_foreign_keys(db_session)
+    recruiter = _create_user(
+        db_session,
+        email="application-service-delete-reapply-recruiter@example.com",
+        role=UserRole.RECRUITER,
+    )
+    seeker = _create_user(
+        db_session,
+        email="application-service-delete-reapply-seeker@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    offer = _create_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        offer_status=JobOfferStatus.PUBLISHED,
+    )
+    _create_profile(db_session, seeker_user_id=seeker.id)
+
+    first = service.apply_to_published_job_offer(
+        db_session,
+        seeker_user=seeker,
+        job_offer_id=offer.id,
+    )
+    service.delete_application_for_seeker(
+        db_session,
+        seeker_user_id=seeker.id,
+        application_id=first.id,
+    )
+
+    second = service.apply_to_published_job_offer(
+        db_session,
+        seeker_user=seeker,
+        job_offer_id=offer.id,
+    )
+    assert second.job_offer_id == offer.id
+    assert second.seeker_user_id == seeker.id
+    assert (
+        db_session.query(Application)
+        .filter(
+            Application.job_offer_id == offer.id,
+            Application.seeker_user_id == seeker.id,
+        )
+        .count()
+        == 1
+    )
+
+
 def test_list_applicants_for_owned_job_offer_returns_snapshot_only(db_session):
     _enable_sqlite_foreign_keys(db_session)
     recruiter = _create_user(

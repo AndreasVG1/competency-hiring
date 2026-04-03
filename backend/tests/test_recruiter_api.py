@@ -15,6 +15,7 @@ RECRUITER_ARCHIVE_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/archiv
 RECRUITER_APPLICANTS_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/applicants"
 SEEKER_PROFILE_ROUTE = f"{API_PREFIX}/seeker/profile"
 SEEKER_APPLY_ROUTE = f"{API_PREFIX}/seeker/job-offers/{{job_offer_id}}/apply"
+SEEKER_APPLICATION_DELETE_ROUTE = f"{API_PREFIX}/seeker/applications/{{application_id}}"
 
 
 RECRUITER_PATHS = [
@@ -868,6 +869,65 @@ def test_applicants_list_returns_snapshot_based_rows_for_owned_offer(client: Tes
     assert isinstance(applicant["shared_matching"]["score"], float)
     assert applicant["shared_matching"]["result_payload"]["scope"] == "shared_application_snapshot"
     assert applicant["shared_matching"]["snapshot_created_at"]
+
+
+def test_applicants_list_hides_withdrawn_application(client: TestClient):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-applicants-withdrawn@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-applicants-withdrawn@example.com",
+        role="job_seeker",
+    )
+
+    offer_id = create_offer(client, recruiter_token, occupation_key="backend_engineer")
+    published = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert published.status_code == 200
+
+    profile_create = client.put(
+        SEEKER_PROFILE_ROUTE,
+        headers=auth_headers(seeker_token),
+        json={
+            "full_name": "Alice Snapshot",
+            "summary": "Initial summary",
+            "location": "Tallinn",
+            "occupation_key": None,
+        },
+    )
+    assert profile_create.status_code == 200
+
+    apply_response = client.post(
+        SEEKER_APPLY_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert apply_response.status_code == 201
+    application_id = apply_response.json()["id"]
+
+    listed_before_delete = client.get(
+        RECRUITER_APPLICANTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert listed_before_delete.status_code == 200
+    assert len(listed_before_delete.json()) == 1
+
+    delete_response = client.delete(
+        SEEKER_APPLICATION_DELETE_ROUTE.format(application_id=application_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert delete_response.status_code == 204
+
+    listed_after_delete = client.get(
+        RECRUITER_APPLICANTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert listed_after_delete.status_code == 200
+    assert listed_after_delete.json() == []
 
 
 def test_applicants_list_returns_null_shared_matching_for_legacy_rows(

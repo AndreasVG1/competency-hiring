@@ -252,7 +252,7 @@ Goal:
 - Display score and breakdown with explicit explanation labels.
 - Keep language decision-supporting, not decision-making.
 
-10. [ ] Add recruiter UI section for application-time matching
+10. [X] Add recruiter UI section for application-time matching
 - In `/recruiter/job-offers/{id}/applicants`, show snapshot matching result per applicant.
 - Label clearly as “shared at application time”.
 

@@ -25,10 +25,12 @@
         <MarketplaceFilterBar
           :query="draftQuery"
           :occupation-key="draftOccupationKey"
+          :applied-state="draftAppliedState"
           :occupation-options="occupationOptions"
           :disabled="isOffersLoading || isOccupationsLoading"
           @update:query="draftQuery = $event"
           @update:occupation-key="draftOccupationKey = $event"
+          @update:applied-state="draftAppliedState = $event"
           @apply="applyFilters"
           @clear="clearFilters"
         />
@@ -63,6 +65,7 @@
             <p class="marketplace-offer-meta">
               {{ offer.company_name || "Company not provided" }} | {{ offer.occupation_label }}
             </p>
+            <p v-if="offer.applied" class="marketplace-offer-applied-note">Applied</p>
             <p class="marketplace-offer-summary">{{ offer.short_description }}</p>
             <p class="marketplace-offer-meta">Published {{ formatDateTime(offer.published_at) }}</p>
             <RouterLink class="button-secondary" :to="`/seeker/job-offers/${offer.id}`">
@@ -102,8 +105,10 @@ const offers = ref<PublicJobOfferListItem[]>([]);
 
 const draftQuery = ref("");
 const draftOccupationKey = ref("");
+const draftAppliedState = ref("");
 const appliedQuery = ref("");
 const appliedOccupationKey = ref("");
+const appliedAppliedState = ref("");
 
 const limit = ref(DEFAULT_LIMIT);
 const offset = ref(0);
@@ -133,6 +138,16 @@ const pageEnd = computed(() => {
 
 function normalizeFilterValue(value: string): string {
   return value.trim();
+}
+
+function mapAppliedFilter(value: string): boolean | undefined {
+  if (value === "applied") {
+    return true;
+  }
+  if (value === "not_applied") {
+    return false;
+  }
+  return undefined;
 }
 
 function formatDateTime(value: string): string {
@@ -169,6 +184,7 @@ async function loadOffers(): Promise<void> {
     offers.value = await seekerClient.listPublishedJobOffers({
       query: appliedQuery.value || undefined,
       occupation_key: appliedOccupationKey.value || undefined,
+      applied: mapAppliedFilter(appliedAppliedState.value),
       limit: limit.value,
       offset: offset.value,
     });
@@ -182,6 +198,7 @@ async function loadOffers(): Promise<void> {
 async function applyFilters(): Promise<void> {
   appliedQuery.value = normalizeFilterValue(draftQuery.value);
   appliedOccupationKey.value = normalizeFilterValue(draftOccupationKey.value);
+  appliedAppliedState.value = draftAppliedState.value;
   offset.value = 0;
   await loadOffers();
 }
@@ -189,8 +206,10 @@ async function applyFilters(): Promise<void> {
 async function clearFilters(): Promise<void> {
   draftQuery.value = "";
   draftOccupationKey.value = "";
+  draftAppliedState.value = "";
   appliedQuery.value = "";
   appliedOccupationKey.value = "";
+  appliedAppliedState.value = "";
   offset.value = 0;
   await loadOffers();
 }

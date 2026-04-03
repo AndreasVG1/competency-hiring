@@ -237,7 +237,7 @@ Goal:
   - `created_at`
 - Keep snapshot immutable once created.
 
-7. [ ] Integrate matching into apply flow
+7. [X] Integrate matching into apply flow
 - During `apply_to_published_job_offer`, compute matching from application-time seeker data and current offer requirements.
 - Persist matching snapshot in same transaction as application + profile snapshot.
 - Ensure rollback safety on failure.

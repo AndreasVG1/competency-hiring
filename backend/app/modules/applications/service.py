@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import (
     Application,
+    ApplicationMatchingSnapshot,
     ApplicationSnapshot,
     JobOffer,
     JobOfferStatus,
@@ -14,12 +15,15 @@ from app.db.models import (
     User,
     UserRole,
 )
+from app.modules.matching.engine import MatchingInputValidationError
+from app.modules.matching.service import calculate_matching_for_job_offer_and_seeker
 
 FORBIDDEN_APPLY_MESSAGE = "Only job seekers can apply to job offers."
 PUBLISHED_JOB_OFFER_NOT_FOUND_MESSAGE = "Published job offer not found."
 SEEKER_PROFILE_NOT_FOUND_MESSAGE = "Seeker profile not found."
 DUPLICATE_APPLICATION_MESSAGE = "Application already exists for this seeker and job offer."
 JOB_OFFER_NOT_FOUND_MESSAGE = "Job offer not found."
+SHARED_APPLICATION_SNAPSHOT_SCOPE = "shared_application_snapshot"
 
 
 def _build_competencies_snapshot(
@@ -103,35 +107,58 @@ def apply_to_published_job_offer(
     )
     consent_time = _normalize_consent_timestamp(consent_given_at=consent_given_at)
 
-    application = Application(
-        job_offer_id=job_offer.id,
-        seeker_user_id=seeker_user.id,
-        consent_given_at=consent_time,
-    )
-    snapshot = ApplicationSnapshot(
-        application=application,
-        full_name=profile.full_name,
-        summary=profile.summary,
-        location=profile.location,
-        occupation_key=profile.occupation_key,
-        competencies=_build_competencies_snapshot(competencies=competency_rows),
-        audit_metadata={
-            "job_offer_id": str(job_offer.id),
-            "job_offer_title": job_offer.title,
-            "job_offer_occupation_key": job_offer.occupation_key,
-        },
-    )
-    db_session.add(application)
-    db_session.add(snapshot)
-
     try:
+        matching_result = calculate_matching_for_job_offer_and_seeker(
+            db_session,
+            seeker_user_id=seeker_user.id,
+            job_offer_id=job_offer.id,
+        )
+        matching_payload = matching_result.model_dump(mode="json")
+        matching_payload["scope"] = SHARED_APPLICATION_SNAPSHOT_SCOPE
+
+        application = Application(
+            job_offer_id=job_offer.id,
+            seeker_user_id=seeker_user.id,
+            consent_given_at=consent_time,
+        )
+        snapshot = ApplicationSnapshot(
+            application=application,
+            full_name=profile.full_name,
+            summary=profile.summary,
+            location=profile.location,
+            occupation_key=profile.occupation_key,
+            competencies=_build_competencies_snapshot(competencies=competency_rows),
+            audit_metadata={
+                "job_offer_id": str(job_offer.id),
+                "job_offer_title": job_offer.title,
+                "job_offer_occupation_key": job_offer.occupation_key,
+            },
+        )
+        matching_snapshot = ApplicationMatchingSnapshot(
+            application=application,
+            algorithm_version=matching_result.algorithm_version,
+            score=matching_result.score,
+            result_payload=matching_payload,
+        )
+        db_session.add(application)
+        db_session.add(snapshot)
+        db_session.add(matching_snapshot)
         db_session.commit()
+    except MatchingInputValidationError as exc:
+        db_session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Invalid matching input: {exc.code}: {exc.message}",
+        ) from exc
     except IntegrityError:
         db_session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=DUPLICATE_APPLICATION_MESSAGE,
         )
+    except Exception:
+        db_session.rollback()
+        raise
 
     db_session.refresh(application)
     return application

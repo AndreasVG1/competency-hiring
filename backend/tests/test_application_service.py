@@ -6,16 +6,20 @@ from sqlalchemy import text
 
 from app.db.models import (
     Application,
+    ApplicationMatchingSnapshot,
     ApplicationSnapshot,
     CompetencyLevel,
     JobOffer,
+    JobOfferRequirement,
     JobOfferStatus,
     JobSeekerCompetency,
     JobSeekerProfile,
+    RequirementPriority,
     User,
     UserRole,
 )
 from app.modules.applications import service
+from app.modules.matching.engine import MatchingInputValidationError
 
 
 def _enable_sqlite_foreign_keys(db_session) -> None:
@@ -74,6 +78,24 @@ def _add_competency(
         user_id=seeker_user_id,
         competency_key=competency_key,
         level=level,
+    )
+    db_session.add(item)
+    db_session.commit()
+    db_session.refresh(item)
+    return item
+
+
+def _add_requirement(
+    db_session,
+    *,
+    job_offer_id: int,
+    competency_key: str,
+    priority: RequirementPriority,
+) -> JobOfferRequirement:
+    item = JobOfferRequirement(
+        job_offer_id=job_offer_id,
+        competency_key=competency_key,
+        priority=priority,
     )
     db_session.add(item)
     db_session.commit()
@@ -194,6 +216,16 @@ def test_apply_rejects_duplicate_application(db_session):
         job_offer_id=offer.id,
     )
     assert first.id
+    matching_snapshot_count_before = (
+        db_session.query(ApplicationMatchingSnapshot)
+        .join(Application, Application.id == ApplicationMatchingSnapshot.application_id)
+        .filter(
+            Application.job_offer_id == offer.id,
+            Application.seeker_user_id == seeker.id,
+        )
+        .count()
+    )
+    assert matching_snapshot_count_before == 1
 
     try:
         service.apply_to_published_job_offer(
@@ -205,6 +237,17 @@ def test_apply_rejects_duplicate_application(db_session):
     except HTTPException as exc:
         assert exc.status_code == 409
         assert exc.detail == "Application already exists for this seeker and job offer."
+
+    matching_snapshot_count_after = (
+        db_session.query(ApplicationMatchingSnapshot)
+        .join(Application, Application.id == ApplicationMatchingSnapshot.application_id)
+        .filter(
+            Application.job_offer_id == offer.id,
+            Application.seeker_user_id == seeker.id,
+        )
+        .count()
+    )
+    assert matching_snapshot_count_after == 1
 
 
 def test_apply_persists_application_with_snapshot_and_consent_time(db_session):
@@ -237,6 +280,12 @@ def test_apply_persists_application_with_snapshot_and_consent_time(db_session):
         competency_key="comp_b",
         level=CompetencyLevel.INTERMEDIATE,
     )
+    _add_requirement(
+        db_session,
+        job_offer_id=offer.id,
+        competency_key="comp_a",
+        priority=RequirementPriority.MUST_HAVE,
+    )
 
     consent_time = datetime(2026, 4, 1, 10, 0, 0, tzinfo=timezone.utc)
     created = service.apply_to_published_job_offer(
@@ -255,6 +304,11 @@ def test_apply_persists_application_with_snapshot_and_consent_time(db_session):
     snapshot = (
         db_session.query(ApplicationSnapshot)
         .filter(ApplicationSnapshot.application_id == created.id)
+        .one()
+    )
+    matching_snapshot = (
+        db_session.query(ApplicationMatchingSnapshot)
+        .filter(ApplicationMatchingSnapshot.application_id == created.id)
         .one()
     )
 
@@ -276,6 +330,128 @@ def test_apply_persists_application_with_snapshot_and_consent_time(db_session):
         "job_offer_title": "Backend Engineer",
         "job_offer_occupation_key": "backend_engineer",
     }
+    assert matching_snapshot.algorithm_version == "v2_exact_priority_level_dual_signal"
+    assert isinstance(matching_snapshot.score, float)
+    assert matching_snapshot.score == 100.0
+    assert matching_snapshot.result_payload["scope"] == "shared_application_snapshot"
+    assert matching_snapshot.result_payload["algorithm_version"] == matching_snapshot.algorithm_version
+    assert matching_snapshot.result_payload["score"] == matching_snapshot.score
+
+
+def test_apply_rolls_back_and_returns_422_for_matching_input_validation_error(
+    db_session,
+    monkeypatch,
+):
+    _enable_sqlite_foreign_keys(db_session)
+    recruiter = _create_user(
+        db_session,
+        email="application-service-matching-validation-recruiter@example.com",
+        role=UserRole.RECRUITER,
+    )
+    seeker = _create_user(
+        db_session,
+        email="application-service-matching-validation-seeker@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    offer = _create_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        offer_status=JobOfferStatus.PUBLISHED,
+    )
+    _create_profile(db_session, seeker_user_id=seeker.id)
+
+    def _raise_matching_validation_error(*_args, **_kwargs):
+        raise MatchingInputValidationError(
+            code="duplicate_requirement_competency_key",
+            message="Duplicate requirement competency_key: 'comp_api'.",
+        )
+
+    monkeypatch.setattr(
+        service,
+        "calculate_matching_for_job_offer_and_seeker",
+        _raise_matching_validation_error,
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        service.apply_to_published_job_offer(
+            db_session,
+            seeker_user=seeker,
+            job_offer_id=offer.id,
+        )
+
+    assert exc_info.value.status_code == 422
+    assert (
+        exc_info.value.detail
+        == "Invalid matching input: duplicate_requirement_competency_key: "
+        "Duplicate requirement competency_key: 'comp_api'."
+    )
+    assert (
+        db_session.query(Application)
+        .filter(
+            Application.job_offer_id == offer.id,
+            Application.seeker_user_id == seeker.id,
+        )
+        .count()
+        == 0
+    )
+    assert db_session.query(ApplicationSnapshot).count() == 0
+    assert db_session.query(ApplicationMatchingSnapshot).count() == 0
+
+
+def test_apply_rolls_back_when_commit_fails(db_session, monkeypatch):
+    _enable_sqlite_foreign_keys(db_session)
+    recruiter = _create_user(
+        db_session,
+        email="application-service-commit-failure-recruiter@example.com",
+        role=UserRole.RECRUITER,
+    )
+    seeker = _create_user(
+        db_session,
+        email="application-service-commit-failure-seeker@example.com",
+        role=UserRole.JOB_SEEKER,
+    )
+    offer = _create_offer(
+        db_session,
+        recruiter_user_id=recruiter.id,
+        offer_status=JobOfferStatus.PUBLISHED,
+    )
+    _create_profile(db_session, seeker_user_id=seeker.id)
+    _add_competency(
+        db_session,
+        seeker_user_id=seeker.id,
+        competency_key="comp_a",
+        level=CompetencyLevel.INTERMEDIATE,
+    )
+    _add_requirement(
+        db_session,
+        job_offer_id=offer.id,
+        competency_key="comp_a",
+        priority=RequirementPriority.IMPORTANT,
+    )
+
+    def _raise_commit_failure():
+        raise RuntimeError("simulated commit failure")
+
+    monkeypatch.setattr(db_session, "commit", _raise_commit_failure)
+
+    with pytest.raises(RuntimeError, match="simulated commit failure"):
+        service.apply_to_published_job_offer(
+            db_session,
+            seeker_user=seeker,
+            job_offer_id=offer.id,
+        )
+
+    assert (
+        db_session.query(Application)
+        .filter(
+            Application.job_offer_id == offer.id,
+            Application.seeker_user_id == seeker.id,
+        )
+        .count()
+        == 0
+    )
+    assert db_session.query(ApplicationSnapshot).count() == 0
+    assert db_session.query(ApplicationMatchingSnapshot).count() == 0
 
 
 def test_list_applications_for_seeker_returns_only_own_rows(db_session):

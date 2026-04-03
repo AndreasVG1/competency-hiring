@@ -76,7 +76,7 @@ def _list_seeker_competencies(
     ]
 
 
-def get_private_analysis_for_seeker(
+def calculate_matching_for_job_offer_and_seeker(
     db_session: Session,
     *,
     seeker_user_id: int,
@@ -93,12 +93,25 @@ def get_private_analysis_for_seeker(
         seeker_user_id=seeker_user_id,
     )
 
+    return calculate_exact_match_result(
+        job_offer_id=job_offer_id,
+        seeker_user_id=seeker_user_id,
+        requirements=requirements,
+        seeker_competencies=competencies,
+    )
+
+
+def get_private_analysis_for_seeker(
+    db_session: Session,
+    *,
+    seeker_user_id: int,
+    job_offer_id: int,
+) -> MatchingResultPayload:
     try:
-        return calculate_exact_match_result(
+        return calculate_matching_for_job_offer_and_seeker(
+            db_session,
             job_offer_id=job_offer_id,
             seeker_user_id=seeker_user_id,
-            requirements=requirements,
-            seeker_competencies=competencies,
         )
     except MatchingInputValidationError as exc:
         raise HTTPException(

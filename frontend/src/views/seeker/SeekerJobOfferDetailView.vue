@@ -52,6 +52,32 @@
 
       <section v-if="offer && !isOfferNotFound" class="seeker-section">
         <header class="section-header">
+          <h2>Private analysis</h2>
+          <p>
+            Run a private analysis to review your current match details. This is decision support only and
+            does not make hiring decisions.
+          </p>
+        </header>
+        <ApiErrorNotice v-if="analysisError" :error="analysisError" show-all-messages />
+        <div class="table-actions">
+          <button
+            class="button-secondary"
+            type="button"
+            :disabled="isAnalysisLoading"
+            @click="runPrivateAnalysis"
+          >
+            {{ analysisButtonLabel }}
+          </button>
+        </div>
+        <JsonPayloadViewer
+          title="Current analysis result"
+          :payload="analysisResult"
+          empty-text="No analysis run yet. Use the button above to fetch your private analysis."
+        />
+      </section>
+
+      <section v-if="offer && !isOfferNotFound" class="seeker-section">
+        <header class="section-header">
           <h2>Apply</h2>
           <p>
             Applying is an explicit consent action. If you apply, your profile snapshot at application time
@@ -79,17 +105,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { ApiClientError, seekerClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import JobOfferRequirementsTable from "../../components/JobOfferRequirementsTable.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
+import JsonPayloadViewer from "../../components/JsonPayloadViewer.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
-import type { PublicJobOfferDetail } from "../../types/domain";
+import type { PrivateMatchingAnalysisResponse, PublicJobOfferDetail } from "../../types/domain";
 
 const route = useRoute();
 const labelCache = useCatalogLabelCache();
@@ -103,6 +130,9 @@ const isApplying = ref(false);
 const hasApplied = ref(false);
 const applyError = ref<unknown | null>(null);
 const applySuccessMessage = ref<string | null>(null);
+const analysisResult = ref<PrivateMatchingAnalysisResponse | null>(null);
+const analysisError = ref<unknown | null>(null);
+const isAnalysisLoading = ref(false);
 
 function parseOfferId(): number | null {
   const offerId = Number(route.params.id);
@@ -147,15 +177,14 @@ const applyButtonLabel = computed(() => {
   return "Apply with consent";
 });
 
-async function loadOffer(): Promise<void> {
-  const offerId = parseOfferId();
-  if (offerId === null) {
-    isOfferNotFound.value = true;
-    isOfferLoading.value = false;
-    offerLoadError.value = "Invalid job offer id.";
-    return;
+const analysisButtonLabel = computed(() => {
+  if (isAnalysisLoading.value) {
+    return "Running analysis...";
   }
+  return "Run private analysis";
+});
 
+async function loadOffer(): Promise<void> {
   isOfferLoading.value = true;
   isOfferNotFound.value = false;
   offerLoadError.value = null;
@@ -163,6 +192,17 @@ async function loadOffer(): Promise<void> {
   hasApplied.value = false;
   applyError.value = null;
   applySuccessMessage.value = null;
+  analysisResult.value = null;
+  analysisError.value = null;
+  isAnalysisLoading.value = false;
+
+  const offerId = parseOfferId();
+  if (offerId === null) {
+    isOfferNotFound.value = true;
+    isOfferLoading.value = false;
+    offerLoadError.value = "Invalid job offer id.";
+    return;
+  }
 
   try {
     const loadedOffer = await seekerClient.getPublishedJobOffer(offerId);
@@ -214,7 +254,28 @@ async function applyToOffer(): Promise<void> {
   }
 }
 
-onMounted(async () => {
-  await loadOffer();
-});
+async function runPrivateAnalysis(): Promise<void> {
+  if (!offer.value || isAnalysisLoading.value) {
+    return;
+  }
+
+  isAnalysisLoading.value = true;
+  analysisError.value = null;
+
+  try {
+    analysisResult.value = await seekerClient.getPrivateJobOfferAnalysis(offer.value.id);
+  } catch (error) {
+    analysisError.value = error;
+  } finally {
+    isAnalysisLoading.value = false;
+  }
+}
+
+watch(
+  () => route.params.id,
+  async () => {
+    await loadOffer();
+  },
+  { immediate: true },
+);
 </script>

@@ -140,6 +140,85 @@ export interface ApplicationCreateResponse {
   created_at: string;
 }
 
+export type MatchingResultStatus = "ok" | "ok_with_must_have_gaps" | "not_applicable_no_requirements";
+export type MatchingBreakdownStatus = "matched" | "insufficient" | "missing";
+export type MatchingReasonCode =
+  | "missing_competency"
+  | "level_below_expected"
+  | "meets_expected_level";
+
+export interface MatchingTotals {
+  earned_points: number;
+  max_points: number;
+  requirements_count: number;
+  matched_count: number;
+  insufficient_count: number;
+  missing_count: number;
+}
+
+export interface MatchingWeightsUsed {
+  priority_weights: Record<RequirementPriority, number>;
+  expected_level_by_priority: Record<RequirementPriority, CompetencyLevel>;
+}
+
+export interface MustHaveCoverage {
+  total_count: number;
+  matched_count: number;
+  insufficient_count: number;
+  missing_count: number;
+  coverage_ratio: number;
+}
+
+export interface MatchingBreakdownItem {
+  competency_key: string;
+  priority: RequirementPriority;
+  expected_level: CompetencyLevel;
+  seeker_level: CompetencyLevel | null;
+  status: MatchingBreakdownStatus;
+  earned_points: number;
+  max_points: number;
+  point_loss: number;
+  reason_code: MatchingReasonCode;
+}
+
+export interface MissingCompetencyItem {
+  competency_key: string;
+  priority: RequirementPriority;
+  reason_code: MatchingReasonCode;
+}
+
+export interface InsufficientCompetencyItem {
+  competency_key: string;
+  priority: RequirementPriority;
+  expected_level: CompetencyLevel;
+  seeker_level: CompetencyLevel;
+  reason_code: MatchingReasonCode;
+}
+
+export interface DevelopmentTargetItem {
+  competency_key: string;
+  priority: RequirementPriority;
+  suggested_target_level: CompetencyLevel;
+  point_gain_if_reached: number;
+}
+
+export interface PrivateMatchingAnalysisResponse {
+  algorithm_version: string;
+  scope: string;
+  job_offer_id: number;
+  seeker_user_id: number;
+  score: number;
+  status: MatchingResultStatus;
+  critical_gap_present: boolean;
+  must_have_coverage: MustHaveCoverage;
+  totals: MatchingTotals;
+  weights_used: MatchingWeightsUsed;
+  breakdown: MatchingBreakdownItem[];
+  missing_competencies: MissingCompetencyItem[];
+  insufficient_competencies: InsufficientCompetencyItem[];
+  development_targets: DevelopmentTargetItem[];
+}
+
 export interface RecruiterApplicantSnapshotCompetency {
   competency_key: string;
   level: CompetencyLevel;

@@ -10,6 +10,8 @@ from app.modules.applications.service import (
     list_applications_for_seeker,
 )
 from app.modules.auth.dependencies import require_job_seeker
+from app.modules.matching.schemas import MatchingResultPayload
+from app.modules.matching.service import get_private_analysis_for_seeker
 from app.modules.seeker.schemas import (
     ApplicationCreateResponse,
     PublicJobOfferDetail,
@@ -162,6 +164,19 @@ def read_marketplace_job_offer(
     del current_seeker
     return get_published_job_offer_detail_or_404(
         db_session,
+        job_offer_id=job_offer_id,
+    )
+
+
+@router.get("/job-offers/{job_offer_id}/analysis", response_model=MatchingResultPayload)
+def read_private_job_offer_analysis(
+    job_offer_id: int,
+    db_session: DbSession,
+    current_seeker: CurrentSeeker,
+) -> MatchingResultPayload:
+    return get_private_analysis_for_seeker(
+        db_session,
+        seeker_user_id=current_seeker.id,
         job_offer_id=job_offer_id,
     )
 

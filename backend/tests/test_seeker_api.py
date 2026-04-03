@@ -8,6 +8,7 @@ SEEKER_COMPETENCIES_ROUTE = f"{API_PREFIX}/seeker/competencies"
 SEEKER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/seeker/job-offers"
 SEEKER_APPLICATIONS_ROUTE = f"{API_PREFIX}/seeker/applications"
 SEEKER_APPLY_ROUTE = f"{SEEKER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/apply"
+SEEKER_ANALYSIS_ROUTE = f"{SEEKER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/analysis"
 RECRUITER_PROFILE_ROUTE = f"{API_PREFIX}/recruiter/profile"
 RECRUITER_JOB_OFFERS_ROUTE = f"{API_PREFIX}/recruiter/job-offers"
 RECRUITER_REQUIREMENTS_ROUTE = f"{RECRUITER_JOB_OFFERS_ROUTE}/{{job_offer_id}}/requirements"
@@ -23,6 +24,7 @@ SEEKER_PATHS = [
     ("DELETE", f"{SEEKER_COMPETENCIES_ROUTE}/1"),
     ("GET", SEEKER_JOB_OFFERS_ROUTE),
     ("GET", f"{SEEKER_JOB_OFFERS_ROUTE}/1"),
+    ("GET", SEEKER_ANALYSIS_ROUTE.format(job_offer_id=1)),
     ("POST", SEEKER_APPLY_ROUTE.format(job_offer_id=1)),
     ("GET", SEEKER_APPLICATIONS_ROUTE),
 ]
@@ -732,6 +734,146 @@ def test_job_offer_marketplace_detail_returns_404_for_draft_or_missing_offer(cli
 
     missing_response = client.get(
         f"{SEEKER_JOB_OFFERS_ROUTE}/999999",
+        headers=auth_headers(seeker_token),
+    )
+    assert_structured_http_error(
+        missing_response,
+        status_code=404,
+        message="Published job offer not found.",
+    )
+
+
+def test_private_job_offer_analysis_returns_current_seekers_result(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-analysis-happy@example.com",
+        role="recruiter",
+    )
+    seeker_one_token = register_and_get_token(
+        client,
+        email="seeker-analysis-happy-one@example.com",
+        role="job_seeker",
+    )
+    seeker_two_token = register_and_get_token(
+        client,
+        email="seeker-analysis-happy-two@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_competency_detail",
+        lambda *, competency_key: {"key": competency_key, "label": competency_key},
+    )
+    monkeypatch.setattr(
+        "app.modules.seeker.service.get_competency_detail",
+        lambda *, competency_key: {"key": competency_key, "label": competency_key, "code": "C", "ekr_level": 4},
+    )
+
+    offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Build APIs",
+    )
+
+    requirement_one = client.post(
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+        json={"competency_key": "comp_api", "priority": "must_have"},
+    )
+    assert requirement_one.status_code == 201
+    requirement_two = client.post(
+        RECRUITER_REQUIREMENTS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+        json={"competency_key": "comp_sql", "priority": "important"},
+    )
+    assert requirement_two.status_code == 201
+
+    publish = client.post(
+        RECRUITER_PUBLISH_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(recruiter_token),
+    )
+    assert publish.status_code == 200
+
+    seeker_one_comp = client.post(
+        SEEKER_COMPETENCIES_ROUTE,
+        headers=auth_headers(seeker_one_token),
+        json={"competency_key": "comp_api", "level": "intermediate"},
+    )
+    assert seeker_one_comp.status_code == 201
+
+    seeker_one_analysis = client.get(
+        SEEKER_ANALYSIS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_one_token),
+    )
+    assert seeker_one_analysis.status_code == 200
+    seeker_one_body = seeker_one_analysis.json()
+    assert seeker_one_body["scope"] == "private_preview"
+    assert seeker_one_body["algorithm_version"] == "v2_exact_priority_level_dual_signal"
+    assert seeker_one_body["job_offer_id"] == offer_id
+    assert seeker_one_body["status"] == "ok"
+    assert seeker_one_body["score"] == 62.5
+    assert seeker_one_body["totals"]["matched_count"] == 1
+    assert seeker_one_body["totals"]["missing_count"] == 1
+
+    seeker_two_analysis = client.get(
+        SEEKER_ANALYSIS_ROUTE.format(job_offer_id=offer_id),
+        headers=auth_headers(seeker_two_token),
+    )
+    assert seeker_two_analysis.status_code == 200
+    seeker_two_body = seeker_two_analysis.json()
+    assert seeker_two_body["scope"] == "private_preview"
+    assert seeker_two_body["algorithm_version"] == "v2_exact_priority_level_dual_signal"
+    assert seeker_two_body["job_offer_id"] == offer_id
+    assert seeker_two_body["status"] == "ok_with_must_have_gaps"
+    assert seeker_two_body["score"] == 0.0
+    assert seeker_two_body["critical_gap_present"] is True
+    assert seeker_two_body["totals"]["matched_count"] == 0
+    assert seeker_two_body["totals"]["missing_count"] == 2
+
+    assert seeker_one_body["seeker_user_id"] != seeker_two_body["seeker_user_id"]
+
+
+def test_private_job_offer_analysis_returns_404_for_draft_or_missing_offer(client: TestClient, monkeypatch):
+    recruiter_token = register_and_get_token(
+        client,
+        email="recruiter-analysis-404@example.com",
+        role="recruiter",
+    )
+    seeker_token = register_and_get_token(
+        client,
+        email="seeker-analysis-404@example.com",
+        role="job_seeker",
+    )
+
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.get_occupation_detail",
+        lambda *, occupation_key: {"key": occupation_key, "label": occupation_key.replace("_", " ").title()},
+    )
+
+    draft_offer_id = create_recruiter_offer(
+        client,
+        recruiter_token,
+        occupation_key="backend_engineer",
+        description="Draft only",
+    )
+
+    draft_response = client.get(
+        SEEKER_ANALYSIS_ROUTE.format(job_offer_id=draft_offer_id),
+        headers=auth_headers(seeker_token),
+    )
+    assert_structured_http_error(
+        draft_response,
+        status_code=404,
+        message="Published job offer not found.",
+    )
+
+    missing_response = client.get(
+        SEEKER_ANALYSIS_ROUTE.format(job_offer_id=999999),
         headers=auth_headers(seeker_token),
     )
     assert_structured_http_error(

@@ -130,6 +130,7 @@ def test_application_snapshot_is_one_to_one_by_primary_key(db_session):
     )
     db_session.add(first)
     db_session.commit()
+    db_session.expunge(first)
 
     second = ApplicationSnapshot(
         application_id=application.id,

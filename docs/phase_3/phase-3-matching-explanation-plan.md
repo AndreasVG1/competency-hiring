@@ -223,7 +223,7 @@ Goal:
 - Duplicate guard assumptions (already constrained in DB) and safe fallback.
 - Unknown enum value defense with explicit errors.
 
-5. [ ] Add seeker private analysis endpoint(s)
+5. [X] Add seeker private analysis endpoint(s)
 - Recommended endpoint: `GET /seeker/job-offers/{id}/analysis`.
 - Enforce seeker role and published-offer-only visibility.
 - Return private analysis only to current seeker.

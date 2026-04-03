@@ -27,9 +27,15 @@ def test_full_match_returns_100_score_and_no_gaps():
         ],
     )
 
-    assert result.algorithm_version == "v1_exact_priority_level"
+    assert result.algorithm_version == "v2_exact_priority_level_dual_signal"
     assert result.scope == "private_preview"
     assert result.status == "ok"
+    assert result.critical_gap_present is False
+    assert result.must_have_coverage.total_count == 1
+    assert result.must_have_coverage.matched_count == 1
+    assert result.must_have_coverage.insufficient_count == 0
+    assert result.must_have_coverage.missing_count == 0
+    assert result.must_have_coverage.coverage_ratio == 1.0
     assert result.score == 100.0
     assert result.totals.earned_points == 9.0
     assert result.totals.max_points == 9.0
@@ -61,7 +67,13 @@ def test_missing_competency_is_classified_and_scored_as_zero():
         seeker_competencies=[],
     )
 
-    assert result.status == "ok"
+    assert result.status == "ok_with_must_have_gaps"
+    assert result.critical_gap_present is True
+    assert result.must_have_coverage.total_count == 1
+    assert result.must_have_coverage.matched_count == 0
+    assert result.must_have_coverage.insufficient_count == 0
+    assert result.must_have_coverage.missing_count == 1
+    assert result.must_have_coverage.coverage_ratio == 0.0
     assert result.score == 0.0
     assert result.totals.earned_points == 0.0
     assert result.totals.max_points == 5.0
@@ -90,6 +102,12 @@ def test_insufficient_level_gets_partial_points():
     )
 
     assert result.status == "ok"
+    assert result.critical_gap_present is False
+    assert result.must_have_coverage.total_count == 0
+    assert result.must_have_coverage.matched_count == 0
+    assert result.must_have_coverage.insufficient_count == 0
+    assert result.must_have_coverage.missing_count == 0
+    assert result.must_have_coverage.coverage_ratio == 0.0
     assert result.score == 50.0
     assert result.totals.earned_points == 1.5
     assert result.totals.max_points == 3.0
@@ -125,6 +143,12 @@ def test_weighted_mixed_priorities_score_is_correct():
     )
 
     assert result.status == "ok"
+    assert result.critical_gap_present is False
+    assert result.must_have_coverage.total_count == 1
+    assert result.must_have_coverage.matched_count == 1
+    assert result.must_have_coverage.insufficient_count == 0
+    assert result.must_have_coverage.missing_count == 0
+    assert result.must_have_coverage.coverage_ratio == 1.0
     assert result.totals.earned_points == 6.5
     assert result.totals.max_points == 9.0
     assert result.score == 72.2
@@ -143,6 +167,12 @@ def test_no_requirements_returns_not_applicable_status():
     )
 
     assert result.status == "not_applicable_no_requirements"
+    assert result.critical_gap_present is False
+    assert result.must_have_coverage.total_count == 0
+    assert result.must_have_coverage.matched_count == 0
+    assert result.must_have_coverage.insufficient_count == 0
+    assert result.must_have_coverage.missing_count == 0
+    assert result.must_have_coverage.coverage_ratio == 0.0
     assert result.score == 0.0
     assert result.totals.earned_points == 0.0
     assert result.totals.max_points == 0.0
@@ -171,6 +201,13 @@ def test_output_ordering_is_deterministic_across_lists():
         seeker_competencies=[_competency("comp_f", CompetencyLevel.BEGINNER)],
     )
 
+    assert result.status == "ok_with_must_have_gaps"
+    assert result.critical_gap_present is True
+    assert result.must_have_coverage.total_count == 3
+    assert result.must_have_coverage.matched_count == 0
+    assert result.must_have_coverage.insufficient_count == 1
+    assert result.must_have_coverage.missing_count == 2
+    assert result.must_have_coverage.coverage_ratio == 0.0
     assert [item.competency_key for item in result.breakdown] == [
         "comp_a",
         "comp_b",
@@ -205,3 +242,40 @@ def test_output_ordering_is_deterministic_across_lists():
         "comp_d",
         "comp_e",
     ]
+
+
+def test_missing_non_must_have_does_not_trigger_critical_gap():
+    result = calculate_exact_match_result(
+        job_offer_id=107,
+        seeker_user_id=23,
+        requirements=[
+            _requirement("comp_api", RequirementPriority.MUST_HAVE),
+            _requirement("comp_docs", RequirementPriority.IMPORTANT),
+        ],
+        seeker_competencies=[_competency("comp_api", CompetencyLevel.INTERMEDIATE)],
+    )
+
+    assert result.status == "ok"
+    assert result.critical_gap_present is False
+    assert result.must_have_coverage.total_count == 1
+    assert result.must_have_coverage.matched_count == 1
+    assert result.must_have_coverage.insufficient_count == 0
+    assert result.must_have_coverage.missing_count == 0
+    assert result.must_have_coverage.coverage_ratio == 1.0
+
+
+def test_must_have_insufficient_without_missing_is_not_critical_gap():
+    result = calculate_exact_match_result(
+        job_offer_id=108,
+        seeker_user_id=24,
+        requirements=[_requirement("comp_api", RequirementPriority.MUST_HAVE)],
+        seeker_competencies=[_competency("comp_api", CompetencyLevel.BEGINNER)],
+    )
+
+    assert result.status == "ok"
+    assert result.critical_gap_present is False
+    assert result.must_have_coverage.total_count == 1
+    assert result.must_have_coverage.matched_count == 0
+    assert result.must_have_coverage.insufficient_count == 1
+    assert result.must_have_coverage.missing_count == 0
+    assert result.must_have_coverage.coverage_ratio == 0.0

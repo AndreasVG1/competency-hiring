@@ -84,6 +84,20 @@ For each job requirement:
   - `status = "not_applicable_no_requirements"`
   - explanation should explicitly state that no requirements were defined
 
+### Dual-signal status and must-have coverage (v2)
+- no additional score penalty is applied for missing `must_have` competencies
+- compute `must_have_coverage` from requirements with priority `must_have`:
+  - `total_count`
+  - `matched_count`
+  - `insufficient_count`
+  - `missing_count`
+  - `coverage_ratio = matched_count / total_count` (or `0.0` when `total_count == 0`)
+- `critical_gap_present = true` when `must_have_coverage.missing_count > 0`
+- status policy:
+  - `not_applicable_no_requirements` when no requirements
+  - `ok_with_must_have_gaps` when `critical_gap_present = true`
+  - `ok` otherwise
+
 ### Determinism rules
 - no randomness
 - no time-dependent scoring inputs
@@ -100,12 +114,20 @@ Suggested response shape:
 
 ```json
 {
-  "algorithm_version": "v1_exact_priority_level",
+  "algorithm_version": "v2_exact_priority_level_dual_signal",
   "scope": "private_preview",
   "job_offer_id": 101,
   "seeker_user_id": 17,
   "score": 72.5,
-  "status": "ok",
+  "status": "ok_with_must_have_gaps",
+  "critical_gap_present": true,
+  "must_have_coverage": {
+    "total_count": 2,
+    "matched_count": 0,
+    "insufficient_count": 1,
+    "missing_count": 1,
+    "coverage_ratio": 0.0
+  },
   "totals": {
     "earned_points": 14.5,
     "max_points": 20.0,
@@ -328,6 +350,7 @@ Phase 3 is complete when:
 
 - Existing `RequirementPriority` and `CompetencyLevel` enums remain unchanged.
 - Global expected-level mapping by priority is accepted for MVP simplicity.
-- Overqualification does not provide bonus points above requirement max in v1.
-- Private seeker analyses are computed on demand and are not persisted as history in v1.
+- Overqualification does not provide bonus points above requirement max in v2.
+- Missing must-have competencies do not apply a direct score penalty in v2; risk is surfaced through dual-signal fields.
+- Private seeker analyses are computed on demand and are not persisted as history in v1/v2.
 - Any future algorithm changes must increment `algorithm_version` and preserve backward compatibility for stored snapshots.

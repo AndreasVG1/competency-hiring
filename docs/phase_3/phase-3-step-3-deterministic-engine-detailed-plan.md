@@ -102,6 +102,17 @@ For each requirement:
   - `status = "not_applicable_no_requirements"`
   - totals are all zero except counts derived from empty inputs
 
+### v2 Dual-signal extension
+
+- score formula remains unchanged in v2
+- v2 adds must-have risk signaling:
+  - `must_have_coverage` with matched/insufficient/missing counts and coverage ratio
+  - `critical_gap_present` (`true` when any `must_have` competency is missing)
+- v2 status policy:
+  - `not_applicable_no_requirements` when no requirements
+  - `ok_with_must_have_gaps` when `critical_gap_present = true`
+  - `ok` otherwise
+
 ### Deterministic ordering
 
 All list outputs that represent requirement outcomes must be stable using this key order:
@@ -191,8 +202,10 @@ Derived lists:
 
 ### Step E: Final payload highlights
 
-- `algorithm_version = "v1_exact_priority_level"`
+- `algorithm_version = "v2_exact_priority_level_dual_signal"`
 - `scope = "private_preview"`
+- `critical_gap_present = false` (no missing must-have in this walkthrough)
+- `must_have_coverage`: total `1`, matched `1`, insufficient `0`, missing `0`, ratio `1.0`
 - `totals`: matched `1`, insufficient `1`, missing `1`, requirements `3`
 - explanation sections are consistent with one shared evaluated row set (no recomputation drift)
 
@@ -200,10 +213,14 @@ Derived lists:
 
 The function returns `MatchingResultPayload` with:
 
-- `algorithm_version = "v1_exact_priority_level"`
+- `algorithm_version = "v2_exact_priority_level_dual_signal"`
 - `scope = "private_preview"`
 - pass-through IDs from function input
 - `status` as defined above
+- `critical_gap_present`: `true` when at least one must-have competency is missing
+- `must_have_coverage`:
+  - count summary for must-have requirements only
+  - `coverage_ratio = matched_count / total_count` (or `0.0` when no must-have requirements)
 - `totals`:
   - earned/max points
   - counts for requirements, matched, insufficient, missing
@@ -346,7 +363,7 @@ Step 3 is complete when all are true:
 - enum values in models remain unchanged (`RequirementPriority`, `CompetencyLevel`).
 - no overqualification bonus above requirement max points.
 - algorithm identifiers remain:
-  - `algorithm_version = "v1_exact_priority_level"`
+  - `algorithm_version = "v2_exact_priority_level_dual_signal"`
   - `scope = "private_preview"`
 - strict validation hardening and defensive enum/duplicate handling is deferred to Phase 3 step 4.
 

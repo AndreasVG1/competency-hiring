@@ -27,6 +27,14 @@ class MatchingWeightsUsed(BaseModel):
     expected_level_by_priority: dict[str, str]
 
 
+class MustHaveCoverage(BaseModel):
+    total_count: int
+    matched_count: int
+    insufficient_count: int
+    missing_count: int
+    coverage_ratio: float
+
+
 class MatchingBreakdownItem(BaseModel):
     competency_key: str
     priority: RequirementPriority
@@ -67,6 +75,8 @@ class MatchingResultPayload(BaseModel):
     seeker_user_id: int
     score: float
     status: str
+    critical_gap_present: bool
+    must_have_coverage: MustHaveCoverage
     totals: MatchingTotals
     weights_used: MatchingWeightsUsed
     breakdown: list[MatchingBreakdownItem]

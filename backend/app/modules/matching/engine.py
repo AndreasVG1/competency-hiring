@@ -10,10 +10,11 @@ from app.modules.matching.schemas import (
     MatchingTotals,
     MatchingWeightsUsed,
     MissingCompetencyItem,
+    MustHaveCoverage,
     SeekerCompetencyInput,
 )
 
-ALGORITHM_VERSION = "v1_exact_priority_level"
+ALGORITHM_VERSION = "v2_exact_priority_level_dual_signal"
 PRIVATE_PREVIEW_SCOPE = "private_preview"
 
 # Phase 3 MVP normative mappings:
@@ -85,7 +86,7 @@ def calculate_exact_match_result(
     """
     seeker_lookup: dict[str, CompetencyLevel] = {}
     for seeker_competency in seeker_competencies:
-        # Step-3 default duplicate behavior: first occurrence wins.
+        # Default duplicate behavior: first occurrence wins.
         seeker_lookup.setdefault(seeker_competency.competency_key, seeker_competency.level)
 
     evaluated_rows: list[_EvaluatedRequirement] = []
@@ -136,13 +137,35 @@ def calculate_exact_match_result(
     insufficient_count = sum(1 for row in evaluated_rows if row.status == "insufficient")
     missing_count = sum(1 for row in evaluated_rows if row.status == "missing")
 
-    if total_max_points > 0:
-        status = "ok"
-        score = round((100.0 * total_earned_points) / total_max_points, 1)
-    else:
+    must_have_rows = [
+        row
+        for row in evaluated_rows
+        if row.priority == RequirementPriority.MUST_HAVE
+    ]
+    must_have_total_count = len(must_have_rows)
+    must_have_matched_count = sum(1 for row in must_have_rows if row.status == "matched")
+    must_have_insufficient_count = sum(
+        1 for row in must_have_rows if row.status == "insufficient"
+    )
+    must_have_missing_count = sum(1 for row in must_have_rows if row.status == "missing")
+    must_have_coverage_ratio = (
+        must_have_matched_count / must_have_total_count
+        if must_have_total_count > 0
+        else 0.0
+    )
+    # Dual-signal rule: missing must-have competency creates a critical gap warning.
+    critical_gap_present = must_have_missing_count > 0
+
+    if total_max_points <= 0:
         # Explicit no-requirements fallback from Phase 3 spec.
         status = "not_applicable_no_requirements"
         score = 0.0
+    else:
+        score = round((100.0 * total_earned_points) / total_max_points, 1)
+        if critical_gap_present:
+            status = "ok_with_must_have_gaps"
+        else:
+            status = "ok"
 
     breakdown = [
         MatchingBreakdownItem(
@@ -200,6 +223,13 @@ def calculate_exact_match_result(
         insufficient_count=insufficient_count,
         missing_count=missing_count,
     )
+    must_have_coverage = MustHaveCoverage(
+        total_count=must_have_total_count,
+        matched_count=must_have_matched_count,
+        insufficient_count=must_have_insufficient_count,
+        missing_count=must_have_missing_count,
+        coverage_ratio=must_have_coverage_ratio,
+    )
     weights_used = MatchingWeightsUsed(
         priority_weights={
             priority.value: weight for priority, weight in PRIORITY_WEIGHTS.items()
@@ -217,6 +247,8 @@ def calculate_exact_match_result(
         seeker_user_id=seeker_user_id,
         score=score,
         status=status,
+        critical_gap_present=critical_gap_present,
+        must_have_coverage=must_have_coverage,
         totals=totals,
         weights_used=weights_used,
         breakdown=breakdown,

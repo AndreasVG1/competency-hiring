@@ -623,11 +623,56 @@ a {
   gap: 0.75rem;
 }
 
+.applicants-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.applicants-sort {
+  width: min(22rem, 100%);
+}
+
 .applicant-card {
   border: 1px solid rgba(31, 41, 51, 0.16);
   border-radius: 12px;
   background-color: #fff;
   padding: 0.85rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.applicant-card-header {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.applicant-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.applicant-card-title {
+  margin: 0;
+}
+
+.applicant-score-pill {
+  margin: 0;
+  border: 1px solid rgba(29, 78, 137, 0.25);
+  border-radius: 999px;
+  background-color: rgba(232, 240, 250, 0.75);
+  color: #1d4e89;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.9rem;
+}
+
+.applicant-toggle-button {
+  justify-self: start;
+}
+
+.applicant-expanded-content {
   display: grid;
   gap: 0.85rem;
 }
@@ -795,5 +840,13 @@ a {
 
   .marketplace-offer-header {
     flex-direction: column;
+  }
+
+  .applicants-toolbar {
+    justify-content: stretch;
+  }
+
+  .applicants-sort {
+    width: 100%;
   }
 }

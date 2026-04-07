@@ -364,7 +364,7 @@ Phase 4 is complete when:
 Status:
 
 - [X] all acceptance criteria above are implemented on backend
-- [ ] frontend structured explanation cards/tables remain pending (Phase 4 frontend pass)
+- [X] frontend structured explanation cards/tables remain pending (Phase 4 frontend pass)
 
 ## Assumptions and Defaults
 

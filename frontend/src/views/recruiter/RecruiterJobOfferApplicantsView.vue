@@ -45,99 +45,137 @@
 
         <p v-if="isApplicantsLoading" class="section-note">Loading applicants...</p>
         <p v-else-if="applicants.length === 0" class="section-note">No applicants yet.</p>
-        <ul v-else class="applicants-list">
-          <li v-for="applicant in applicants" :key="applicant.application_id" class="applicant-card">
-            <header class="section-header">
-              <h3>{{ applicant.shared_profile.full_name }}</h3>
-              <p class="snapshot-note">
-                Shared at application time on {{ formatDateTime(applicant.snapshot_created_at) }}.
-              </p>
-            </header>
+        <template v-else>
+          <div class="applicants-toolbar">
+            <label class="form-field applicants-sort">
+              <span>Sort by</span>
+              <select v-model="applicantSort" class="enum-select">
+                <option value="score_desc">Score (high to low)</option>
+                <option value="applied_desc">Date applied (newest first)</option>
+              </select>
+            </label>
+          </div>
 
-            <dl class="summary-grid">
-              <dt>Applied at</dt>
-              <dd>{{ formatDateTime(applicant.applied_at) }}</dd>
-              <dt>Consent given at</dt>
-              <dd>{{ formatDateTime(applicant.consent_given_at) }}</dd>
-              <dt>Location</dt>
-              <dd>{{ applicant.shared_profile.location || "Not provided" }}</dd>
-              <dt>Occupation key</dt>
-              <dd>{{ applicant.shared_profile.occupation_key || "Not provided" }}</dd>
-              <dt>Summary</dt>
-              <dd>{{ applicant.shared_profile.summary || "Not provided" }}</dd>
-            </dl>
-
-            <section>
-              <header class="subsection-header">
-                <h3>Shared competencies</h3>
-                <p>Competency values shown here come from the stored application snapshot.</p>
+          <ul class="applicants-list">
+            <li
+              v-for="applicant in sortedApplicants"
+              :key="applicant.application_id"
+              class="applicant-card"
+            >
+              <header class="applicant-card-header">
+                <div class="applicant-card-title-row">
+                  <h3 class="applicant-card-title">{{ applicant.shared_profile.full_name }}</h3>
+                  <p class="applicant-score-pill">
+                    Score:
+                    <strong>{{ formatApplicantScore(applicant) }}</strong>
+                  </p>
+                </div>
               </header>
 
-              <p v-if="applicant.shared_profile.competencies.length === 0" class="section-note">
-                No competencies were shared.
-              </p>
-              <table v-else class="competency-table">
-                <thead>
-                  <tr>
-                    <th>Competency</th>
-                    <th>Level</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="(competency, competencyIndex) in applicant.shared_profile.competencies"
-                    :key="`${applicant.application_id}-${competency.competency_key}-${competencyIndex}`"
-                  >
-                    <td>{{ competencyLabel(competency.competency_key) }}</td>
-                    <td>{{ competency.level }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </section>
+              <dl class="summary-grid">
+                <dt>Applied at</dt>
+                <dd>{{ formatDateTime(applicant.applied_at) }}</dd>
+                <dt>Summary</dt>
+                <dd>{{ applicant.shared_profile.summary || "Not provided" }}</dd>
+              </dl>
 
-            <section>
-              <header class="subsection-header">
-                <h3>Shared matching result</h3>
-                <p>This result was shared at application time as part of consent.</p>
-              </header>
+              <button
+                type="button"
+                class="button-secondary applicant-toggle-button"
+                :aria-expanded="isApplicantExpanded(applicant.application_id)"
+                :aria-controls="applicantDetailsId(applicant.application_id)"
+                @click="toggleApplicantDetails(applicant.application_id)"
+              >
+                {{ isApplicantExpanded(applicant.application_id) ? "Hide details" : "View details" }}
+              </button>
 
-              <template v-if="applicant.shared_matching">
+              <div
+                v-if="isApplicantExpanded(applicant.application_id)"
+                :id="applicantDetailsId(applicant.application_id)"
+                class="applicant-expanded-content"
+              >
                 <dl class="summary-grid">
-                  <dt>Score</dt>
-                  <dd>{{ formatScore(applicant.shared_matching.score) }}</dd>
-                  <dt>Algorithm version</dt>
-                  <dd>{{ applicant.shared_matching.algorithm_version }}</dd>
-                  <dt>Matching snapshot created at</dt>
-                  <dd>{{ formatDateTime(applicant.shared_matching.snapshot_created_at) }}</dd>
+                  <dt>Occupation key</dt>
+                  <dd>{{ applicant.shared_profile.occupation_key || "Not provided" }}</dd>
+                  <dt>Location</dt>
+                  <dd>{{ applicant.shared_profile.location || "Not provided" }}</dd>
                 </dl>
 
-                <MatchingExplanationPanel
-                  v-if="applicant.shared_matching.explanation"
-                  summary-title="Shared match explanation"
-                  :explanation="applicant.shared_matching.explanation"
-                  :competency-label="competencyLabel"
-                  :show-roadmap="false"
-                />
-                <p v-else class="section-note">
-                  Structured explanation is unavailable for this shared matching snapshot.
-                </p>
+                <section>
+                  <header class="subsection-header">
+                    <h3>Shared competencies</h3>
+                    <p>Competency values shown here come from the stored application snapshot.</p>
+                  </header>
 
-                <details class="matching-disclosure">
-                  <summary class="matching-disclosure-summary">
-                    <span class="matching-disclosure-closed-label">Show matching payload</span>
-                    <span class="matching-disclosure-open-label">Hide matching payload</span>
-                  </summary>
+                  <p v-if="applicant.shared_profile.competencies.length === 0" class="section-note">
+                    No competencies were shared.
+                  </p>
+                  <table v-else class="competency-table">
+                    <thead>
+                      <tr>
+                        <th>Competency</th>
+                        <th>Level</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="(competency, competencyIndex) in applicant.shared_profile.competencies"
+                        :key="`${applicant.application_id}-${competency.competency_key}-${competencyIndex}`"
+                      >
+                        <td>{{ competencyLabel(competency.competency_key) }}</td>
+                        <td>{{ competency.level }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
 
-                  <JsonPayloadViewer
-                    title="Snapshot matching payload"
-                    :payload="applicant.shared_matching.result_payload"
-                  />
-                </details>
-              </template>
-              <p v-else class="section-note">No shared matching snapshot is available for this application.</p>
-            </section>
-          </li>
-        </ul>
+                <section>
+                  <header class="subsection-header">
+                    <h3>Shared matching result</h3>
+                    <p>This result was shared at application time as part of consent.</p>
+                  </header>
+
+                  <template v-if="applicant.shared_matching">
+                    <dl class="summary-grid">
+                      <dt>Score</dt>
+                      <dd>{{ formatScore(applicant.shared_matching.score) }}</dd>
+                      <dt>Algorithm version</dt>
+                      <dd>{{ applicant.shared_matching.algorithm_version }}</dd>
+                      <dt>Matching snapshot created at</dt>
+                      <dd>{{ formatDateTime(applicant.shared_matching.snapshot_created_at) }}</dd>
+                    </dl>
+
+                    <MatchingExplanationPanel
+                      v-if="applicant.shared_matching.explanation"
+                      summary-title="Shared match explanation"
+                      :explanation="applicant.shared_matching.explanation"
+                      :competency-label="competencyLabel"
+                      :show-roadmap="false"
+                    />
+                    <p v-else class="section-note">
+                      Structured explanation is unavailable for this shared matching snapshot.
+                    </p>
+
+                    <details class="matching-disclosure">
+                      <summary class="matching-disclosure-summary">
+                        <span class="matching-disclosure-closed-label">Show matching payload</span>
+                        <span class="matching-disclosure-open-label">Hide matching payload</span>
+                      </summary>
+
+                      <JsonPayloadViewer
+                        title="Snapshot matching payload"
+                        :payload="applicant.shared_matching.result_payload"
+                      />
+                    </details>
+                  </template>
+                  <p v-else class="section-note">
+                    No shared matching snapshot is available for this application.
+                  </p>
+                </section>
+              </div>
+            </li>
+          </ul>
+        </template>
       </section>
     </section>
   </main>
@@ -159,8 +197,12 @@ import type { JobOfferResponse, RecruiterApplicantListItem } from "../../types/d
 const route = useRoute();
 const labelCache = useCatalogLabelCache();
 
+type ApplicantSort = "score_desc" | "applied_desc";
+
 const jobOffer = ref<JobOfferResponse | null>(null);
 const applicants = ref<RecruiterApplicantListItem[]>([]);
+const applicantSort = ref<ApplicantSort>("score_desc");
+const expandedApplicationId = ref<number | null>(null);
 
 const isOfferLoading = ref(true);
 const isApplicantsLoading = ref(false);
@@ -168,6 +210,33 @@ const isOfferNotFound = ref(false);
 
 const offerLoadError = ref<unknown | null>(null);
 const applicantsLoadError = ref<unknown | null>(null);
+
+const sortedApplicants = computed<RecruiterApplicantListItem[]>(() => {
+  const items = [...applicants.value];
+
+  items.sort((left, right) => {
+    if (applicantSort.value === "score_desc") {
+      const scoreComparison = compareScoreDesc(left, right);
+      if (scoreComparison !== 0) {
+        return scoreComparison;
+      }
+    } else {
+      const appliedComparison = compareAppliedDateDesc(left, right);
+      if (appliedComparison !== 0) {
+        return appliedComparison;
+      }
+    }
+
+    const appliedTieBreaker = compareAppliedDateDesc(left, right);
+    if (appliedTieBreaker !== 0) {
+      return appliedTieBreaker;
+    }
+
+    return right.application_id - left.application_id;
+  });
+
+  return items;
+});
 
 const backToOfferPath = computed(() => {
   const offerId = parseOfferId();
@@ -214,6 +283,64 @@ function formatScore(value: number): string {
   return value.toFixed(1);
 }
 
+function formatApplicantScore(applicant: RecruiterApplicantListItem): string {
+  if (applicant.shared_matching === null) {
+    return "No score available";
+  }
+  return formatScore(applicant.shared_matching.score);
+}
+
+function isApplicantExpanded(applicationId: number): boolean {
+  return expandedApplicationId.value === applicationId;
+}
+
+function applicantDetailsId(applicationId: number): string {
+  return `applicant-details-${applicationId}`;
+}
+
+function toggleApplicantDetails(applicationId: number): void {
+  if (expandedApplicationId.value === applicationId) {
+    expandedApplicationId.value = null;
+    return;
+  }
+  expandedApplicationId.value = applicationId;
+}
+
+function parseTimestampForSort(value: string): number {
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  return parsed;
+}
+
+function compareAppliedDateDesc(
+  left: RecruiterApplicantListItem,
+  right: RecruiterApplicantListItem,
+): number {
+  return parseTimestampForSort(right.applied_at) - parseTimestampForSort(left.applied_at);
+}
+
+function compareScoreDesc(
+  left: RecruiterApplicantListItem,
+  right: RecruiterApplicantListItem,
+): number {
+  const leftScore = left.shared_matching?.score ?? null;
+  const rightScore = right.shared_matching?.score ?? null;
+
+  if (leftScore === null && rightScore === null) {
+    return 0;
+  }
+  if (leftScore === null) {
+    return 1;
+  }
+  if (rightScore === null) {
+    return -1;
+  }
+
+  return rightScore - leftScore;
+}
+
 function collectApplicantCompetencyKeys(loadedApplicants: RecruiterApplicantListItem[]): string[] {
   const keys = new Set<string>();
 
@@ -255,6 +382,7 @@ async function loadApplicants(): Promise<void> {
   applicantsLoadError.value = null;
   jobOffer.value = null;
   applicants.value = [];
+  expandedApplicationId.value = null;
 
   try {
     jobOffer.value = await recruiterClient.getJobOffer(offerId);

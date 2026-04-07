@@ -118,7 +118,7 @@ These are the intended technologies unless repository code indicates otherwise.
 - Neo4j for the internal competency knowledge graph
 
 ### Infrastructure
-- [TODO: Docker Compose for local development]
+- VPS Docker production deployment
 - environment-based configuration
 
 If the implemented stack differs from this section, follow the actual repository code and update this file.
@@ -213,8 +213,7 @@ Examples:
 - applications
 - consents
 - matching results
-- [TODO: audit logs]
-- [TODO: snapshots of shared data]
+- snapshots of shared data
 
 ### Neo4j stores competency graph data
 

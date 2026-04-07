@@ -35,11 +35,21 @@ def get_competency_detail(*, competency_key: str) -> dict:
             detail=COMPETENCY_NOT_FOUND_MESSAGE,
         )
 
+    activity_indicators = [
+        {
+            "key": item["id"],
+            "text": item["text"],
+            "code": item["code"],
+        }
+        for item in row.get("activity_indicators", [])
+    ]
+
     return {
         "key": row["id"],
         "label": row["name"],
         "code": row["code"],
         "ekr_level": row.get("ekr_level"),
+        "activity_indicators": activity_indicators,
     }
 
 

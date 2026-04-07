@@ -187,6 +187,57 @@ def test_unknown_catalog_keys_return_structured_404(client: TestClient, monkeypa
     assert_structured_http_error(occupation_response, status_code=404)
 
 
+def test_competency_detail_includes_activity_indicators(client: TestClient, monkeypatch):
+    router_module, service_module = get_catalog_modules_or_xfail()
+    token = register_and_get_token(client)
+
+    def fake_competency_detail(*_args, **_kwargs):
+        return {
+            "key": "comp_1",
+            "label": "Sterilization Basics",
+            "code": "COMP-001",
+            "ekr_level": 4,
+            "activity_indicators": [
+                {
+                    "key": "ai_1",
+                    "text": "Follows sterilization workflow exactly.",
+                    "code": "AI-001",
+                },
+                {
+                    "key": "ai_2",
+                    "text": "Logs post-cleaning checks.",
+                    "code": "AI-002",
+                },
+            ],
+        }
+
+    patch_callable(
+        monkeypatch,
+        router_module,
+        service_module,
+        ["get_competency_detail", "get_competency", "read_competency_detail"],
+        fake_competency_detail,
+    )
+
+    response = client.get(
+        f"{COMPETENCIES_ROUTE}/comp_1",
+        headers=auth_headers(token),
+    )
+
+    if response.status_code == 404:
+        pytest.xfail("Catalog routes are not wired into the API router yet.")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["key"] == "comp_1"
+    assert body["label"] == "Sterilization Basics"
+    assert [item["key"] for item in body["activity_indicators"]] == ["ai_1", "ai_2"]
+    assert [item["text"] for item in body["activity_indicators"]] == [
+        "Follows sterilization workflow exactly.",
+        "Logs post-cleaning checks.",
+    ]
+
+
 def test_catalog_search_returns_empty_list_for_no_matches(client: TestClient, monkeypatch):
     router_module, service_module = get_catalog_modules_or_xfail()
     token = register_and_get_token(client)
@@ -236,6 +287,14 @@ def test_catalog_payload_never_exposes_neo4j_internal_id_fields(client: TestClie
             "label": "Sterilization Basics",
             "code": "COMP-001",
             "ekr_level": 4,
+            "activity_indicators": [
+                {
+                    "key": "ai_1",
+                    "text": "Handles sterilization procedures.",
+                    "code": "AI-001",
+                    "neo4j_id": 888,
+                }
+            ],
             "id": "internal-node-id",
             "neo4j_id": 101,
         }

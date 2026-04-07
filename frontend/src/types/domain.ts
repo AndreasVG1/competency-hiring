@@ -22,6 +22,16 @@ export interface CompetencyCatalogItem extends CatalogItem {
   ekr_level: number | null;
 }
 
+export interface ActivityIndicatorCatalogItem {
+  key: string;
+  text: string;
+  code: string;
+}
+
+export interface CompetencyCatalogDetail extends CompetencyCatalogItem {
+  activity_indicators: ActivityIndicatorCatalogItem[];
+}
+
 export interface OccupationDetail extends CatalogItem {
   required_competencies: CatalogItem[];
 }

@@ -33,7 +33,16 @@ def get_competency_by_key(*, competency_key: str) -> dict | None:
 
     cypher = """
     MATCH (c:Competency {id: $competency_key})
-    RETURN c.id AS id, c.name AS name, c.code AS code, c.ekr_level AS ekr_level
+    OPTIONAL MATCH (c)-[:HAS_ACTIVITY_INDICATOR]->(ai:ActivityIndicator)
+    WITH c, ai
+    ORDER BY ai.text ASC, ai.id ASC
+    RETURN
+      c.id AS id,
+      c.name AS name,
+      c.code AS code,
+      c.ekr_level AS ekr_level,
+      [item IN collect(ai) WHERE item IS NOT NULL | {id: item.id, text: item.text, code: item.code}]
+        AS activity_indicators
     LIMIT 1
     """
 

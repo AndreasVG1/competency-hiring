@@ -49,7 +49,11 @@
           <p>Requirements are listed exactly as published by the recruiter.</p>
         </header>
 
-        <JobOfferRequirementsTable :requirements="offer.requirements" :label-resolver="competencyLabel" />
+        <JobOfferRequirementsTable
+          :requirements="offer.requirements"
+          :label-resolver="competencyLabel"
+          :activity-indicator-resolver="activityIndicatorsFor"
+        />
       </section>
 
       <section v-if="offer && !isOfferNotFound" class="seeker-section">
@@ -181,6 +185,10 @@ function competencyLabel(competencyKey: string): string {
   }
 
   return "Loading label...";
+}
+
+function activityIndicatorsFor(competencyKey: string) {
+  return labelCache.getActivityIndicators(competencyKey) ?? [];
 }
 
 function formatDateTime(value: string): string {

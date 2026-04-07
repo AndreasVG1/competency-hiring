@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, Query
 
 from app.db.models import User
 from app.modules.auth.dependencies import get_current_user
-from app.modules.catalog.schemas import CatalogItem, CompetencyCatalogItem, OccupationDetail
+from app.modules.catalog.schemas import (
+    CatalogItem,
+    CompetencyCatalogDetail,
+    CompetencyCatalogItem,
+    OccupationDetail,
+)
 from app.modules.catalog.service import (
     get_competency_detail,
     get_occupation_detail,
@@ -31,12 +36,12 @@ def list_competencies(
     ]
 
 
-@router.get("/competencies/{competency_key}", response_model=CompetencyCatalogItem)
+@router.get("/competencies/{competency_key}", response_model=CompetencyCatalogDetail)
 def read_competency_detail(
     competency_key: str,
     _current_user: CurrentUser,
-) -> CompetencyCatalogItem:
-    return CompetencyCatalogItem.model_validate(
+) -> CompetencyCatalogDetail:
+    return CompetencyCatalogDetail.model_validate(
         get_competency_detail(competency_key=competency_key),
     )
 

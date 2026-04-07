@@ -1,11 +1,13 @@
 import { reactive } from "vue";
 
 import { catalogClient } from "../api";
+import type { ActivityIndicatorCatalogItem } from "../types/domain";
 
 type LabelState = "idle" | "loading" | "ready" | "error";
 
 export function useCatalogLabelCache() {
   const labelsByKey = reactive(new Map<string, string>());
+  const activityIndicatorsByKey = reactive(new Map<string, ActivityIndicatorCatalogItem[]>());
   const loadingKeys = reactive(new Set<string>());
   const failedKeys = reactive(new Set<string>());
   const pendingRequests = new Map<string, Promise<void>>();
@@ -23,6 +25,10 @@ export function useCatalogLabelCache() {
 
   function getLabel(key: string): string | undefined {
     return labelsByKey.get(key);
+  }
+
+  function getActivityIndicators(key: string): ActivityIndicatorCatalogItem[] | undefined {
+    return activityIndicatorsByKey.get(key);
   }
 
   function getLabelState(key: string): LabelState {
@@ -60,6 +66,7 @@ export function useCatalogLabelCache() {
       try {
         const detail = await catalogClient.getCompetency(normalizedKey);
         labelsByKey.set(normalizedKey, detail.label);
+        activityIndicatorsByKey.set(normalizedKey, detail.activity_indicators ?? []);
       } catch (_error) {
         failedKeys.add(normalizedKey);
       } finally {
@@ -79,6 +86,7 @@ export function useCatalogLabelCache() {
   return {
     setLabel,
     getLabel,
+    getActivityIndicators,
     getLabelState,
     ensureLabel,
     hydrateKeys,

@@ -123,6 +123,18 @@ def catalog_records_provider(*args, **kwargs) -> list[dict[str, Any]]:
                     "code": "COMP-UNIQUE-001",
                     "ekr_level": 4,
                 },
+                "activity_indicators": [
+                    {
+                        "id": "ai_2",
+                        "text": "Kontrollib dokumenteerimise täpsust.",
+                        "code": "AI-002",
+                    },
+                    {
+                        "id": "ai_1",
+                        "text": "Hooldab seadmeid vastavalt juhendile.",
+                        "code": "AI-001",
+                    },
+                ],
             }
         ]
 
@@ -303,3 +315,15 @@ def test_service_ordering_limit_and_unique_code_assumptions(monkeypatch):
     )
     assert detail["key"] == "comp_1"
     assert detail["code"] == "COMP-UNIQUE-001"
+    assert detail["activity_indicators"] == [
+        {
+            "key": "ai_2",
+            "text": "Kontrollib dokumenteerimise täpsust.",
+            "code": "AI-002",
+        },
+        {
+            "key": "ai_1",
+            "text": "Hooldab seadmeid vastavalt juhendile.",
+            "code": "AI-001",
+        },
+    ]

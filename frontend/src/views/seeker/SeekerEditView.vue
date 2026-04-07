@@ -175,6 +175,7 @@
               <th>Competency</th>
               <th>Key</th>
               <th>Level</th>
+              <th>Context</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -189,6 +190,16 @@
                   :options="competencyLevelOptions"
                   :disabled="row.isSaving || row.isDeleting"
                 />
+              </td>
+              <td>
+                <button
+                  v-if="indicatorCount(row.competencyKey) > 0"
+                  type="button"
+                  class="button-secondary indicator-trigger-button"
+                  @click="openIndicators(row.competencyKey)"
+                >
+                  View indicators
+                </button>
               </td>
               <td>
                 <div class="table-actions">
@@ -217,6 +228,39 @@
       </section>
     </section>
   </main>
+
+  <div
+    v-if="overlayCompetencyKey !== null"
+    class="indicator-overlay-backdrop"
+    @click="closeIndicators"
+  >
+    <section
+      class="indicator-overlay-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="seeker-edit-indicators-title"
+      @click.stop
+    >
+      <header class="indicator-overlay-header">
+        <h3 id="seeker-edit-indicators-title">Activity indicators</h3>
+        <button type="button" class="button-secondary indicator-overlay-close" @click="closeIndicators">
+          Close
+        </button>
+      </header>
+
+      <p class="indicator-overlay-subtitle">
+        {{ competencyLabel(overlayCompetencyKey) }}
+        <small>({{ overlayCompetencyKey }})</small>
+      </p>
+
+      <p v-if="activeIndicators.length === 0" class="table-note">No indicators available.</p>
+      <ol v-else class="indicator-overlay-list">
+        <li v-for="indicator in activeIndicators" :key="indicator.key" class="indicator-overlay-item">
+          {{ indicator.text }}
+        </li>
+      </ol>
+    </section>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -286,7 +330,14 @@ const isAddingCompetency = ref(false);
 const addCompetencyError = ref<unknown | null>(null);
 const addCompetencySuccessMessage = ref<string | null>(null);
 const competencyPickerKey = ref(0);
+const overlayCompetencyKey = ref<string | null>(null);
 const existingCompetencyKeys = computed(() => competencyRows.value.map((row) => row.competencyKey));
+const activeIndicators = computed(() => {
+  if (overlayCompetencyKey.value === null) {
+    return [];
+  }
+  return labelCache.getActivityIndicators(overlayCompetencyKey.value) ?? [];
+});
 
 function mapResponseToRow(response: SeekerCompetencyResponse): CompetencyRowState {
   return {
@@ -336,6 +387,18 @@ function selectCompetency(item: CatalogItem): void {
   selectedCompetency.value = item;
   addCompetencyError.value = null;
   addCompetencySuccessMessage.value = null;
+}
+
+function indicatorCount(competencyKey: string): number {
+  return (labelCache.getActivityIndicators(competencyKey) ?? []).length;
+}
+
+function openIndicators(competencyKey: string): void {
+  overlayCompetencyKey.value = competencyKey;
+}
+
+function closeIndicators(): void {
+  overlayCompetencyKey.value = null;
 }
 
 function addSuggestedCompetency(item: CatalogItem): void {

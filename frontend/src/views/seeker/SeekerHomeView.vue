@@ -76,6 +76,7 @@
               <th>Competency</th>
               <th>Key</th>
               <th>Level</th>
+              <th>Context</th>
             </tr>
           </thead>
           <tbody>
@@ -83,16 +84,59 @@
               <td>{{ competencyLabel(item.competency_key) }}</td>
               <td><code>{{ item.competency_key }}</code></td>
               <td>{{ formatLevel(item.level) }}</td>
+              <td>
+                <button
+                  v-if="indicatorCount(item.competency_key) > 0"
+                  type="button"
+                  class="button-secondary indicator-trigger-button"
+                  @click="openIndicators(item.competency_key)"
+                >
+                  View indicators
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </section>
     </section>
   </main>
+
+  <div
+    v-if="overlayCompetencyKey !== null"
+    class="indicator-overlay-backdrop"
+    @click="closeIndicators"
+  >
+    <section
+      class="indicator-overlay-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="seeker-profile-indicators-title"
+      @click.stop
+    >
+      <header class="indicator-overlay-header">
+        <h3 id="seeker-profile-indicators-title">Activity indicators</h3>
+        <button type="button" class="button-secondary indicator-overlay-close" @click="closeIndicators">
+          Close
+        </button>
+      </header>
+
+      <p class="indicator-overlay-subtitle">
+        {{ competencyLabel(overlayCompetencyKey) }}
+        <small>({{ overlayCompetencyKey }})</small>
+      </p>
+
+      <p v-if="activeIndicators.length === 0" class="table-note">No indicators available.</p>
+      <ol v-else class="indicator-overlay-list">
+        <li v-for="indicator in activeIndicators" :key="indicator.key" class="indicator-overlay-item">
+          {{ indicator.text }}
+        </li>
+      </ol>
+    </section>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { ApiClientError, catalogClient, seekerClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
@@ -113,10 +157,18 @@ const isCompetenciesLoading = ref(true);
 const isDeletingProfile = ref(false);
 
 const selectedOccupationLabel = ref<string | null>(null);
+const overlayCompetencyKey = ref<string | null>(null);
 
 const profileLoadError = ref<unknown | null>(null);
 const competenciesLoadError = ref<unknown | null>(null);
 const deleteProfileError = ref<unknown | null>(null);
+
+const activeIndicators = computed(() => {
+  if (overlayCompetencyKey.value === null) {
+    return [];
+  }
+  return labelCache.getActivityIndicators(overlayCompetencyKey.value) ?? [];
+});
 
 function formatLevel(level: CompetencyLevel): string {
   if (level === "beginner") {
@@ -140,6 +192,18 @@ function competencyLabel(competencyKey: string): string {
   }
 
   return "Loading label...";
+}
+
+function indicatorCount(competencyKey: string): number {
+  return (labelCache.getActivityIndicators(competencyKey) ?? []).length;
+}
+
+function openIndicators(competencyKey: string): void {
+  overlayCompetencyKey.value = competencyKey;
+}
+
+function closeIndicators(): void {
+  overlayCompetencyKey.value = null;
 }
 
 async function loadProfile(): Promise<void> {

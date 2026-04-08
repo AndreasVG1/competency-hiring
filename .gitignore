@@ -126,3 +126,6 @@ node_modules/
 backend/app/env/
 backend/data/
 .DS_Store
+
+it_occupations.json
+kompetentsid.xlsx

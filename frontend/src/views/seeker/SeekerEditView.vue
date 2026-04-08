@@ -229,44 +229,20 @@
     </section>
   </main>
 
-  <div
-    v-if="overlayCompetencyKey !== null"
-    class="indicator-overlay-backdrop"
-    @click="closeIndicators"
-  >
-    <section
-      class="indicator-overlay-panel"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="seeker-edit-indicators-title"
-      @click.stop
-    >
-      <header class="indicator-overlay-header">
-        <h3 id="seeker-edit-indicators-title">Activity indicators</h3>
-        <button type="button" class="button-secondary indicator-overlay-close" @click="closeIndicators">
-          Close
-        </button>
-      </header>
-
-      <p class="indicator-overlay-subtitle">
-        {{ competencyLabel(overlayCompetencyKey) }}
-        <small>({{ overlayCompetencyKey }})</small>
-      </p>
-
-      <p v-if="activeIndicators.length === 0" class="table-note">No indicators available.</p>
-      <ol v-else class="indicator-overlay-list">
-        <li v-for="indicator in activeIndicators" :key="indicator.key" class="indicator-overlay-item">
-          {{ indicator.text }}
-        </li>
-      </ol>
-    </section>
-  </div>
+  <ActivityIndicatorsOverlay
+    :competency-key="overlayCompetencyKey"
+    :indicators="activeIndicators"
+    :label-resolver="competencyLabel"
+    title-id="seeker-edit-indicators-title"
+    @close="closeIndicators"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 
 import { ApiClientError, catalogClient, seekerClient } from "../../api";
+import ActivityIndicatorsOverlay from "../../components/ActivityIndicatorsOverlay.vue";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
 import CatalogSearchPicker from "../../components/CatalogSearchPicker.vue";
 import EnumSelect from "../../components/EnumSelect.vue";

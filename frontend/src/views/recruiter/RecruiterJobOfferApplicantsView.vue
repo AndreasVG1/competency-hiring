@@ -107,26 +107,11 @@
                     <p>Competency values shown here come from the stored application snapshot.</p>
                   </header>
 
-                  <p v-if="applicant.shared_profile.competencies.length === 0" class="section-note">
-                    No competencies were shared.
-                  </p>
-                  <table v-else class="competency-table">
-                    <thead>
-                      <tr>
-                        <th>Competency</th>
-                        <th>Level</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="(competency, competencyIndex) in applicant.shared_profile.competencies"
-                        :key="`${applicant.application_id}-${competency.competency_key}-${competencyIndex}`"
-                      >
-                        <td>{{ competencyLabel(competency.competency_key) }}</td>
-                        <td>{{ competency.level }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <CompetencyLevelTable
+                    :rows="toSharedCompetencyRows(applicant)"
+                    empty-text="No competencies were shared."
+                    :label-resolver="competencyLabel"
+                  />
                 </section>
 
                 <section>
@@ -187,6 +172,7 @@ import { useRoute } from "vue-router";
 
 import { ApiClientError, recruiterClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
+import CompetencyLevelTable from "../../components/CompetencyLevelTable.vue";
 import JobOfferStatusBadge from "../../components/JobOfferStatusBadge.vue";
 import JsonPayloadViewer from "../../components/JsonPayloadViewer.vue";
 import MatchingExplanationPanel from "../../components/MatchingExplanationPanel.vue";
@@ -364,6 +350,14 @@ function collectApplicantCompetencyKeys(loadedApplicants: RecruiterApplicantList
   }
 
   return [...keys];
+}
+
+function toSharedCompetencyRows(applicant: RecruiterApplicantListItem) {
+  return applicant.shared_profile.competencies.map((competency, index) => ({
+    id: `${applicant.application_id}-${competency.competency_key}-${index}`,
+    competency_key: competency.competency_key,
+    level: competency.level,
+  }));
 }
 
 async function loadApplicants(): Promise<void> {

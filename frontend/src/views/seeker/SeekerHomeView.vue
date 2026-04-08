@@ -68,71 +68,19 @@
         <ApiErrorNotice v-if="competenciesLoadError" :error="competenciesLoadError" show-all-messages />
 
         <p v-if="isCompetenciesLoading" class="table-note">Loading competencies...</p>
-        <p v-else-if="competencies.length === 0" class="table-note">No competencies saved yet.</p>
-
-        <table v-else class="competency-table">
-          <thead>
-            <tr>
-              <th>Competency</th>
-              <th>Key</th>
-              <th>Level</th>
-              <th>Context</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in competencies" :key="item.id">
-              <td>{{ competencyLabel(item.competency_key) }}</td>
-              <td><code>{{ item.competency_key }}</code></td>
-              <td>{{ formatLevel(item.level) }}</td>
-              <td>
-                <button
-                  v-if="indicatorCount(item.competency_key) > 0"
-                  type="button"
-                  class="button-secondary indicator-trigger-button"
-                  @click="openIndicators(item.competency_key)"
-                >
-                  View indicators
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <CompetencyLevelTable
+          v-else
+          :rows="competencyTableRows"
+          empty-text="No competencies saved yet."
+          :show-key="true"
+          :label-resolver="competencyLabel"
+          :level-formatter="formatLevel"
+          :activity-indicator-resolver="activityIndicatorsFor"
+          overlay-title-id="seeker-profile-indicators-title"
+        />
       </section>
     </section>
   </main>
-
-  <div
-    v-if="overlayCompetencyKey !== null"
-    class="indicator-overlay-backdrop"
-    @click="closeIndicators"
-  >
-    <section
-      class="indicator-overlay-panel"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="seeker-profile-indicators-title"
-      @click.stop
-    >
-      <header class="indicator-overlay-header">
-        <h3 id="seeker-profile-indicators-title">Activity indicators</h3>
-        <button type="button" class="button-secondary indicator-overlay-close" @click="closeIndicators">
-          Close
-        </button>
-      </header>
-
-      <p class="indicator-overlay-subtitle">
-        {{ competencyLabel(overlayCompetencyKey) }}
-        <small>({{ overlayCompetencyKey }})</small>
-      </p>
-
-      <p v-if="activeIndicators.length === 0" class="table-note">No indicators available.</p>
-      <ol v-else class="indicator-overlay-list">
-        <li v-for="indicator in activeIndicators" :key="indicator.key" class="indicator-overlay-item">
-          {{ indicator.text }}
-        </li>
-      </ol>
-    </section>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -140,6 +88,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { ApiClientError, catalogClient, seekerClient } from "../../api";
 import ApiErrorNotice from "../../components/ApiErrorNotice.vue";
+import CompetencyLevelTable from "../../components/CompetencyLevelTable.vue";
 import PageActionsBar from "../../components/PageActionsBar.vue";
 import { useCatalogLabelCache } from "../../composables/useCatalogLabelCache";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
@@ -157,20 +106,20 @@ const isCompetenciesLoading = ref(true);
 const isDeletingProfile = ref(false);
 
 const selectedOccupationLabel = ref<string | null>(null);
-const overlayCompetencyKey = ref<string | null>(null);
 
 const profileLoadError = ref<unknown | null>(null);
 const competenciesLoadError = ref<unknown | null>(null);
 const deleteProfileError = ref<unknown | null>(null);
 
-const activeIndicators = computed(() => {
-  if (overlayCompetencyKey.value === null) {
-    return [];
-  }
-  return labelCache.getActivityIndicators(overlayCompetencyKey.value) ?? [];
-});
+const competencyTableRows = computed(() =>
+  competencies.value.map((item) => ({
+    id: item.id,
+    competency_key: item.competency_key,
+    level: item.level,
+  })),
+);
 
-function formatLevel(level: CompetencyLevel): string {
+function formatLevel(level: string): string {
   if (level === "beginner") {
     return "Beginner";
   }
@@ -194,16 +143,8 @@ function competencyLabel(competencyKey: string): string {
   return "Loading label...";
 }
 
-function indicatorCount(competencyKey: string): number {
-  return (labelCache.getActivityIndicators(competencyKey) ?? []).length;
-}
-
-function openIndicators(competencyKey: string): void {
-  overlayCompetencyKey.value = competencyKey;
-}
-
-function closeIndicators(): void {
-  overlayCompetencyKey.value = null;
+function activityIndicatorsFor(competencyKey: string) {
+  return labelCache.getActivityIndicators(competencyKey) ?? [];
 }
 
 async function loadProfile(): Promise<void> {

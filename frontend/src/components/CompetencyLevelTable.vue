@@ -30,6 +30,7 @@
   <ActivityIndicatorsOverlay
     :competency-key="overlayCompetencyKey"
     :indicators="activeIndicators"
+    :loading="isOverlayLoading"
     :label-resolver="labelResolver"
     :title-id="overlayTitleId"
     @close="closeIndicators"
@@ -54,6 +55,8 @@ interface Props {
   labelResolver?: (competencyKey: string) => string;
   levelFormatter?: (level: string) => string;
   activityIndicatorResolver?: (competencyKey: string) => ActivityIndicatorCatalogItem[] | undefined;
+  activityIndicatorCountResolver?: (competencyKey: string) => number;
+  activityIndicatorLoader?: (competencyKey: string) => Promise<void>;
   overlayTitleId?: string;
 }
 
@@ -62,12 +65,17 @@ const props = withDefaults(defineProps<Props>(), {
   labelResolver: undefined,
   levelFormatter: undefined,
   activityIndicatorResolver: undefined,
+  activityIndicatorCountResolver: undefined,
+  activityIndicatorLoader: undefined,
   overlayTitleId: "competency-level-table-indicators-title",
 });
 
 const overlayCompetencyKey = ref<string | null>(null);
+const isOverlayLoading = ref(false);
 
-const showContextColumn = computed(() => props.activityIndicatorResolver !== undefined);
+const showContextColumn = computed(
+  () => props.activityIndicatorResolver !== undefined || props.activityIndicatorCountResolver !== undefined,
+);
 const activeIndicators = computed<ActivityIndicatorCatalogItem[]>(() => {
   if (!overlayCompetencyKey.value || !props.activityIndicatorResolver) {
     return [];
@@ -90,17 +98,37 @@ function formatLevel(level: string): string {
 }
 
 function indicatorCount(competencyKey: string): number {
-  if (!props.activityIndicatorResolver) {
-    return 0;
+  if (props.activityIndicatorCountResolver) {
+    return props.activityIndicatorCountResolver(competencyKey);
   }
-  return (props.activityIndicatorResolver(competencyKey) ?? []).length;
+  if (props.activityIndicatorResolver) {
+    return (props.activityIndicatorResolver(competencyKey) ?? []).length;
+  }
+  return 0;
 }
 
 function openIndicators(competencyKey: string): void {
   overlayCompetencyKey.value = competencyKey;
+  isOverlayLoading.value = props.activityIndicatorLoader !== undefined;
+
+  if (!props.activityIndicatorLoader) {
+    return;
+  }
+
+  const activeKey = competencyKey;
+  void (async () => {
+    try {
+      await props.activityIndicatorLoader?.(competencyKey);
+    } finally {
+      if (overlayCompetencyKey.value === activeKey) {
+        isOverlayLoading.value = false;
+      }
+    }
+  })();
 }
 
 function closeIndicators(): void {
   overlayCompetencyKey.value = null;
+  isOverlayLoading.value = false;
 }
 </script>

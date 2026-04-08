@@ -23,3 +23,18 @@ class CompetencyCatalogDetail(CompetencyCatalogItem):
 
 class OccupationDetail(CatalogItem):
     required_competencies: list[CatalogItem]
+
+
+class CompetencyResolveRequest(BaseModel):
+    keys: list[str] = Field(..., max_length=500)
+
+
+class ResolvedCompetencyItem(BaseModel):
+    key: str
+    label: str
+    activity_indicator_count: int
+
+
+class CompetencyResolveResponse(BaseModel):
+    items: list[ResolvedCompetencyItem] = Field(default_factory=list)
+    missing_keys: list[str] = Field(default_factory=list)

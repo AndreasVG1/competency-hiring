@@ -107,6 +107,8 @@
           empty-text="No requirements saved yet."
           :label-resolver="competencyLabel"
           :activity-indicator-resolver="activityIndicatorsFor"
+          :activity-indicator-count-resolver="activityIndicatorCountFor"
+          :activity-indicator-loader="loadActivityIndicators"
         />
       </section>
     </section>
@@ -176,6 +178,14 @@ function competencyLabel(competencyKey: string): string {
 
 function activityIndicatorsFor(competencyKey: string) {
   return labelCache.getActivityIndicators(competencyKey) ?? [];
+}
+
+function activityIndicatorCountFor(competencyKey: string): number {
+  return labelCache.getActivityIndicatorCount(competencyKey);
+}
+
+async function loadActivityIndicators(competencyKey: string): Promise<void> {
+  await labelCache.ensureActivityIndicators(competencyKey);
 }
 
 const tableRequirements = computed<PublicJobOfferRequirementItem[]>(() => {

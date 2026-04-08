@@ -230,6 +230,7 @@
   <ActivityIndicatorsOverlay
     :competency-key="overlayCompetencyKey"
     :indicators="activeIndicators"
+    :loading="isOverlayLoading"
     :label-resolver="competencyLabel"
     title-id="seeker-edit-indicators-title"
     @close="closeIndicators"
@@ -305,6 +306,7 @@ const addCompetencyError = ref<unknown | null>(null);
 const addCompetencySuccessMessage = ref<string | null>(null);
 const competencyPickerKey = ref(0);
 const overlayCompetencyKey = ref<string | null>(null);
+const isOverlayLoading = ref(false);
 const existingCompetencyKeys = computed(() => competencyRows.value.map((row) => row.competencyKey));
 const activeIndicators = computed(() => {
   if (overlayCompetencyKey.value === null) {
@@ -364,15 +366,26 @@ function selectCompetency(item: CatalogItem): void {
 }
 
 function indicatorCount(competencyKey: string): number {
-  return (labelCache.getActivityIndicators(competencyKey) ?? []).length;
+  return labelCache.getActivityIndicatorCount(competencyKey);
 }
 
 function openIndicators(competencyKey: string): void {
   overlayCompetencyKey.value = competencyKey;
+  isOverlayLoading.value = true;
+  void (async () => {
+    try {
+      await labelCache.ensureActivityIndicators(competencyKey);
+    } finally {
+      if (overlayCompetencyKey.value === competencyKey) {
+        isOverlayLoading.value = false;
+      }
+    }
+  })();
 }
 
 function closeIndicators(): void {
   overlayCompetencyKey.value = null;
+  isOverlayLoading.value = false;
 }
 
 function addSuggestedCompetency(item: CatalogItem): void {

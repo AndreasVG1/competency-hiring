@@ -75,6 +75,8 @@
 	          :label-resolver="competencyLabel"
 	          :level-formatter="formatLevel"
 	          :activity-indicator-resolver="activityIndicatorsFor"
+            :activity-indicator-count-resolver="activityIndicatorCountFor"
+            :activity-indicator-loader="loadActivityIndicators"
 	          overlay-title-id="seeker-profile-indicators-title"
 	        />
       </section>
@@ -144,6 +146,14 @@ function competencyLabel(competencyKey: string): string {
 
 function activityIndicatorsFor(competencyKey: string) {
   return labelCache.getActivityIndicators(competencyKey) ?? [];
+}
+
+function activityIndicatorCountFor(competencyKey: string): number {
+  return labelCache.getActivityIndicatorCount(competencyKey);
+}
+
+async function loadActivityIndicators(competencyKey: string): Promise<void> {
+  await labelCache.ensureActivityIndicators(competencyKey);
 }
 
 async function loadProfile(): Promise<void> {

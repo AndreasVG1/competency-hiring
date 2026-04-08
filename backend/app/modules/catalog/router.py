@@ -6,6 +6,8 @@ from app.db.models import User
 from app.modules.auth.dependencies import get_current_user
 from app.modules.catalog.schemas import (
     CatalogItem,
+    CompetencyResolveRequest,
+    CompetencyResolveResponse,
     CompetencyCatalogDetail,
     CompetencyCatalogItem,
     OccupationDetail,
@@ -13,6 +15,7 @@ from app.modules.catalog.schemas import (
 from app.modules.catalog.service import (
     get_competency_detail,
     get_occupation_detail,
+    resolve_competencies,
     search_competencies,
     search_occupations,
 )
@@ -34,6 +37,16 @@ def list_competencies(
         CompetencyCatalogItem.model_validate(item)
         for item in search_competencies(query=query, limit=limit)
     ]
+
+
+@router.post("/competencies/resolve", response_model=CompetencyResolveResponse)
+def resolve_competency_batch(
+    request: CompetencyResolveRequest,
+    _current_user: CurrentUser,
+) -> CompetencyResolveResponse:
+    return CompetencyResolveResponse.model_validate(
+        resolve_competencies(keys=request.keys),
+    )
 
 
 @router.get("/competencies/{competency_key}", response_model=CompetencyCatalogDetail)

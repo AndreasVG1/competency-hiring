@@ -101,7 +101,7 @@ For pages with many competencies:
 
 This plan is intentionally phased so we can measure improvements after each step and avoid large cross-cutting changes.
 
-### Phase 5.1 — Biggest Win: New Catalog Bulk Resolve API
+### [X] Phase 5.1 — Biggest Win: New Catalog Bulk Resolve API
 
 #### What we add (API design)
 
@@ -181,11 +181,11 @@ Reasoning:
 
 ---
 
-### Phase 5.2 — Frontend Wins (Batching + Cache + Cancellation)
+### [ ] Phase 5.2 — Frontend Wins (Batching + Cache + Cancellation)
 
 Phase 5.2 adopts the new bulk endpoint, adds a global cache, and fixes request waste in typeahead.
 
-#### 5.2.1 Global catalog cache (Pinia)
+#### [ ] 5.2.1 Global catalog cache (Pinia)
 
 Create a global store (example path):
 
@@ -203,7 +203,7 @@ Reasoning:
 - Today, each view instantiates its own cache, so navigation causes redundant re-fetching.
 - A global store provides cross-route reuse and makes “batch then lazy detail” easy to centralize.
 
-#### 5.2.2 Replace per-key hydration with a single resolve call
+#### [ ] 5.2.2 Replace per-key hydration with a single resolve call
 
 Update view code paths that currently call:
 
@@ -225,7 +225,7 @@ Reasoning:
 
 - This is where the N+1 pattern manifests most strongly.
 
-#### 5.2.3 Make “View indicators” lazy (detail fetch on demand)
+#### [ ] 5.2.3 Make “View indicators” lazy (detail fetch on demand)
 
 Update table components so they do not rely on a prehydrated list of indicators to show the button.
 
@@ -246,7 +246,7 @@ Reasoning:
 - Most users won’t open indicators for every competency; avoid loading text for all keys by default.
 - This significantly reduces Neo4j relationship expansion work.
 
-#### 5.2.4 True request cancellation for typeahead search
+#### [ ] 5.2.4 True request cancellation for typeahead search
 
 Today, `CatalogSearchPicker.vue` ignores stale responses, but the backend still processes them.
 
@@ -263,7 +263,7 @@ Reasoning:
 - Aborting stale queries prevents wasted Neo4j work during rapid typing.
 - This improves responsiveness under load and reduces tail latency.
 
-#### 5.2.5 Concurrency and chunking safeguards
+#### [ ] 5.2.5 Concurrency and chunking safeguards
 
 Add guardrails so the app does not create “thundering herd” requests again:
 
@@ -295,7 +295,7 @@ Manual QA (Network tab):
 
 ---
 
-### Phase 5.3 — Even Better: Embed Labels/Counts Into Business APIs (Minimize Catalog Calls Further)
+### [ ] Phase 5.3 — Even Better: Embed Labels/Counts Into Business APIs (Minimize Catalog Calls Further)
 
 Phase 5.3 goes beyond batching and reduces catalog calls by **enriching business endpoints** with the display fields the UI needs.
 

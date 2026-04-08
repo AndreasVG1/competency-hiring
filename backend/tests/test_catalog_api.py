@@ -9,6 +9,7 @@ API_PREFIX = "/api/v1"
 REGISTER_ROUTE = f"{API_PREFIX}/auth/register"
 OCCUPATIONS_ROUTE = f"{API_PREFIX}/catalog/occupations"
 COMPETENCIES_ROUTE = f"{API_PREFIX}/catalog/competencies"
+COMPETENCIES_RESOLVE_ROUTE = f"{COMPETENCIES_ROUTE}/resolve"
 
 def import_or_xfail(module_name: str):
     try:
@@ -86,6 +87,16 @@ def test_catalog_endpoints_require_authentication(client: TestClient, path: str)
     get_catalog_modules_or_xfail()
 
     response = client.get(path)
+    if response.status_code == 404:
+        pytest.xfail("Catalog routes are not wired into the API router yet.")
+
+    assert_structured_http_error(response, status_code=401)
+
+
+def test_competency_resolve_requires_authentication(client: TestClient):
+    get_catalog_modules_or_xfail()
+
+    response = client.post(COMPETENCIES_RESOLVE_ROUTE, json={"keys": ["comp_1"]})
     if response.status_code == 404:
         pytest.xfail("Catalog routes are not wired into the API router yet.")
 
@@ -236,6 +247,55 @@ def test_competency_detail_includes_activity_indicators(client: TestClient, monk
         "Follows sterilization workflow exactly.",
         "Logs post-cleaning checks.",
     ]
+
+
+def test_competency_resolve_returns_deterministic_contract_shape(client: TestClient, monkeypatch):
+    router_module, service_module = get_catalog_modules_or_xfail()
+    token = register_and_get_token(client)
+
+    def fake_resolve_competencies(*_args, **_kwargs):
+        return {
+            "items": [
+                {
+                    "key": "comp_2",
+                    "label": "Beta Competency",
+                    "activity_indicator_count": 0,
+                    "neo4j_id": 999,
+                },
+                {
+                    "key": "comp_1",
+                    "label": "Alpha Competency",
+                    "activity_indicator_count": 3,
+                    "internal_id": "should-not-leak",
+                },
+            ],
+            "missing_keys": ["comp_unknown"],
+            "id": "top-level-should-not-leak",
+        }
+
+    patch_callable(
+        monkeypatch,
+        router_module,
+        service_module,
+        ["resolve_competencies", "resolve_competency_batch", "resolve_competencies_batch"],
+        fake_resolve_competencies,
+    )
+
+    response = client.post(
+        COMPETENCIES_RESOLVE_ROUTE,
+        json={"keys": ["comp_2", "comp_1", "comp_unknown"]},
+        headers=auth_headers(token),
+    )
+
+    if response.status_code == 404:
+        pytest.xfail("Catalog routes are not wired into the API router yet.")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert list(body.keys()) == ["items", "missing_keys"]
+    assert [item["key"] for item in body["items"]] == ["comp_2", "comp_1"]
+    assert body["missing_keys"] == ["comp_unknown"]
+    assert_absent_forbidden_id_fields(body)
 
 
 def test_catalog_search_returns_empty_list_for_no_matches(client: TestClient, monkeypatch):

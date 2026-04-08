@@ -18,7 +18,8 @@
 	        {{ resolveLabel(competencyKey) }}
 	      </p>
 
-      <p v-if="indicators.length === 0" class="table-note">No indicators available.</p>
+      <p v-if="loading" class="table-note">Loading indicators...</p>
+      <p v-else-if="indicators.length === 0" class="table-note">No indicators available.</p>
       <ol v-else class="indicator-overlay-list">
         <li v-for="indicator in indicators" :key="indicator.key" class="indicator-overlay-item">
           {{ indicator.text }}
@@ -36,10 +37,12 @@ interface Props {
   indicators: ActivityIndicatorCatalogItem[];
   titleId: string;
   labelResolver?: (competencyKey: string) => string;
+  loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   labelResolver: undefined,
+  loading: false,
 });
 
 const emit = defineEmits<{

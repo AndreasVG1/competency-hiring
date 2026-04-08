@@ -1,6 +1,7 @@
 import { apiRequest } from "./httpClient";
 import type {
   CatalogItem,
+  CompetencyResolveResponse,
   CompetencyCatalogDetail,
   CompetencyCatalogItem,
   OccupationDetail,
@@ -27,6 +28,13 @@ export const catalogClient = {
     return apiRequest<CompetencyCatalogDetail>(
       `${CATALOG_BASE_PATH}/competencies/${encodeURIComponent(competencyKey)}`,
     );
+  },
+
+  resolveCompetencies(keys: string[]): Promise<CompetencyResolveResponse> {
+    return apiRequest<CompetencyResolveResponse>(`${CATALOG_BASE_PATH}/competencies/resolve`, {
+      method: "POST",
+      body: { keys },
+    });
   },
 
   listOccupations(params: CatalogSearchParams = {}): Promise<CatalogItem[]> {

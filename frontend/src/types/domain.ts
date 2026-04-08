@@ -32,6 +32,17 @@ export interface CompetencyCatalogDetail extends CompetencyCatalogItem {
   activity_indicators: ActivityIndicatorCatalogItem[];
 }
 
+export interface ResolvedCompetencyItem {
+  key: string;
+  label: string;
+  activity_indicator_count: number;
+}
+
+export interface CompetencyResolveResponse {
+  items: ResolvedCompetencyItem[];
+  missing_keys: string[];
+}
+
 export interface OccupationDetail extends CatalogItem {
   required_competencies: CatalogItem[];
 }

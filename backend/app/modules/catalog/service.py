@@ -53,6 +53,47 @@ def get_competency_detail(*, competency_key: str) -> dict:
     }
 
 
+def resolve_competencies(*, keys: list[str]) -> dict:
+    normalized_keys: list[str] = []
+    seen: set[str] = set()
+
+    for raw_key in keys:
+        key = raw_key.strip()
+        if not key:
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized_keys.append(key)
+
+    if not normalized_keys:
+        return {"items": [], "missing_keys": []}
+
+    rows = repository.resolve_competencies(keys=normalized_keys)
+    row_by_requested_key: dict[str, dict] = {
+        str(row["requested_key"]): row for row in rows if row.get("requested_key") is not None
+    }
+
+    items: list[dict] = []
+    missing_keys: list[str] = []
+
+    for key in normalized_keys:
+        row = row_by_requested_key.get(key)
+        if not row or row.get("id") is None:
+            missing_keys.append(key)
+            continue
+
+        items.append(
+            {
+                "key": row["id"],
+                "label": row["name"],
+                "activity_indicator_count": int(row.get("activity_indicator_count", 0)),
+            }
+        )
+
+    return {"items": items, "missing_keys": missing_keys}
+
+
 def search_occupations(*, query: str, limit: int) -> list[dict]:
     rows = repository.search_occupations(query=query.strip(), limit=limit)
     return [_to_catalog_item(key=row["id"], label=row["name"]) for row in rows]

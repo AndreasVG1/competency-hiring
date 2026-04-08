@@ -30,6 +30,7 @@
   <ActivityIndicatorsOverlay
     :competency-key="overlayCompetencyKey"
     :indicators="activeIndicators"
+    :loading="isOverlayLoading"
     :label-resolver="resolveLabel"
     title-id="job-offer-requirements-indicators-title"
     @close="closeIndicators"
@@ -51,17 +52,24 @@ interface Props {
   emptyText?: string;
   labelResolver?: (competencyKey: string) => string;
   activityIndicatorResolver?: (competencyKey: string) => ActivityIndicatorCatalogItem[] | undefined;
+  activityIndicatorCountResolver?: (competencyKey: string) => number;
+  activityIndicatorLoader?: (competencyKey: string) => Promise<void>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   emptyText: "No requirements listed for this offer.",
   labelResolver: undefined,
   activityIndicatorResolver: undefined,
+  activityIndicatorCountResolver: undefined,
+  activityIndicatorLoader: undefined,
 });
 
 const overlayCompetencyKey = ref<string | null>(null);
+const isOverlayLoading = ref(false);
 
-const showIndicatorsColumn = computed(() => props.activityIndicatorResolver !== undefined);
+const showIndicatorsColumn = computed(
+  () => props.activityIndicatorResolver !== undefined || props.activityIndicatorCountResolver !== undefined,
+);
 const activeIndicators = computed<ActivityIndicatorCatalogItem[]>(() => {
   if (overlayCompetencyKey.value === null || !props.activityIndicatorResolver) {
     return [];
@@ -87,17 +95,37 @@ function resolveLabel(competencyKey: string): string {
 }
 
 function indicatorCount(competencyKey: string): number {
-  if (!props.activityIndicatorResolver) {
-    return 0;
+  if (props.activityIndicatorCountResolver) {
+    return props.activityIndicatorCountResolver(competencyKey);
   }
-  return (props.activityIndicatorResolver(competencyKey) ?? []).length;
+  if (props.activityIndicatorResolver) {
+    return (props.activityIndicatorResolver(competencyKey) ?? []).length;
+  }
+  return 0;
 }
 
 function openIndicators(competencyKey: string): void {
   overlayCompetencyKey.value = competencyKey;
+  isOverlayLoading.value = props.activityIndicatorLoader !== undefined;
+
+  if (!props.activityIndicatorLoader) {
+    return;
+  }
+
+  const activeKey = competencyKey;
+  void (async () => {
+    try {
+      await props.activityIndicatorLoader?.(competencyKey);
+    } finally {
+      if (overlayCompetencyKey.value === activeKey) {
+        isOverlayLoading.value = false;
+      }
+    }
+  })();
 }
 
 function closeIndicators(): void {
   overlayCompetencyKey.value = null;
+  isOverlayLoading.value = false;
 }
 </script>

@@ -138,6 +138,32 @@ def catalog_records_provider(*args, **kwargs) -> list[dict[str, Any]]:
             }
         ]
 
+    if "keys" in params:
+        keys = params.get("keys") or []
+        records: list[dict[str, Any]] = []
+        for idx, key in enumerate(keys):
+            if key == "unknown":
+                records.append(
+                    {
+                        "idx": idx,
+                        "requested_key": key,
+                        "id": None,
+                        "name": None,
+                        "activity_indicator_count": 0,
+                    }
+                )
+            else:
+                records.append(
+                    {
+                        "idx": idx,
+                        "requested_key": key,
+                        "id": key,
+                        "name": f"Label for {key}",
+                        "activity_indicator_count": 2 if key == "comp_1" else 0,
+                    }
+                )
+        return records
+
     if "occupation_key" in params:
         if params["occupation_key"] == "unknown":
             return []
@@ -256,6 +282,30 @@ def test_service_maps_graph_fields_to_api_fields(monkeypatch):
         assert "label" in item
         assert "id" not in item
         assert "name" not in item
+
+
+def test_resolve_competencies_dedupes_and_preserves_order(monkeypatch):
+    service_module = import_or_xfail("app.modules.catalog.service")
+    install_fake_driver(monkeypatch, FakeDriver(catalog_records_provider))
+
+    resolve_competencies = resolve_callable(
+        service_module,
+        ["resolve_competencies", "resolve_competency_batch"],
+        purpose="competency resolve",
+    )
+
+    result = invoke_with_supported_signature(
+        resolve_competencies,
+        keys=[" comp_2 ", "comp_1", "comp_2", "", "unknown"],
+    )
+
+    assert result == {
+        "items": [
+            {"key": "comp_2", "label": "Label for comp_2", "activity_indicator_count": 0},
+            {"key": "comp_1", "label": "Label for comp_1", "activity_indicator_count": 2},
+        ],
+        "missing_keys": ["unknown"],
+    }
 
 
 def test_service_returns_required_competencies_in_occupation_detail(monkeypatch):

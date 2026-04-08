@@ -65,11 +65,15 @@ class SeekerCompetencyResponse(BaseModel):
     id: int
     competency_key: str
     level: CompetencyLevel
+    competency_label: str | None = None
+    activity_indicator_count: int | None = None
 
 
 class PublicJobOfferRequirementItem(BaseModel):
     competency_key: str
     priority: RequirementPriority
+    competency_label: str | None = None
+    activity_indicator_count: int | None = None
 
 
 class PublicJobOfferListItem(BaseModel):

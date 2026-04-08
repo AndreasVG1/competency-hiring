@@ -6,6 +6,20 @@ type LabelState = "idle" | "loading" | "ready" | "error";
 export function useCatalogLabelCache() {
   const catalogCache = useCatalogCacheStore();
 
+  function setCompetencyMeta(key: string, label: string, activityIndicatorCount: number): void {
+    const normalizedKey = key.trim();
+    if (!normalizedKey) {
+      return;
+    }
+
+    catalogCache.setMeta({
+      key: normalizedKey,
+      label,
+      activityIndicatorCount,
+      loadedAt: Date.now(),
+    });
+  }
+
   function setLabel(key: string, label: string): void {
     const normalizedKey = key.trim();
     if (!normalizedKey) {
@@ -49,6 +63,7 @@ export function useCatalogLabelCache() {
   }
 
   return {
+    setCompetencyMeta,
     setLabel,
     getLabel,
     getActivityIndicators,

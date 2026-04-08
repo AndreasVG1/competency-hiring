@@ -77,6 +77,8 @@ export interface SeekerCompetencyResponse {
   id: number;
   competency_key: string;
   level: CompetencyLevel;
+  competency_label?: string | null;
+  activity_indicator_count?: number | null;
 }
 
 export interface RecruiterProfileUpsertRequest {
@@ -125,11 +127,15 @@ export interface JobOfferRequirementResponse {
   job_offer_id: number;
   competency_key: string;
   priority: RequirementPriority;
+  competency_label?: string | null;
+  activity_indicator_count?: number | null;
 }
 
 export interface PublicJobOfferRequirementItem {
   competency_key: string;
   priority: RequirementPriority;
+  competency_label?: string | null;
+  activity_indicator_count?: number | null;
 }
 
 export interface PublicJobOfferListItem {

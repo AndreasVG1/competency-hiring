@@ -435,7 +435,7 @@ def test_list_published_job_offers_filters_by_applied_state(db_session):
     assert not_applied_items[0].application_id is None
 
 
-def test_get_published_job_offer_detail_returns_requirements(db_session):
+def test_get_published_job_offer_detail_returns_requirements(db_session, monkeypatch):
     recruiter = create_recruiter_user(db_session, email="service-marketplace-detail-recruiter@example.com")
     seeker = create_user(db_session, email="service-marketplace-detail-seeker@example.com")
     db_session.add(
@@ -472,6 +472,15 @@ def test_get_published_job_offer_detail_returns_requirements(db_session):
     db_session.add(application)
     db_session.commit()
 
+    monkeypatch.setattr(
+        service,
+        "resolve_catalog_competencies",
+        lambda *, keys: {
+            "items": [{"key": "python", "label": "Python", "activity_indicator_count": 4}],
+            "missing_keys": [],
+        },
+    )
+
     detail = service.get_published_job_offer_detail_or_404(
         db_session,
         seeker_user_id=seeker.id,
@@ -482,6 +491,8 @@ def test_get_published_job_offer_detail_returns_requirements(db_session):
     assert detail.company_name == "Acme"
     assert detail.requirements[0].competency_key == "python"
     assert detail.requirements[0].priority == RequirementPriority.MUST_HAVE
+    assert detail.requirements[0].competency_label == "Python"
+    assert detail.requirements[0].activity_indicator_count == 4
     assert detail.applied is True
     assert detail.application_id == application.id
 

@@ -194,6 +194,20 @@ async function loadCompetencies(): Promise<void> {
   try {
     const loadedCompetencies = await seekerClient.listCompetencies();
     competencies.value = loadedCompetencies;
+
+    for (const item of loadedCompetencies) {
+      if (
+        item.competency_label != null &&
+        typeof item.activity_indicator_count === "number"
+      ) {
+        labelCache.setCompetencyMeta(
+          item.competency_key,
+          item.competency_label,
+          item.activity_indicator_count,
+        );
+      }
+    }
+
     void labelCache.hydrateKeys(loadedCompetencies.map((item) => item.competency_key));
   } catch (error) {
     competenciesLoadError.value = error;

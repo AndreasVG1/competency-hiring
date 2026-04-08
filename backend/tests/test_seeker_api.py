@@ -318,6 +318,13 @@ def test_competency_list_returns_only_current_seeker_records(client: TestClient,
         "app.modules.seeker.service.get_competency_detail",
         lambda *, competency_key: {"key": competency_key, "label": "Competency", "code": "C", "ekr_level": 4},
     )
+    monkeypatch.setattr(
+        "app.modules.seeker.service.resolve_catalog_competencies",
+        lambda *, keys: {
+            "items": [{"key": "comp_1", "label": "Competency One", "activity_indicator_count": 3}],
+            "missing_keys": [],
+        },
+    )
 
     one_create = client.post(
         SEEKER_COMPETENCIES_ROUTE,
@@ -343,6 +350,8 @@ def test_competency_list_returns_only_current_seeker_records(client: TestClient,
     assert len(items) == 1
     assert items[0]["competency_key"] == "comp_1"
     assert items[0]["level"] == "beginner"
+    assert items[0]["competency_label"] == "Competency One"
+    assert items[0]["activity_indicator_count"] == 3
 
 
 def test_competency_patch_updates_level_for_own_record(client: TestClient, monkeypatch):
@@ -664,6 +673,13 @@ def test_job_offer_marketplace_detail_returns_published_offer_with_requirements(
         "app.modules.recruiter.service.get_competency_detail",
         lambda *, competency_key: {"key": competency_key, "label": competency_key.replace("_", " ").title()},
     )
+    monkeypatch.setattr(
+        "app.modules.seeker.service.resolve_catalog_competencies",
+        lambda *, keys: {
+            "items": [{"key": "python", "label": "Python", "activity_indicator_count": 2}],
+            "missing_keys": [],
+        },
+    )
 
     recruiter_profile = client.put(
         RECRUITER_PROFILE_ROUTE,
@@ -701,7 +717,14 @@ def test_job_offer_marketplace_detail_returns_published_offer_with_requirements(
     assert body["id"] == offer_id
     assert body["company_name"] == "Acme"
     assert body["description"] == "Build APIs"
-    assert body["requirements"] == [{"competency_key": "python", "priority": "must_have"}]
+    assert body["requirements"] == [
+        {
+            "competency_key": "python",
+            "priority": "must_have",
+            "competency_label": "Python",
+            "activity_indicator_count": 2,
+        }
+    ]
     assert body["applied"] is False
     assert body["application_id"] is None
 

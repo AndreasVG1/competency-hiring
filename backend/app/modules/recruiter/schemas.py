@@ -90,6 +90,8 @@ class JobOfferRequirementResponse(BaseModel):
     job_offer_id: int
     competency_key: str
     priority: RequirementPriority
+    competency_label: str | None = None
+    activity_indicator_count: int | None = None
 
 
 class RecruiterApplicantSharedProfile(BaseModel):

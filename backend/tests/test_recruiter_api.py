@@ -594,6 +594,13 @@ def test_requirement_list_returns_only_requirements_for_owned_offer(client: Test
         "app.modules.recruiter.service.get_competency_detail",
         lambda *, competency_key: {"key": competency_key, "label": "Competency", "code": "C", "ekr_level": 4},
     )
+    monkeypatch.setattr(
+        "app.modules.recruiter.service.resolve_catalog_competencies",
+        lambda *, keys: {
+            "items": [{"key": "comp_1", "label": "Competency One", "activity_indicator_count": 5}],
+            "missing_keys": [],
+        },
+    )
 
     create_requirement(client, recruiter_one, job_offer_id=offer_one, competency_key="comp_1", priority="must_have")
     create_requirement(client, recruiter_two, job_offer_id=offer_two, competency_key="comp_2", priority="important")
@@ -608,6 +615,8 @@ def test_requirement_list_returns_only_requirements_for_owned_offer(client: Test
     assert len(items) == 1
     assert items[0]["job_offer_id"] == offer_one
     assert items[0]["competency_key"] == "comp_1"
+    assert items[0]["competency_label"] == "Competency One"
+    assert items[0]["activity_indicator_count"] == 5
 
 
 def test_requirement_patch_updates_priority_for_own_requirement(client: TestClient, monkeypatch):

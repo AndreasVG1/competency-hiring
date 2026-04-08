@@ -12,7 +12,11 @@ from app.db.models import (
     JobSeekerProfile,
     RecruiterProfile,
 )
-from app.modules.catalog.service import get_competency_detail, get_occupation_detail
+from app.modules.catalog.service import (
+    get_competency_detail,
+    get_occupation_detail,
+    resolve_competencies as resolve_catalog_competencies,
+)
 from app.modules.explanation import build_explanation
 from app.modules.matching.service import (
     get_private_analysis_for_seeker as get_private_matching_analysis_for_seeker,
@@ -100,6 +104,38 @@ def list_competencies_for_user(
         .order_by(JobSeekerCompetency.id.asc())
         .all()
     )
+
+
+def list_competencies_for_user_enriched(
+    db_session: Session,
+    *,
+    user_id: int,
+) -> list[dict[str, object]]:
+    competencies = list_competencies_for_user(db_session, user_id=user_id)
+    competency_keys = [item.competency_key for item in competencies]
+
+    try:
+        resolved = resolve_catalog_competencies(keys=competency_keys)
+    except Exception:
+        resolved = {"items": [], "missing_keys": competency_keys}
+    meta_by_key: dict[str, dict[str, object]] = {
+        str(item["key"]): item for item in (resolved.get("items") or []) if item.get("key")
+    }
+
+    enriched: list[dict[str, object]] = []
+    for item in competencies:
+        meta = meta_by_key.get(item.competency_key)
+        enriched.append(
+            {
+                "id": item.id,
+                "competency_key": item.competency_key,
+                "level": item.level,
+                "competency_label": meta.get("label") if meta else None,
+                "activity_indicator_count": meta.get("activity_indicator_count") if meta else None,
+            }
+        )
+
+    return enriched
 
 
 def add_competency_for_user(
@@ -319,6 +355,15 @@ def get_published_job_offer_detail_or_404(
         .all()
     )
 
+    requirement_keys = [requirement.competency_key for requirement in requirements]
+    try:
+        resolved = resolve_catalog_competencies(keys=requirement_keys)
+    except Exception:
+        resolved = {"items": [], "missing_keys": requirement_keys}
+    meta_by_key: dict[str, dict[str, object]] = {
+        str(item["key"]): item for item in (resolved.get("items") or []) if item.get("key")
+    }
+
     return PublicJobOfferDetail(
         id=job_offer.id,
         title=job_offer.title,
@@ -333,6 +378,14 @@ def get_published_job_offer_detail_or_404(
             PublicJobOfferRequirementItem(
                 competency_key=requirement.competency_key,
                 priority=requirement.priority,
+                competency_label=(
+                    meta_by_key.get(requirement.competency_key, {}).get("label") if requirement.competency_key else None
+                ), # type: ignore
+                activity_indicator_count=(
+                    meta_by_key.get(requirement.competency_key, {}).get("activity_indicator_count")
+                    if requirement.competency_key
+                    else None
+                ), # type: ignore
             )
             for requirement in requirements
         ],

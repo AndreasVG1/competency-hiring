@@ -255,6 +255,20 @@ async function loadOffer(): Promise<void> {
   try {
     const loadedOffer = await seekerClient.getPublishedJobOffer(offerId);
     offer.value = loadedOffer;
+
+    for (const requirement of loadedOffer.requirements) {
+      if (
+        requirement.competency_label != null &&
+        typeof requirement.activity_indicator_count === "number"
+      ) {
+        labelCache.setCompetencyMeta(
+          requirement.competency_key,
+          requirement.competency_label,
+          requirement.activity_indicator_count,
+        );
+      }
+    }
+
     void labelCache.hydrateKeys(loadedOffer.requirements.map((item) => item.competency_key));
   } catch (error) {
     if (error instanceof ApiClientError && error.statusCode === 404) {

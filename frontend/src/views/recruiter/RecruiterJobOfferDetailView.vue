@@ -245,6 +245,20 @@ async function loadRequirements(offerId: number): Promise<void> {
   try {
     const loadedRequirements = await recruiterClient.listRequirements(offerId);
     requirements.value = loadedRequirements;
+
+    for (const item of loadedRequirements) {
+      if (
+        item.competency_label != null &&
+        typeof item.activity_indicator_count === "number"
+      ) {
+        labelCache.setCompetencyMeta(
+          item.competency_key,
+          item.competency_label,
+          item.activity_indicator_count,
+        );
+      }
+    }
+
     void labelCache.hydrateKeys(loadedRequirements.map((item) => item.competency_key));
   } catch (error) {
     requirementsLoadError.value = error;

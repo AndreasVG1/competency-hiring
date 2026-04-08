@@ -31,7 +31,7 @@ from app.modules.seeker.service import (
     get_profile_or_404,
     get_private_job_offer_analysis_with_explanation,
     list_published_job_offers,
-    list_competencies_for_user,
+    list_competencies_for_user_enriched,
     update_competency_level_for_user,
     upsert_profile,
 )
@@ -84,7 +84,7 @@ def list_seeker_competencies(
 ) -> list[SeekerCompetencyResponse]:
     return [
         SeekerCompetencyResponse.model_validate(item)
-        for item in list_competencies_for_user(db_session, user_id=current_seeker.id)
+        for item in list_competencies_for_user_enriched(db_session, user_id=current_seeker.id)
     ]
 
 

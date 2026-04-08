@@ -27,7 +27,7 @@ from app.modules.recruiter.service import (
     get_owned_job_offer_or_404,
     get_profile_or_404,
     list_job_offers_for_user,
-    list_requirements_for_job_offer,
+    list_requirements_for_job_offer_enriched,
     publish_job_offer_for_user,
     update_job_offer_for_user,
     update_requirement_priority,
@@ -174,7 +174,7 @@ def list_job_offer_requirements(
 ) -> list[JobOfferRequirementResponse]:
     return [
         JobOfferRequirementResponse.model_validate(item)
-        for item in list_requirements_for_job_offer(
+        for item in list_requirements_for_job_offer_enriched(
             db_session,
             user_id=current_recruiter.id,
             job_offer_id=job_offer_id,

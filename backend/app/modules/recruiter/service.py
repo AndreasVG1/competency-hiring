@@ -8,7 +8,11 @@ from app.db.models import (
     RecruiterProfile,
     RequirementPriority,
 )
-from app.modules.catalog.service import get_competency_detail, get_occupation_detail
+from app.modules.catalog.service import (
+    get_competency_detail,
+    get_occupation_detail,
+    resolve_competencies as resolve_catalog_competencies,
+)
 
 PROFILE_NOT_FOUND_MESSAGE = "Recruiter profile not found."
 JOB_OFFER_NOT_FOUND_MESSAGE = "Job offer not found."
@@ -238,6 +242,44 @@ def list_requirements_for_job_offer(
         .order_by(JobOfferRequirement.id.asc())
         .all()
     )
+
+
+def list_requirements_for_job_offer_enriched(
+    db_session: Session,
+    *,
+    user_id: int,
+    job_offer_id: int,
+) -> list[dict[str, object]]:
+    requirements = list_requirements_for_job_offer(
+        db_session,
+        user_id=user_id,
+        job_offer_id=job_offer_id,
+    )
+    competency_keys = [item.competency_key for item in requirements]
+
+    try:
+        resolved = resolve_catalog_competencies(keys=competency_keys)
+    except Exception:
+        resolved = {"items": [], "missing_keys": competency_keys}
+    meta_by_key: dict[str, dict[str, object]] = {
+        str(item["key"]): item for item in (resolved.get("items") or []) if item.get("key")
+    }
+
+    enriched: list[dict[str, object]] = []
+    for item in requirements:
+        meta = meta_by_key.get(item.competency_key)
+        enriched.append(
+            {
+                "id": item.id,
+                "job_offer_id": item.job_offer_id,
+                "competency_key": item.competency_key,
+                "priority": item.priority,
+                "competency_label": meta.get("label") if meta else None,
+                "activity_indicator_count": meta.get("activity_indicator_count") if meta else None,
+            }
+        )
+
+    return enriched
 
 
 def add_requirement_to_job_offer(

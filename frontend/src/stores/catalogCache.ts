@@ -14,6 +14,7 @@ interface CompetencyMeta {
 }
 
 const RESOLVE_CHUNK_SIZE = 200;
+const RESOLVE_MAX_CONCURRENT_CHUNKS = 3;
 
 function normalizeKey(rawKey: string): string {
   return rawKey.trim();
@@ -44,6 +45,25 @@ function chunkKeys(keys: string[], chunkSize: number): string[][] {
     chunks.push(keys.slice(index, index + chunkSize));
   }
   return chunks;
+}
+
+async function runTasksWithConcurrency(tasks: Array<() => Promise<void>>, maxConcurrent: number): Promise<void> {
+  const inFlight = new Set<Promise<void>>();
+
+  for (const task of tasks) {
+    let promise: Promise<void>;
+    promise = task().finally(() => {
+      inFlight.delete(promise);
+    });
+
+    inFlight.add(promise);
+
+    if (inFlight.size >= maxConcurrent) {
+      await Promise.race(inFlight);
+    }
+  }
+
+  await Promise.all(inFlight);
 }
 
 export const useCatalogCacheStore = defineStore("catalogCache", () => {
@@ -121,7 +141,7 @@ export const useCatalogCacheStore = defineStore("catalogCache", () => {
       return;
     }
 
-    const awaitables: Promise<void>[] = [];
+    const awaitExisting: Promise<void>[] = [];
     const fetchKeys: string[] = [];
 
     for (const key of normalizedKeys) {
@@ -131,18 +151,15 @@ export const useCatalogCacheStore = defineStore("catalogCache", () => {
 
       const inflight = metaInflightByKey.get(key);
       if (inflight) {
-        awaitables.push(inflight);
+        awaitExisting.push(inflight);
         continue;
       }
 
       fetchKeys.push(key);
     }
 
-    for (const chunk of chunkKeys(fetchKeys, RESOLVE_CHUNK_SIZE)) {
-      if (!chunk.length) {
-        continue;
-      }
-
+    const chunks = chunkKeys(fetchKeys, RESOLVE_CHUNK_SIZE).filter((chunk) => chunk.length > 0);
+    const tasks = chunks.map((chunk) => async () => {
       const request = (async () => {
         for (const key of chunk) {
           metaLoadingKeys.add(key);
@@ -200,11 +217,19 @@ export const useCatalogCacheStore = defineStore("catalogCache", () => {
       for (const key of chunk) {
         metaInflightByKey.set(key, request);
       }
-      awaitables.push(request);
+      await request;
+    });
+
+    const pending: Promise<void>[] = [];
+    if (tasks.length > 0) {
+      pending.push(runTasksWithConcurrency(tasks, RESOLVE_MAX_CONCURRENT_CHUNKS));
+    }
+    if (awaitExisting.length > 0) {
+      pending.push(Promise.all(awaitExisting).then(() => undefined));
     }
 
-    if (awaitables.length) {
-      await Promise.all(awaitables);
+    if (pending.length > 0) {
+      await Promise.all(pending);
     }
   }
 

@@ -347,6 +347,10 @@ function collectApplicantCompetencyKeys(loadedApplicants: RecruiterApplicantList
     for (const item of explanation.gaps) {
       keys.add(item.competency_key);
     }
+
+    for (const item of explanation.development_roadmap ?? []) {
+      keys.add(item.competency_key);
+    }
   }
 
   return [...keys];

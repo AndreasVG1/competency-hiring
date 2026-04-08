@@ -185,7 +185,7 @@ Reasoning:
 
 Phase 5.2 adopts the new bulk endpoint, adds a global cache, and fixes request waste in typeahead.
 
-#### [ ] 5.2.1 Global catalog cache (Pinia)
+#### [X] 5.2.1 Global catalog cache (Pinia)
 
 Create a global store (example path):
 

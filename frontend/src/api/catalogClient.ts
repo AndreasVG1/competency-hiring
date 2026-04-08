@@ -14,13 +14,21 @@ interface CatalogSearchParams {
   limit?: number;
 }
 
+interface RequestControlOptions {
+  signal?: AbortSignal;
+}
+
 export const catalogClient = {
-  listCompetencies(params: CatalogSearchParams = {}): Promise<CompetencyCatalogItem[]> {
+  listCompetencies(
+    params: CatalogSearchParams = {},
+    options: RequestControlOptions = {},
+  ): Promise<CompetencyCatalogItem[]> {
     return apiRequest<CompetencyCatalogItem[]>(`${CATALOG_BASE_PATH}/competencies`, {
       query: {
         query: params.query,
         limit: params.limit,
       },
+      signal: options.signal,
     });
   },
 
@@ -37,12 +45,13 @@ export const catalogClient = {
     });
   },
 
-  listOccupations(params: CatalogSearchParams = {}): Promise<CatalogItem[]> {
+  listOccupations(params: CatalogSearchParams = {}, options: RequestControlOptions = {}): Promise<CatalogItem[]> {
     return apiRequest<CatalogItem[]>(`${CATALOG_BASE_PATH}/occupations`, {
       query: {
         query: params.query,
         limit: params.limit,
       },
+      signal: options.signal,
     });
   },
 

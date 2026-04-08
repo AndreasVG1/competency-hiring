@@ -86,8 +86,11 @@ const description = ref("");
 const isCreating = ref(false);
 const createError = ref<unknown | null>(null);
 
-async function searchOccupations(query: string): Promise<CatalogItem[]> {
-  return catalogClient.listOccupations({ query, limit: 8 });
+async function searchOccupations(
+  query: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<CatalogItem[]> {
+  return catalogClient.listOccupations({ query, limit: 8 }, { signal: options.signal });
 }
 
 function selectOccupation(item: CatalogItem): void {

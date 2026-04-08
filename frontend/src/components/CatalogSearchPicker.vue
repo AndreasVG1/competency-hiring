@@ -42,7 +42,7 @@ interface Props {
   debounceMs?: number;
   disabled?: boolean;
   busy?: boolean;
-  searchFn: (query: string) => Promise<CatalogItem[]>;
+  searchFn: (query: string, options?: { signal?: AbortSignal }) => Promise<CatalogItem[]>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -66,6 +66,7 @@ const searchError = ref<unknown | null>(null);
 
 let requestCounter = 0;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let activeSearchController: AbortController | null = null;
 
 const isDisabled = computed(() => props.disabled || props.busy);
 const normalizedQuery = computed(() => query.value.trim());
@@ -94,8 +95,14 @@ async function runSearch(searchQuery: string): Promise<void> {
   isSearching.value = true;
   searchError.value = null;
 
+  if (activeSearchController) {
+    activeSearchController.abort();
+  }
+  activeSearchController = new AbortController();
+  const controller = activeSearchController;
+
   try {
-    const items = await props.searchFn(searchQuery);
+    const items = await props.searchFn(searchQuery, { signal: controller.signal });
     if (requestCounter !== requestId) {
       return;
     }
@@ -103,6 +110,9 @@ async function runSearch(searchQuery: string): Promise<void> {
     hasSearched.value = true;
   } catch (error) {
     if (requestCounter !== requestId) {
+      return;
+    }
+    if (error instanceof DOMException && error.name === "AbortError") {
       return;
     }
     results.value = [];
@@ -143,5 +153,9 @@ watch(
 
 onBeforeUnmount(() => {
   clearDebounce();
+  if (activeSearchController) {
+    activeSearchController.abort();
+    activeSearchController = null;
+  }
 });
 </script>

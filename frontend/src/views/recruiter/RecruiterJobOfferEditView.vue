@@ -322,12 +322,18 @@ function mapRequirementToRow(requirement: JobOfferRequirementResponse): Requirem
   };
 }
 
-async function searchCompetencies(query: string): Promise<CatalogItem[]> {
-  return catalogClient.listCompetencies({ query, limit: 8 });
+async function searchCompetencies(
+  query: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<CatalogItem[]> {
+  return catalogClient.listCompetencies({ query, limit: 8 }, { signal: options.signal });
 }
 
-async function searchOccupations(query: string): Promise<CatalogItem[]> {
-  return catalogClient.listOccupations({ query, limit: 8 });
+async function searchOccupations(
+  query: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<CatalogItem[]> {
+  return catalogClient.listOccupations({ query, limit: 8 }, { signal: options.signal });
 }
 
 function selectOfferOccupation(item: CatalogItem): void {

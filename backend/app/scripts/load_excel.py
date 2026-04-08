@@ -231,6 +231,15 @@ def export_to_json(occupation_data: List[OccupationData], output_path: str) -> N
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+def get_occupation_data_from_excel(
+    *,
+    file_path: str,
+    sheet_name: str | int = 0,
+    field_filter: str | None = None,
+) -> List[OccupationData]:
+    records = load_occupation_records(file_path, sheet_name, field_filter)
+    return group_records_by_occupation(records)
+
 
 if __name__ == "__main__":
     
@@ -249,6 +258,7 @@ if __name__ == "__main__":
     
     print_summary(occupation_data)
     #export_to_json(occupation_data, "it_occupations.json")
+    """
     for occupation in occupation_data[:1]:
         print(f"\nOccupation: {occupation.name} ({occupation.id})")
 
@@ -263,3 +273,4 @@ if __name__ == "__main__":
                 print(f"      text: {indicator.text}")
                 print(f"      id:   {indicator.id}")
                 print(f"      code: {indicator.code}")
+    """

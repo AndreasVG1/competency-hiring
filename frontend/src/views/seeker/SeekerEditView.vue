@@ -133,13 +133,13 @@
             @select="selectCompetency"
           />
 
-          <p class="selected-item">
-            <strong>Selected competency:</strong>
-            <span v-if="selectedCompetency">
-              {{ selectedCompetency.label }} <small>({{ selectedCompetency.key }})</small>
-            </span>
-            <span v-else>None</span>
-          </p>
+	          <p class="selected-item">
+	            <strong>Selected competency:</strong>
+	            <span v-if="selectedCompetency">
+	              {{ selectedCompetency.label }}
+	            </span>
+	            <span v-else>None</span>
+	          </p>
 
           <EnumSelect
             v-model="newCompetencyLevel"
@@ -169,24 +169,22 @@
           No competencies saved yet.
         </div>
 
-        <table v-else class="competency-table">
-          <thead>
-            <tr>
-              <th>Competency</th>
-              <th>Key</th>
-              <th>Level</th>
-              <th>Context</th>
-              <th>Actions</th>
-            </tr>
+	        <table v-else class="competency-table">
+	          <thead>
+	            <tr>
+	              <th>Competency</th>
+	              <th>Level</th>
+	              <th>Context</th>
+	              <th>Actions</th>
+	            </tr>
           </thead>
-          <tbody>
-            <tr v-for="row in competencyRows" :key="row.id">
-              <td>{{ competencyLabel(row.competencyKey) }}</td>
-              <td><code>{{ row.competencyKey }}</code></td>
-              <td>
-                <EnumSelect
-                  v-model="row.levelDraft"
-                  label=""
+	          <tbody>
+	            <tr v-for="row in competencyRows" :key="row.id">
+	              <td>{{ competencyLabel(row.competencyKey) }}</td>
+	              <td>
+	                <EnumSelect
+	                  v-model="row.levelDraft"
+	                  label=""
                   :options="competencyLevelOptions"
                   :disabled="row.isSaving || row.isDeleting"
                 />

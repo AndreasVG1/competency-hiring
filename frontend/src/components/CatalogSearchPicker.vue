@@ -21,13 +21,12 @@
           type="button"
           :disabled="isDisabled"
           @click="selectItem(item)"
-        >
-          <span class="picker-result-label">{{ item.label }}</span>
-          <span class="picker-result-key">{{ item.key }}</span>
-        </button>
-      </li>
-    </ul>
-  </section>
+	        >
+	          <span class="picker-result-label">{{ item.label }}</span>
+	        </button>
+	      </li>
+	    </ul>
+	  </section>
 </template>
 
 <script setup lang="ts">

@@ -1,24 +1,22 @@
 <template>
   <p v-if="rows.length === 0" class="table-note">{{ emptyText }}</p>
 
-  <table v-else class="competency-table">
-    <thead>
-      <tr>
-        <th>Competency</th>
-        <th v-if="showKey">Key</th>
-        <th>Level</th>
-        <th v-if="showContextColumn">Context</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="row in rows" :key="row.id">
-        <td>{{ resolveLabel(row.competency_key) }}</td>
-        <td v-if="showKey"><code>{{ row.competency_key }}</code></td>
-        <td>{{ formatLevel(row.level) }}</td>
-        <td v-if="showContextColumn">
-          <button
-            v-if="indicatorCount(row.competency_key) > 0"
-            type="button"
+	<table v-else class="competency-table">
+	    <thead>
+	      <tr>
+	        <th>Competency</th>
+	        <th>Level</th>
+	        <th v-if="showContextColumn">Context</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	      <tr v-for="row in rows" :key="row.id">
+	        <td>{{ resolveLabel(row.competency_key) }}</td>
+	        <td>{{ formatLevel(row.level) }}</td>
+	        <td v-if="showContextColumn">
+	          <button
+	            v-if="indicatorCount(row.competency_key) > 0"
+	            type="button"
             class="button-secondary indicator-trigger-button"
             @click="openIndicators(row.competency_key)"
           >
@@ -53,7 +51,6 @@ interface CompetencyLevelTableRow {
 interface Props {
   rows: CompetencyLevelTableRow[];
   emptyText?: string;
-  showKey?: boolean;
   labelResolver?: (competencyKey: string) => string;
   levelFormatter?: (level: string) => string;
   activityIndicatorResolver?: (competencyKey: string) => ActivityIndicatorCatalogItem[] | undefined;
@@ -62,7 +59,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   emptyText: "No competencies available.",
-  showKey: false,
   labelResolver: undefined,
   levelFormatter: undefined,
   activityIndicatorResolver: undefined,

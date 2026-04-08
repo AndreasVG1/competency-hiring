@@ -139,14 +139,13 @@
             @select="selectRequirementCompetency"
           />
 
-          <p class="selected-item">
-            <strong>Selected competency:</strong>
-            <span v-if="selectedRequirementCompetency">
-              {{ selectedRequirementCompetency.label }}
-              <small>({{ selectedRequirementCompetency.key }})</small>
-            </span>
-            <span v-else>None</span>
-          </p>
+	        <p class="selected-item">
+	          <strong>Selected competency:</strong>
+	          <span v-if="selectedRequirementCompetency">
+	            {{ selectedRequirementCompetency.label }}
+	          </span>
+	          <span v-else>None</span>
+	        </p>
 
           <EnumSelect
             v-model="newRequirementPriority"
@@ -166,23 +165,21 @@
         <p v-if="isRequirementsLoading" class="table-note">Loading requirements...</p>
         <p v-else-if="requirementRows.length === 0" class="table-note">No requirements saved yet.</p>
 
-        <table v-else class="competency-table">
-          <thead>
-            <tr>
-              <th>Competency</th>
-              <th>Key</th>
-              <th>Priority</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in requirementRows" :key="row.id">
-              <td>{{ competencyLabel(row.competencyKey) }}</td>
-              <td><code>{{ row.competencyKey }}</code></td>
-              <td>
-                <EnumSelect
-                  v-model="row.priorityDraft"
-                  label=""
+	        <table v-else class="competency-table">
+	          <thead>
+	            <tr>
+	              <th>Competency</th>
+	              <th>Priority</th>
+	              <th>Actions</th>
+	            </tr>
+	          </thead>
+	          <tbody>
+	            <tr v-for="row in requirementRows" :key="row.id">
+	              <td>{{ competencyLabel(row.competencyKey) }}</td>
+	              <td>
+	                <EnumSelect
+	                  v-model="row.priorityDraft"
+	                  label=""
                   :options="requirementPriorityOptions"
                   :disabled="row.isSaving || row.isDeleting"
                 />

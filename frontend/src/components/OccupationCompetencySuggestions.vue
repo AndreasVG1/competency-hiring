@@ -14,14 +14,13 @@
           type="button"
           :disabled="isDisabled || isSelected(item.key)"
           @click="selectSuggestion(item)"
-        >
-          <span class="suggestion-main">
-            <span class="suggestion-item-label">{{ item.label }}</span>
-            <span class="suggestion-item-key">{{ item.key }}</span>
-          </span>
-          <span class="suggestion-status">
-            {{ isSelected(item.key) ? alreadyAddedText : addText }}
-          </span>
+	        >
+	          <span class="suggestion-main">
+	            <span class="suggestion-item-label">{{ item.label }}</span>
+	          </span>
+	          <span class="suggestion-status">
+	            {{ isSelected(item.key) ? alreadyAddedText : addText }}
+	          </span>
         </button>
       </li>
     </ul>

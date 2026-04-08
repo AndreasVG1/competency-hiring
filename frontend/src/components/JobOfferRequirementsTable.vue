@@ -1,23 +1,21 @@
 <template>
   <p v-if="requirements.length === 0" class="table-note">{{ emptyText }}</p>
 
-  <table v-else class="competency-table">
-    <thead>
-      <tr>
-        <th>Competency</th>
-        <th>Key</th>
-        <th>Priority</th>
-        <th v-if="showIndicatorsColumn">Context</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="item in requirements" :key="item.competency_key">
-        <td>{{ resolveLabel(item.competency_key) }}</td>
-        <td><code>{{ item.competency_key }}</code></td>
-        <td>{{ formatPriority(item.priority) }}</td>
-        <td v-if="showIndicatorsColumn">
-          <button
-            v-if="indicatorCount(item.competency_key) > 0"
+	<table v-else class="competency-table">
+	    <thead>
+	      <tr>
+	        <th>Competency</th>
+	        <th>Priority</th>
+	        <th v-if="showIndicatorsColumn">Context</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	      <tr v-for="item in requirements" :key="item.competency_key">
+	        <td>{{ resolveLabel(item.competency_key) }}</td>
+	        <td>{{ formatPriority(item.priority) }}</td>
+	        <td v-if="showIndicatorsColumn">
+	          <button
+	            v-if="indicatorCount(item.competency_key) > 0"
             type="button"
             class="button-secondary indicator-trigger-button"
             @click="openIndicators(item.competency_key)"

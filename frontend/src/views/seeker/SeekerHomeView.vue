@@ -68,16 +68,15 @@
         <ApiErrorNotice v-if="competenciesLoadError" :error="competenciesLoadError" show-all-messages />
 
         <p v-if="isCompetenciesLoading" class="table-note">Loading competencies...</p>
-        <CompetencyLevelTable
-          v-else
-          :rows="competencyTableRows"
-          empty-text="No competencies saved yet."
-          :show-key="true"
-          :label-resolver="competencyLabel"
-          :level-formatter="formatLevel"
-          :activity-indicator-resolver="activityIndicatorsFor"
-          overlay-title-id="seeker-profile-indicators-title"
-        />
+	        <CompetencyLevelTable
+	          v-else
+	          :rows="competencyTableRows"
+	          empty-text="No competencies saved yet."
+	          :label-resolver="competencyLabel"
+	          :level-formatter="formatLevel"
+	          :activity-indicator-resolver="activityIndicatorsFor"
+	          overlay-title-id="seeker-profile-indicators-title"
+	        />
       </section>
     </section>
   </main>

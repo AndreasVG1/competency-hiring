@@ -14,10 +14,9 @@
         </button>
       </header>
 
-      <p class="indicator-overlay-subtitle">
-        {{ resolveLabel(competencyKey) }}
-        <small>({{ competencyKey }})</small>
-      </p>
+	      <p class="indicator-overlay-subtitle">
+	        {{ resolveLabel(competencyKey) }}
+	      </p>
 
       <p v-if="indicators.length === 0" class="table-note">No indicators available.</p>
       <ol v-else class="indicator-overlay-list">

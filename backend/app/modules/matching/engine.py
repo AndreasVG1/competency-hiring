@@ -17,7 +17,7 @@ from app.modules.matching.schemas import (
 ALGORITHM_VERSION = "v2_exact_priority_level_dual_signal"
 PRIVATE_PREVIEW_SCOPE = "private_preview"
 
-# Phase 3 MVP normative mappings:
+# MVP normative mappings:
 # - priority drives maximum points
 # - level strings map to deterministic numeric ratios
 # - expected level is a global rule per requirement priority
@@ -68,7 +68,7 @@ class _EvaluatedRequirement:
 
 
 def _sort_key(row: _EvaluatedRequirement) -> tuple[int, float, str]:
-    # Stable explanation ordering required by the Phase 3 contract:
+    # Stable explanation ordering:
     # 1) priority severity, 2) point loss descending, 3) competency key asc.
     return (
         PRIORITY_SORT_RANK[row.priority],

@@ -155,13 +155,13 @@ Responsibilities:
 - role-based access control
 - session/token validation
 
-#### 2. Profile Management
+#### 2. Seeker profile
 Responsibilities:
 - job seeker profile management
 - competency addition/removal
 - competency level management
 
-#### 3. Job Offer Management
+#### 3. Recruiter profile
 Responsibilities:
 - create/edit/archive job offers
 - attach competency requirements
@@ -188,10 +188,11 @@ Responsibilities:
 - share application-relevant data with recruiter
 - manage candidate lists visible to recruiters
 
-#### 7. Knowledge Adapter
+#### 7. Import Scripts
 Responsibilities:
-- integrate with the external Semantic MediaWiki source
-- fetch source data
+- One time use
+- Extract data from an Excel spreadsheet
+- Parse data into Python data classes
 - normalize and validate data
 - import data into Neo4j
 - isolate external source specifics from the rest of the system

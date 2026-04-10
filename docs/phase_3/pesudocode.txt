@@ -1,0 +1,25 @@
+sisend:
+  seeker_competencies = [(competency_key, level)]
+  job_requirements = [(competency_key, priority)]
+
+iga requirement kohta:
+  leia seeker competency sama competency_key alusel
+  määra priority_weight
+  määra expected_level
+
+  kui competency puudub:
+    status = missing
+    earned_points = 0
+  muidu:
+    ratio = min(seeker_level / expected_level, 1.0)
+    earned_points = priority_weight * ratio
+    kui seeker_level >= expected_level:
+      status = matched
+    muidu:
+      status = insufficient
+
+summeeri earned_points ja max_points
+
+
+
+

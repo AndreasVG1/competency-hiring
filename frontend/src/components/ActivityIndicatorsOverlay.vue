@@ -9,17 +9,17 @@
     >
       <header class="indicator-overlay-header">
         <h3 :id="titleId">Activity indicators</h3>
-        <button type="button" class="button-secondary indicator-overlay-close" @click="emitClose">
+        <button type="button" class="btn btn-outline-secondary btn-sm" @click="emitClose">
           Close
         </button>
       </header>
 
-	      <p class="indicator-overlay-subtitle">
-	        {{ resolveLabel(competencyKey) }}
-	      </p>
+      <p class="indicator-overlay-subtitle text-break">
+        {{ resolveLabel(competencyKey) }}
+      </p>
 
-      <p v-if="loading" class="table-note">Loading indicators...</p>
-      <p v-else-if="indicators.length === 0" class="table-note">No indicators available.</p>
+      <p v-if="loading" class="text-body-secondary mb-0">Loading indicators...</p>
+      <p v-else-if="indicators.length === 0" class="text-body-secondary mb-0">No indicators available.</p>
       <ol v-else class="indicator-overlay-list">
         <li v-for="indicator in indicators" :key="indicator.key" class="indicator-overlay-item">
           {{ indicator.text }}

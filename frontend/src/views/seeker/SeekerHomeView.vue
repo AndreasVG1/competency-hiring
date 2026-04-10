@@ -1,87 +1,80 @@
 <template>
-  <main class="seeker-page">
-    <section class="panel seeker-panel">
-      <PageActionsBar>
-        <RouterLink class="button-primary" to="/seeker/job-offers">
-          Browse published job offers
-        </RouterLink>
-        <RouterLink class="button-secondary" to="/seeker/edit">Edit profile</RouterLink>
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-primary" to="/seeker/job-offers">Browse published job offers</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/seeker/edit">Edit profile</RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <h1>Profile Overview</h1>
-        <p class="content">Review what is currently saved in your private profile.</p>
+    <header>
+      <h1 class="h3 mb-1">Profile Overview</h1>
+      <p class="text-body-secondary mb-0">Review what is currently saved in your private profile.</p>
+    </header>
+
+    <ApiErrorNotice v-if="deleteProfileError" :error="deleteProfileError" show-all-messages />
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-0">Profile</h2>
       </header>
 
-      <ApiErrorNotice v-if="deleteProfileError" :error="deleteProfileError" show-all-messages />
+      <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
 
-      <section class="seeker-section">
-        <header class="section-header">
-          <h2>Profile</h2>
-        </header>
+      <p v-if="isProfileLoading" class="text-body-secondary mb-0">Loading profile...</p>
 
-        <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
+      <template v-else-if="isFirstTimeProfile || !profile">
+        <p class="text-body-secondary mb-0">No profile found yet.</p>
+        <div>
+          <RouterLink class="btn btn-primary" to="/seeker/edit">Create profile</RouterLink>
+        </div>
+      </template>
 
-        <p v-if="isProfileLoading" class="section-note">Loading profile...</p>
+      <template v-else>
+        <dl class="row mb-0">
+          <dt class="col-sm-3 text-body-secondary">Full name</dt>
+          <dd class="col-sm-9 text-break">{{ profile.full_name }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Summary</dt>
+          <dd class="col-sm-9 text-break">{{ profile.summary || "Not set" }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Location</dt>
+          <dd class="col-sm-9 text-break">{{ profile.location || "Not set" }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Occupation</dt>
+          <dd class="col-sm-9 text-break">
+            <span v-if="profile.occupation_key">
+              {{ selectedOccupationLabel || profile.occupation_key }}
+            </span>
+            <span v-else>Not set</span>
+          </dd>
+        </dl>
 
-        <template v-else-if="isFirstTimeProfile || !profile">
-          <p class="section-note">No profile found yet.</p>
-          <RouterLink class="button-primary" to="/seeker/edit">Create profile</RouterLink>
-        </template>
-
-        <template v-else>
-          <dl class="summary-grid">
-            <dt>Full name</dt>
-            <dd>{{ profile.full_name }}</dd>
-            <dt>Summary</dt>
-            <dd>{{ profile.summary || "Not set" }}</dd>
-            <dt>Location</dt>
-            <dd>{{ profile.location || "Not set" }}</dd>
-            <dt>Occupation</dt>
-            <dd>
-              <span v-if="profile.occupation_key">
-                {{ selectedOccupationLabel || profile.occupation_key }}
-              </span>
-              <span v-else>Not set</span>
-            </dd>
-          </dl>
-
-          <div class="table-actions">
-            <RouterLink class="button-secondary" to="/seeker/edit">Edit profile</RouterLink>
-            <button
-              class="button-danger"
-              type="button"
-              :disabled="isDeletingProfile"
-              @click="deleteProfile"
-            >
-              {{ isDeletingProfile ? "Deleting..." : "Delete profile" }}
-            </button>
-          </div>
-        </template>
-      </section>
-
-      <section class="seeker-section">
-        <header class="section-header">
-          <h2>Competencies</h2>
-        </header>
-
-        <ApiErrorNotice v-if="competenciesLoadError" :error="competenciesLoadError" show-all-messages />
-
-        <p v-if="isCompetenciesLoading" class="table-note">Loading competencies...</p>
-	        <CompetencyLevelTable
-	          v-else
-	          :rows="competencyTableRows"
-	          empty-text="No competencies saved yet."
-	          :label-resolver="competencyLabel"
-	          :level-formatter="formatLevel"
-	          :activity-indicator-resolver="activityIndicatorsFor"
-            :activity-indicator-count-resolver="activityIndicatorCountFor"
-            :activity-indicator-loader="loadActivityIndicators"
-	          overlay-title-id="seeker-profile-indicators-title"
-	        />
-      </section>
+        <div class="d-flex flex-wrap gap-2">
+          <RouterLink class="btn btn-outline-secondary" to="/seeker/edit">Edit profile</RouterLink>
+          <button class="btn btn-outline-danger" type="button" :disabled="isDeletingProfile" @click="deleteProfile">
+            {{ isDeletingProfile ? "Deleting..." : "Delete profile" }}
+          </button>
+        </div>
+      </template>
     </section>
-  </main>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-0">Competencies</h2>
+      </header>
+
+      <ApiErrorNotice v-if="competenciesLoadError" :error="competenciesLoadError" show-all-messages />
+
+      <p v-if="isCompetenciesLoading" class="text-body-secondary mb-0">Loading competencies...</p>
+      <CompetencyLevelTable
+        v-else
+        :rows="competencyTableRows"
+        empty-text="No competencies saved yet."
+        :label-resolver="competencyLabel"
+        :level-formatter="formatLevel"
+        :activity-indicator-resolver="activityIndicatorsFor"
+        :activity-indicator-count-resolver="activityIndicatorCountFor"
+        :activity-indicator-loader="loadActivityIndicators"
+        overlay-title-id="seeker-profile-indicators-title"
+      />
+    </section>
+  </div>
 </template>
 
 <script setup lang="ts">

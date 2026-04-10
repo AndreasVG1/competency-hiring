@@ -1,137 +1,129 @@
 <template>
-  <main class="seeker-page">
-    <section class="panel seeker-panel">
-      <PageActionsBar>
-        <RouterLink class="button-secondary" to="/seeker/job-offers">Back to marketplace</RouterLink>
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-outline-secondary" to="/seeker/job-offers">Back to marketplace</RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <p class="eyebrow">Seeker Marketplace</p>
-        <h1>Job Offer Detail</h1>
-        <p class="content">Review published information before deciding whether to apply.</p>
+    <header>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Seeker Marketplace</p>
+      <h1 class="h3 mb-1">Job Offer Detail</h1>
+      <p class="text-body-secondary mb-0">Review published information before deciding whether to apply.</p>
+    </header>
+
+    <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-0">Offer</h2>
       </header>
 
-      <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
-
-      <section class="seeker-section">
-        <header class="section-header">
-          <h2>Offer</h2>
-        </header>
-
-        <p v-if="isOfferLoading" class="section-note">Loading offer...</p>
-        <template v-else-if="isOfferNotFound">
-          <p class="section-note">Published job offer not found.</p>
-          <RouterLink class="button-secondary" to="/seeker/job-offers">Back to published offers</RouterLink>
-        </template>
-        <template v-else-if="offer">
-          <div class="marketplace-offer-header">
-            <h3>{{ offer.title }}</h3>
-            <JobOfferStatusBadge status="published" />
-          </div>
-          <dl class="summary-grid">
-            <dt>Company</dt>
-            <dd>{{ offer.company_name || "Company not provided" }}</dd>
-            <dt>Occupation</dt>
-            <dd>{{ offer.occupation_label }}</dd>
-            <dt>Published</dt>
-            <dd>{{ formatDateTime(offer.published_at) }}</dd>
-            <dt>Application status</dt>
-            <dd>{{ offer.applied ? "Applied" : "Not applied" }}</dd>
-            <dt>Description</dt>
-            <dd>{{ offer.description }}</dd>
-          </dl>
-        </template>
-      </section>
-
-      <section v-if="offer && !isOfferNotFound" class="seeker-section">
-        <header class="section-header">
-          <h2>Requirements</h2>
-          <p>Requirements are listed exactly as published by the recruiter.</p>
-        </header>
-
-        <JobOfferRequirementsTable
-          :requirements="offer.requirements"
-          :label-resolver="competencyLabel"
-          :activity-indicator-resolver="activityIndicatorsFor"
-          :activity-indicator-count-resolver="activityIndicatorCountFor"
-          :activity-indicator-loader="loadActivityIndicators"
-        />
-      </section>
-
-      <section v-if="offer && !isOfferNotFound" class="seeker-section">
-        <header class="section-header">
-          <h2>Private analysis</h2>
-          <p>
-            Run a private analysis to review your current match details. This is decision support only and
-            does not make hiring decisions.
-          </p>
-        </header>
-        <ApiErrorNotice v-if="analysisError" :error="analysisError" show-all-messages />
-        <div class="table-actions">
-          <button
-            class="button-secondary"
-            type="button"
-            :disabled="isAnalysisLoading"
-            @click="runPrivateAnalysis"
-          >
-            {{ analysisButtonLabel }}
-          </button>
+      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Loading offer...</p>
+      <template v-else-if="isOfferNotFound">
+        <p class="text-body-secondary mb-0">Published job offer not found.</p>
+        <div>
+          <RouterLink class="btn btn-outline-secondary" to="/seeker/job-offers">Back to published offers</RouterLink>
         </div>
-        <p v-if="analysisResult === null" class="section-note">
-          No analysis run yet. Use the button above to fetch your private analysis.
-        </p>
-        <template v-else>
-          <MatchingExplanationPanel
-            summary-title="Current analysis explanation"
-            :explanation="analysisResult.explanation"
-            :competency-label="competencyLabel"
-          />
-          <details class="matching-disclosure">
-            <summary class="matching-disclosure-summary">
-              <span class="matching-disclosure-closed-label">Show raw analysis payload</span>
-              <span class="matching-disclosure-open-label">Hide raw analysis payload</span>
-            </summary>
-            <JsonPayloadViewer title="Raw analysis payload" :payload="analysisResult" />
-          </details>
-        </template>
-      </section>
-
-      <section v-if="offer && !isOfferNotFound" class="seeker-section">
-        <header class="section-header">
-          <h2>Apply</h2>
-          <p>
-            Applying is an explicit consent action. If you apply, your profile snapshot at application time
-            is shared with the recruiter for this offer.
-          </p>
-        </header>
-        <ApiErrorNotice v-if="applyError" :error="applyError" show-all-messages />
-        <p v-if="applySuccessMessage" class="form-success">{{ applySuccessMessage }}</p>
-        <p class="consent-callout">
-          Consent note: only data captured at the moment you apply is shared for this application.
-        </p>
-        <div class="table-actions">
-          <button
-            v-if="!hasApplied"
-            class="button-primary"
-            type="button"
-            :disabled="isApplying"
-            @click="applyToOffer"
-          >
-            {{ applyButtonLabel }}
-          </button>
-          <button
-            v-else
-            class="button-secondary"
-            type="button"
-            :disabled="isWithdrawing || currentApplicationId === null"
-            @click="withdrawApplication"
-          >
-            {{ withdrawButtonLabel }}
-          </button>
+      </template>
+      <template v-else-if="offer">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <h3 class="h6 mb-0 text-break">{{ offer.title }}</h3>
+          <JobOfferStatusBadge status="published" />
         </div>
-      </section>
+
+        <dl class="row mb-0">
+          <dt class="col-sm-3 text-body-secondary">Company</dt>
+          <dd class="col-sm-9 text-break">{{ offer.company_name || "Company not provided" }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Occupation</dt>
+          <dd class="col-sm-9 text-break">{{ offer.occupation_label }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Published</dt>
+          <dd class="col-sm-9 text-break">{{ formatDateTime(offer.published_at) }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Application status</dt>
+          <dd class="col-sm-9 text-break">{{ offer.applied ? "Applied" : "Not applied" }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Description</dt>
+          <dd class="col-sm-9 text-break">{{ offer.description }}</dd>
+        </dl>
+      </template>
     </section>
-  </main>
+
+    <section v-if="offer && !isOfferNotFound" class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Requirements</h2>
+        <p class="text-body-secondary mb-0">Requirements are listed exactly as published by the recruiter.</p>
+      </header>
+
+      <JobOfferRequirementsTable
+        :requirements="offer.requirements"
+        :label-resolver="competencyLabel"
+        :activity-indicator-resolver="activityIndicatorsFor"
+        :activity-indicator-count-resolver="activityIndicatorCountFor"
+        :activity-indicator-loader="loadActivityIndicators"
+      />
+    </section>
+
+    <section v-if="offer && !isOfferNotFound" class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Private analysis</h2>
+        <p class="text-body-secondary mb-0">
+          Run a private analysis to review your current match details. This is decision support only and does
+          not make hiring decisions.
+        </p>
+      </header>
+      <ApiErrorNotice v-if="analysisError" :error="analysisError" show-all-messages />
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-outline-secondary" type="button" :disabled="isAnalysisLoading" @click="runPrivateAnalysis">
+          {{ analysisButtonLabel }}
+        </button>
+      </div>
+      <p v-if="analysisResult === null" class="text-body-secondary mb-0">
+        No analysis run yet. Use the button above to fetch your private analysis.
+      </p>
+      <template v-else>
+        <MatchingExplanationPanel
+          summary-title="Current analysis explanation"
+          :explanation="analysisResult.explanation"
+          :competency-label="competencyLabel"
+        />
+        <details class="matching-disclosure">
+          <summary class="matching-disclosure-summary">
+            <span class="matching-disclosure-closed-label">Show raw analysis payload</span>
+            <span class="matching-disclosure-open-label">Hide raw analysis payload</span>
+          </summary>
+          <JsonPayloadViewer title="Raw analysis payload" :payload="analysisResult" />
+        </details>
+      </template>
+    </section>
+
+    <section v-if="offer && !isOfferNotFound" class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Apply</h2>
+        <p class="text-body-secondary mb-0">
+          Applying is an explicit consent action. If you apply, your profile snapshot at application time is shared
+          with the recruiter for this offer.
+        </p>
+      </header>
+      <ApiErrorNotice v-if="applyError" :error="applyError" show-all-messages />
+      <div v-if="applySuccessMessage" class="alert alert-success mb-0" role="status">
+        {{ applySuccessMessage }}
+      </div>
+      <div class="alert alert-info mb-0">
+        Consent note: only data captured at the moment you apply is shared for this application.
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <button v-if="!hasApplied" class="btn btn-primary" type="button" :disabled="isApplying" @click="applyToOffer">
+          {{ applyButtonLabel }}
+        </button>
+        <button
+          v-else
+          class="btn btn-outline-secondary"
+          type="button"
+          :disabled="isWithdrawing || currentApplicationId === null"
+          @click="withdrawApplication"
+        >
+          {{ withdrawButtonLabel }}
+        </button>
+      </div>
+    </section>
+  </div>
 </template>
 
 <script setup lang="ts">

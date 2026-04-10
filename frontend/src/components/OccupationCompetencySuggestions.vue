@@ -1,26 +1,24 @@
 <template>
-  <section class="occupation-competency-suggestions">
-    <p class="suggestions-label">{{ label }}</p>
+  <section class="d-grid gap-2">
+    <p class="fw-semibold mb-0">{{ label }}</p>
 
-    <p v-if="!occupationKey" class="suggestions-meta">{{ waitingText }}</p>
-    <p v-else-if="isLoading" class="suggestions-meta">Loading related competencies...</p>
+    <p v-if="!occupationKey" class="text-body-secondary mb-0">{{ waitingText }}</p>
+    <p v-else-if="isLoading" class="text-body-secondary mb-0">Loading related competencies...</p>
     <ApiErrorNotice v-else-if="loadError" :error="loadError" />
-    <p v-else-if="suggestedCompetencies.length === 0" class="suggestions-meta">{{ emptyText }}</p>
+    <p v-else-if="suggestedCompetencies.length === 0" class="text-body-secondary mb-0">{{ emptyText }}</p>
 
-    <ul v-else class="suggestions-list">
+    <ul v-else class="list-group">
       <li v-for="item in suggestedCompetencies" :key="item.key">
         <button
-          class="suggestion-button"
+          class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-3"
           type="button"
           :disabled="isDisabled || isSelected(item.key)"
           @click="selectSuggestion(item)"
-	        >
-	          <span class="suggestion-main">
-	            <span class="suggestion-item-label">{{ item.label }}</span>
-	          </span>
-	          <span class="suggestion-status">
-	            {{ isSelected(item.key) ? alreadyAddedText : addText }}
-	          </span>
+        >
+          <span class="flex-grow-1 min-w-0 text-break fw-semibold">{{ item.label }}</span>
+          <span class="small text-body-secondary fw-semibold">
+            {{ isSelected(item.key) ? alreadyAddedText : addText }}
+          </span>
         </button>
       </li>
     </ul>

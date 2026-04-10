@@ -1,193 +1,197 @@
 <template>
-  <main class="recruiter-page">
-    <section class="panel recruiter-panel">
-      <PageActionsBar>
-        <RouterLink class="button-secondary" to="/recruiter">Back to recruiter</RouterLink>
-        <RouterLink
-          v-if="jobOffer"
-          class="button-secondary"
-          :to="`/recruiter/job-offers/${jobOffer.id}`"
-        >
-          View read-only
-        </RouterLink>
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Back to recruiter</RouterLink>
+      <RouterLink v-if="jobOffer" class="btn btn-outline-secondary" :to="`/recruiter/job-offers/${jobOffer.id}`">
+        View read-only
+      </RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <p class="eyebrow">Recruiter Area</p>
-        <h1>Edit Job Offer</h1>
-        <p class="content">Update offer fields, manage requirements, and control publication state.</p>
+    <header>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
+      <h1 class="h3 mb-1">Edit Job Offer</h1>
+      <p class="text-body-secondary mb-0">
+        Update offer fields, manage requirements, and control publication state.
+      </p>
+    </header>
+
+    <ApiErrorNotice v-if="deleteOfferError" :error="deleteOfferError" show-all-messages />
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Offer</h2>
+        <p class="text-body-secondary mb-0">Editable offer fields and explicit status transitions.</p>
       </header>
 
-      <ApiErrorNotice v-if="deleteOfferError" :error="deleteOfferError" show-all-messages />
+      <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
+      <ApiErrorNotice v-if="transitionError" :error="transitionError" show-all-messages />
+      <div v-if="transitionSuccessMessage" class="alert alert-success mb-0" role="status">
+        {{ transitionSuccessMessage }}
+      </div>
 
-      <section class="recruiter-section">
-        <header class="section-header">
-          <h2>Offer</h2>
-          <p>Editable offer fields and explicit status transitions.</p>
-        </header>
+      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Loading offer...</p>
+      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Job offer not found.</p>
 
-        <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
-        <ApiErrorNotice v-if="transitionError" :error="transitionError" show-all-messages />
-        <p v-if="transitionSuccessMessage" class="form-success">{{ transitionSuccessMessage }}</p>
+      <form v-else-if="jobOffer" class="d-grid gap-3" @submit.prevent="saveOffer">
+        <p class="mb-0">
+          <strong>Current status:</strong>
+          <JobOfferStatusBadge :status="jobOffer.status" />
+        </p>
 
-        <p v-if="isOfferLoading" class="section-note">Loading offer...</p>
-        <p v-else-if="isOfferNotFound" class="section-note">Job offer not found.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <button
+            v-if="jobOffer.status === 'draft'"
+            class="btn btn-primary"
+            type="button"
+            :disabled="isTransitioning || isDeletingOffer"
+            @click="publishOffer"
+          >
+            {{ isTransitioning ? "Publishing..." : "Publish offer" }}
+          </button>
+          <button
+            v-else-if="jobOffer.status === 'published'"
+            class="btn btn-outline-secondary"
+            type="button"
+            :disabled="isTransitioning || isDeletingOffer"
+            @click="archiveOffer"
+          >
+            {{ isTransitioning ? "Archiving..." : "Archive offer" }}
+          </button>
+        </div>
 
-        <form v-else-if="jobOffer" class="recruiter-form" @submit.prevent="saveOffer">
-          <p class="selected-item">
-            <strong>Current status:</strong>
-            <JobOfferStatusBadge :status="jobOffer.status" />
-          </p>
-
-          <div class="table-actions">
-            <button
-              v-if="jobOffer.status === 'draft'"
-              class="button-primary"
-              type="button"
-              :disabled="isTransitioning || isDeletingOffer"
-              @click="publishOffer"
-            >
-              {{ isTransitioning ? "Publishing..." : "Publish offer" }}
-            </button>
-            <button
-              v-else-if="jobOffer.status === 'published'"
-              class="button-secondary"
-              type="button"
-              :disabled="isTransitioning || isDeletingOffer"
-              @click="archiveOffer"
-            >
-              {{ isTransitioning ? "Archiving..." : "Archive offer" }}
-            </button>
-          </div>
-
-          <CatalogSearchPicker
-            :key="offerOccupationPickerKey"
-            label="Occupation"
-            placeholder="Search occupations"
-            no-results-text="No occupations found."
-            :disabled="isUpdatingOffer"
-            :busy="isUpdatingOffer"
-            :search-fn="searchOccupations"
-            @select="selectOfferOccupation"
-          />
-
-          <p class="selected-item">
-            <strong>Selected occupation:</strong>
-            <span v-if="offerForm.occupationKey">
-              {{ offerForm.occupationLabel || offerForm.occupationKey }}
-              <small>({{ offerForm.occupationKey }})</small>
-            </span>
-            <span v-else>None</span>
-          </p>
-
-          <label class="form-field">
-            <span>Description</span>
-            <textarea
-              v-model="offerForm.description"
-              rows="4"
-              required
-              :disabled="isUpdatingOffer"
-            />
-          </label>
-
-          <ApiErrorNotice v-if="offerUpdateError" :error="offerUpdateError" show-all-messages />
-          <p v-if="offerUpdateSuccessMessage" class="form-success">{{ offerUpdateSuccessMessage }}</p>
-
-          <div class="table-actions">
-            <button class="button-primary" type="submit" :disabled="isUpdatingOffer">
-              {{ isUpdatingOffer ? "Saving offer..." : "Save offer" }}
-            </button>
-            <button
-              class="button-danger"
-              type="button"
-              :disabled="isDeletingOffer || isTransitioning"
-              @click="deleteOffer"
-            >
-              {{ isDeletingOffer ? "Deleting..." : "Delete offer" }}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section class="recruiter-section" v-if="jobOffer">
-        <header class="section-header">
-          <h2>Requirements</h2>
-          <p>Add and maintain competency priorities.</p>
-        </header>
-
-        <ApiErrorNotice v-if="requirementsLoadError" :error="requirementsLoadError" show-all-messages />
-
-        <OccupationCompetencySuggestions
-          :occupation-key="jobOffer.occupation_key"
-          :selected-keys="existingRequirementKeys"
-          :disabled="isRequirementsLoading"
-          :busy="isAddingRequirement"
-          label="Competencies related to selected occupation"
-          waiting-text="Select an occupation for this offer to see related competencies."
-          @select="addSuggestedRequirement"
+        <CatalogSearchPicker
+          :key="offerOccupationPickerKey"
+          label="Occupation"
+          placeholder="Search occupations"
+          no-results-text="No occupations found."
+          :disabled="isUpdatingOffer"
+          :busy="isUpdatingOffer"
+          :search-fn="searchOccupations"
+          @select="selectOfferOccupation"
         />
 
-        <form class="recruiter-form" @submit.prevent="addRequirement">
-          <CatalogSearchPicker
-            :key="requirementPickerKey"
-            label="Competency"
-            placeholder="Search competencies"
-            no-results-text="No competencies found."
-            :disabled="isRequirementsLoading"
-            :busy="isAddingRequirement"
-            :search-fn="searchCompetencies"
-            @select="selectRequirementCompetency"
+        <p class="mb-0 text-break">
+          <strong>Selected occupation:</strong>
+          <span v-if="offerForm.occupationKey">
+            {{ offerForm.occupationLabel || offerForm.occupationKey }}
+            <span class="d-block small text-body-secondary break-all">({{ offerForm.occupationKey }})</span>
+          </span>
+          <span v-else>None</span>
+        </p>
+
+        <div>
+          <label class="form-label" for="recruiter-offer-description">Description</label>
+          <textarea
+            id="recruiter-offer-description"
+            v-model="offerForm.description"
+            class="form-control"
+            rows="4"
+            required
+            :disabled="isUpdatingOffer"
           />
+        </div>
 
-	        <p class="selected-item">
-	          <strong>Selected competency:</strong>
-	          <span v-if="selectedRequirementCompetency">
-	            {{ selectedRequirementCompetency.label }}
-	          </span>
-	          <span v-else>None</span>
-	        </p>
+        <ApiErrorNotice v-if="offerUpdateError" :error="offerUpdateError" show-all-messages />
+        <div v-if="offerUpdateSuccessMessage" class="alert alert-success mb-0" role="status">
+          {{ offerUpdateSuccessMessage }}
+        </div>
 
-          <EnumSelect
-            v-model="newRequirementPriority"
-            label="Priority"
-            :options="requirementPriorityOptions"
-            :disabled="isAddingRequirement || isRequirementsLoading"
-          />
-
-          <ApiErrorNotice v-if="addRequirementError" :error="addRequirementError" show-all-messages />
-          <p v-if="addRequirementSuccessMessage" class="form-success">{{ addRequirementSuccessMessage }}</p>
-
-          <button class="button-primary" type="submit" :disabled="isAddingRequirement || isRequirementsLoading">
-            {{ isAddingRequirement ? "Adding requirement..." : "Add requirement" }}
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-primary" type="submit" :disabled="isUpdatingOffer">
+            {{ isUpdatingOffer ? "Saving offer..." : "Save offer" }}
           </button>
-        </form>
+          <button
+            class="btn btn-outline-danger"
+            type="button"
+            :disabled="isDeletingOffer || isTransitioning"
+            @click="deleteOffer"
+          >
+            {{ isDeletingOffer ? "Deleting..." : "Delete offer" }}
+          </button>
+        </div>
+      </form>
+    </section>
 
-        <p v-if="isRequirementsLoading" class="table-note">Loading requirements...</p>
-        <p v-else-if="requirementRows.length === 0" class="table-note">No requirements saved yet.</p>
+    <section v-if="jobOffer" class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Requirements</h2>
+        <p class="text-body-secondary mb-0">Add and maintain competency priorities.</p>
+      </header>
 
-	        <table v-else class="competency-table">
-	          <thead>
-	            <tr>
-	              <th>Competency</th>
-	              <th>Priority</th>
-	              <th>Actions</th>
-	            </tr>
-	          </thead>
-	          <tbody>
-	            <tr v-for="row in requirementRows" :key="row.id">
-	              <td>{{ competencyLabel(row.competencyKey) }}</td>
-	              <td>
-	                <EnumSelect
-	                  v-model="row.priorityDraft"
-	                  label=""
+      <ApiErrorNotice v-if="requirementsLoadError" :error="requirementsLoadError" show-all-messages />
+
+      <OccupationCompetencySuggestions
+        :occupation-key="jobOffer.occupation_key"
+        :selected-keys="existingRequirementKeys"
+        :disabled="isRequirementsLoading"
+        :busy="isAddingRequirement"
+        label="Competencies related to selected occupation"
+        waiting-text="Select an occupation for this offer to see related competencies."
+        @select="addSuggestedRequirement"
+      />
+
+      <form class="d-grid gap-3" @submit.prevent="addRequirement">
+        <CatalogSearchPicker
+          :key="requirementPickerKey"
+          label="Competency"
+          placeholder="Search competencies"
+          no-results-text="No competencies found."
+          :disabled="isRequirementsLoading"
+          :busy="isAddingRequirement"
+          :search-fn="searchCompetencies"
+          @select="selectRequirementCompetency"
+        />
+
+        <p class="mb-0 text-break">
+          <strong>Selected competency:</strong>
+          <span v-if="selectedRequirementCompetency">{{ selectedRequirementCompetency.label }}</span>
+          <span v-else>None</span>
+        </p>
+
+        <EnumSelect
+          v-model="newRequirementPriority"
+          label="Priority"
+          :options="requirementPriorityOptions"
+          :disabled="isAddingRequirement || isRequirementsLoading"
+        />
+
+        <ApiErrorNotice v-if="addRequirementError" :error="addRequirementError" show-all-messages />
+        <div v-if="addRequirementSuccessMessage" class="alert alert-success mb-0" role="status">
+          {{ addRequirementSuccessMessage }}
+        </div>
+
+        <button class="btn btn-primary" type="submit" :disabled="isAddingRequirement || isRequirementsLoading">
+          {{ isAddingRequirement ? "Adding requirement..." : "Add requirement" }}
+        </button>
+      </form>
+
+      <p v-if="isRequirementsLoading" class="text-body-secondary mb-0">Loading requirements...</p>
+      <p v-else-if="requirementRows.length === 0" class="text-body-secondary mb-0">No requirements saved yet.</p>
+
+      <div v-else class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Competency</th>
+              <th scope="col">Priority</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in requirementRows" :key="row.id">
+              <td class="text-break">{{ competencyLabel(row.competencyKey) }}</td>
+              <td>
+                <EnumSelect
+                  v-model="row.priorityDraft"
+                  label=""
                   :options="requirementPriorityOptions"
                   :disabled="row.isSaving || row.isDeleting"
                 />
               </td>
               <td>
-                <div class="table-actions">
+                <div class="d-flex flex-wrap gap-2">
                   <button
-                    class="button-secondary"
+                    class="btn btn-outline-secondary btn-sm"
                     type="button"
                     :disabled="row.isSaving || row.isDeleting || row.priorityDraft === row.persistedPriority"
                     @click="saveRequirementPriority(row.id)"
@@ -195,7 +199,7 @@
                     {{ row.isSaving ? "Saving..." : "Save" }}
                   </button>
                   <button
-                    class="button-danger"
+                    class="btn btn-outline-danger btn-sm"
                     type="button"
                     :disabled="row.isSaving || row.isDeleting"
                     @click="deleteRequirement(row.id)"
@@ -208,9 +212,9 @@
             </tr>
           </tbody>
         </table>
-      </section>
+      </div>
     </section>
-  </main>
+  </div>
 </template>
 
 <script setup lang="ts">

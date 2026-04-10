@@ -1,32 +1,45 @@
 <template>
-  <section class="content">
-    <h2>Login</h2>
-    <p>Sign in to continue to your dashboard.</p>
+  <section class="d-grid gap-3">
+    <header>
+      <h2 class="h4 mb-1">Login</h2>
+      <p class="text-body-secondary mb-0">Sign in to continue to your dashboard.</p>
+    </header>
 
-    <form class="auth-form" @submit.prevent="submitLogin">
-      <label class="form-field">
-        <span>Email</span>
-        <input v-model="email" type="email" autocomplete="email" required />
-      </label>
-
-      <label class="form-field">
-        <span>Password</span>
+    <form @submit.prevent="submitLogin">
+      <div class="mb-3">
+        <label class="form-label" for="login-email">Email</label>
         <input
+          id="login-email"
+          v-model="email"
+          class="form-control"
+          type="email"
+          autocomplete="email"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="login-password">Password</label>
+        <input
+          id="login-password"
           v-model="password"
+          class="form-control"
           type="password"
           autocomplete="current-password"
           required
         />
-      </label>
+      </div>
 
-      <p v-if="errorMessage" class="form-error">{{ errorMessage }}</p>
+      <div v-if="errorMessage" class="alert alert-danger" role="alert">
+        {{ errorMessage }}
+      </div>
 
-      <button class="button-primary" type="submit" :disabled="isSubmitting">
+      <button class="btn btn-primary w-100" type="submit" :disabled="isSubmitting">
         {{ isSubmitting ? "Signing in..." : "Sign in" }}
       </button>
     </form>
 
-    <RouterLink class="inline-link" to="/auth/register">Create an account</RouterLink>
+    <RouterLink class="link-primary" to="/auth/register">Create an account</RouterLink>
   </section>
 </template>
 

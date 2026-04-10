@@ -1,31 +1,33 @@
 <template>
-  <p v-if="rows.length === 0" class="table-note">{{ emptyText }}</p>
+  <p v-if="rows.length === 0" class="text-body-secondary mb-0">{{ emptyText }}</p>
 
-	<table v-else class="competency-table">
-	    <thead>
-	      <tr>
-	        <th>Competency</th>
-	        <th>Level</th>
-	        <th v-if="showContextColumn">Context</th>
-	      </tr>
-	    </thead>
-	    <tbody>
-	      <tr v-for="row in rows" :key="row.id">
-	        <td>{{ resolveLabel(row.competency_key) }}</td>
-	        <td>{{ formatLevel(row.level) }}</td>
-	        <td v-if="showContextColumn">
-	          <button
-	            v-if="indicatorCount(row.competency_key) > 0"
-	            type="button"
-            class="button-secondary indicator-trigger-button"
-            @click="openIndicators(row.competency_key)"
-          >
-            View indicators
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div v-else class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th scope="col">Competency</th>
+          <th scope="col">Level</th>
+          <th v-if="showContextColumn" scope="col">Context</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="row in rows" :key="row.id">
+          <td class="text-break">{{ resolveLabel(row.competency_key) }}</td>
+          <td>{{ formatLevel(row.level) }}</td>
+          <td v-if="showContextColumn">
+            <button
+              v-if="indicatorCount(row.competency_key) > 0"
+              type="button"
+              class="btn btn-outline-secondary btn-sm"
+              @click="openIndicators(row.competency_key)"
+            >
+              View indicators
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
   <ActivityIndicatorsOverlay
     :competency-key="overlayCompetencyKey"

@@ -1,90 +1,102 @@
 <template>
-  <main class="seeker-page">
-    <section class="panel seeker-panel">
-      <PageActionsBar>
-        <RouterLink class="button-secondary" to="/seeker">Back to seeker overview</RouterLink>
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-outline-secondary" to="/seeker">Back to seeker overview</RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <p class="eyebrow">Seeker Marketplace</p>
-        <h1>Published Job Offers</h1>
-        <p class="content">
-          Browse currently published offers. No suitability score is shown in this phase.
-        </p>
+    <header>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Seeker Marketplace</p>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <h1 class="h3 mb-0">Published Job Offers</h1>
         <JobOfferStatusBadge status="published" />
+      </div>
+      <p class="text-body-secondary mb-0">
+        Browse currently published offers. No suitability score is shown in this phase.
+      </p>
+    </header>
+
+    <ApiErrorNotice v-if="occupationsLoadError" :error="occupationsLoadError" show-all-messages />
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Filters</h2>
+        <p class="text-body-secondary mb-0">Apply explicit filters to narrow the list.</p>
       </header>
 
-      <ApiErrorNotice v-if="occupationsLoadError" :error="occupationsLoadError" show-all-messages />
+      <MarketplaceFilterBar
+        :query="draftQuery"
+        :occupation-key="draftOccupationKey"
+        :applied-state="draftAppliedState"
+        :occupation-options="occupationOptions"
+        :disabled="isOffersLoading || isOccupationsLoading"
+        @update:query="draftQuery = $event"
+        @update:occupation-key="draftOccupationKey = $event"
+        @update:applied-state="draftAppliedState = $event"
+        @apply="applyFilters"
+        @clear="clearFilters"
+      />
 
-      <section class="seeker-section">
-        <header class="section-header">
-          <h2>Filters</h2>
-          <p>Apply explicit filters to narrow the list.</p>
-        </header>
-
-        <MarketplaceFilterBar
-          :query="draftQuery"
-          :occupation-key="draftOccupationKey"
-          :applied-state="draftAppliedState"
-          :occupation-options="occupationOptions"
-          :disabled="isOffersLoading || isOccupationsLoading"
-          @update:query="draftQuery = $event"
-          @update:occupation-key="draftOccupationKey = $event"
-          @update:applied-state="draftAppliedState = $event"
-          @apply="applyFilters"
-          @clear="clearFilters"
-        />
-
-        <label class="form-field marketplace-page-size">
-          <span>Page size</span>
-          <select v-model.number="limit" :disabled="isOffersLoading" @change="applyFilters">
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-            <option :value="50">50</option>
-          </select>
-        </label>
-      </section>
-
-      <section class="seeker-section">
-        <header class="section-header">
-          <h2>Results</h2>
-          <p v-if="offers.length > 0">Showing {{ pageStart }}-{{ pageEnd }} published offers.</p>
-        </header>
-
-        <ApiErrorNotice v-if="offersLoadError" :error="offersLoadError" show-all-messages />
-
-        <p v-if="isOffersLoading" class="section-note">Loading published offers...</p>
-        <p v-else-if="offers.length === 0" class="section-note">No published offers match these filters.</p>
-
-        <ul v-else class="marketplace-offer-list">
-          <li v-for="offer in offers" :key="offer.id" class="marketplace-offer-card">
-            <div class="marketplace-offer-header">
-              <h3>{{ offer.title }}</h3>
-              <JobOfferStatusBadge status="published" />
-            </div>
-            <p class="marketplace-offer-meta">
-              {{ offer.company_name || "Company not provided" }} | {{ offer.occupation_label }}
-            </p>
-            <p v-if="offer.applied" class="marketplace-offer-applied-note">Applied</p>
-            <p class="marketplace-offer-summary">{{ offer.short_description }}</p>
-            <p class="marketplace-offer-meta">Published {{ formatDateTime(offer.published_at) }}</p>
-            <RouterLink class="button-secondary" :to="`/seeker/job-offers/${offer.id}`">
-              View details
-            </RouterLink>
-          </li>
-        </ul>
-
-        <div class="table-actions">
-          <button class="button-secondary" type="button" :disabled="!canGoPrevious" @click="goPreviousPage">
-            Previous
-          </button>
-          <button class="button-secondary" type="button" :disabled="!canGoNext" @click="goNextPage">
-            Next
-          </button>
+      <div class="row g-3">
+        <div class="col-12 col-md-3">
+          <label class="d-grid gap-1">
+            <span class="form-label mb-0">Page size</span>
+            <select v-model.number="limit" class="form-select" :disabled="isOffersLoading" @change="applyFilters">
+              <option :value="10">10</option>
+              <option :value="20">20</option>
+              <option :value="50">50</option>
+            </select>
+          </label>
         </div>
-      </section>
+      </div>
     </section>
-  </main>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Results</h2>
+        <p v-if="offers.length > 0" class="text-body-secondary mb-0">
+          Showing {{ pageStart }}-{{ pageEnd }} published offers.
+        </p>
+      </header>
+
+      <ApiErrorNotice v-if="offersLoadError" :error="offersLoadError" show-all-messages />
+
+      <p v-if="isOffersLoading" class="text-body-secondary mb-0">Loading published offers...</p>
+      <p v-else-if="offers.length === 0" class="text-body-secondary mb-0">No published offers match these filters.</p>
+
+      <ul v-else class="list-group">
+        <li v-for="offer in offers" :key="offer.id" class="list-group-item">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div class="min-w-0 flex-grow-1">
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <h3 class="h6 mb-0 text-break">{{ offer.title }}</h3>
+                <JobOfferStatusBadge status="published" />
+                <span v-if="offer.applied" class="badge text-bg-info">Applied</span>
+              </div>
+              <p class="text-body-secondary mb-1 text-break">
+                {{ offer.company_name || "Company not provided" }} | {{ offer.occupation_label }}
+              </p>
+              <p class="mb-1 text-break">{{ offer.short_description }}</p>
+              <p class="text-body-secondary mb-0">Published {{ formatDateTime(offer.published_at) }}</p>
+            </div>
+            <div class="flex-shrink-0">
+              <RouterLink class="btn btn-outline-secondary btn-sm" :to="`/seeker/job-offers/${offer.id}`">
+                View details
+              </RouterLink>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <button class="btn btn-outline-secondary" type="button" :disabled="!canGoPrevious" @click="goPreviousPage">
+          Previous
+        </button>
+        <button class="btn btn-outline-secondary" type="button" :disabled="!canGoNext" @click="goNextPage">
+          Next
+        </button>
+      </div>
+    </section>
+  </div>
 </template>
 
 <script setup lang="ts">

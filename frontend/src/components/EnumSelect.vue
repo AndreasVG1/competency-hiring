@@ -1,8 +1,8 @@
 <template>
-  <label class="form-field">
-    <span v-if="label">{{ label }}</span>
+  <label class="d-grid gap-1">
+    <span v-if="label" class="form-label mb-0">{{ label }}</span>
     <select
-      class="enum-select"
+      class="form-select"
       :value="modelValue"
       :disabled="disabled"
       @change="onChange"

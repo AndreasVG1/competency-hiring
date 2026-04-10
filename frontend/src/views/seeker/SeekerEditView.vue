@@ -1,190 +1,180 @@
 <template>
-  <main class="seeker-page">
-    <section class="panel seeker-panel">
-      <PageActionsBar>
-        <RouterLink class="button-secondary" to="/seeker">Back to profile</RouterLink>
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-outline-secondary" to="/seeker">Back to profile</RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <p class="eyebrow">Job Seeker Area</p>
-        <h1>Edit Profile</h1>
-        <p class="content">Update your private profile and competency data.</p>
+    <header>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Job Seeker Area</p>
+      <h1 class="h3 mb-1">Edit Profile</h1>
+      <p class="text-body-secondary mb-0">Update your private profile and competency data.</p>
+    </header>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Profile</h2>
+        <p class="text-body-secondary mb-0">
+          Keep your core information updated before running matching analysis.
+        </p>
       </header>
 
-      <section class="seeker-section">
-        <header class="section-header">
-          <h2>Profile</h2>
-          <p>Keep your core information updated before running matching analysis.</p>
-        </header>
+      <p v-if="isFirstTimeProfile" class="text-body-secondary mb-0">
+        No profile found yet. Fill in your details and save to create one.
+      </p>
 
-        <p v-if="isFirstTimeProfile" class="section-note">
-          No profile found yet. Fill in your details and save to create one.
-        </p>
+      <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
 
-        <ApiErrorNotice
-          v-if="profileLoadError"
-          :error="profileLoadError"
-          show-all-messages
+      <form class="d-grid gap-3" @submit.prevent="saveProfile">
+        <div>
+          <label class="form-label" for="seeker-full-name">Full name</label>
+          <input
+            id="seeker-full-name"
+            v-model="profileForm.fullName"
+            class="form-control"
+            type="text"
+            maxlength="255"
+            required
+            :disabled="isProfileLoading || isProfileSaving"
+          />
+        </div>
+
+        <div>
+          <label class="form-label" for="seeker-summary">Summary</label>
+          <textarea
+            id="seeker-summary"
+            v-model="profileForm.summary"
+            class="form-control"
+            rows="3"
+            :disabled="isProfileLoading || isProfileSaving"
+          />
+        </div>
+
+        <div>
+          <label class="form-label" for="seeker-location">Location</label>
+          <input
+            id="seeker-location"
+            v-model="profileForm.location"
+            class="form-control"
+            type="text"
+            maxlength="255"
+            :disabled="isProfileLoading || isProfileSaving"
+          />
+        </div>
+
+        <CatalogSearchPicker
+          label="Occupation"
+          placeholder="Search occupations"
+          no-results-text="No occupations found."
+          :disabled="isProfileLoading"
+          :busy="isProfileSaving"
+          :search-fn="searchOccupations"
+          @select="selectOccupation"
         />
 
-        <form class="seeker-form" @submit.prevent="saveProfile">
-          <label class="form-field">
-            <span>Full name</span>
-            <input
-              v-model="profileForm.fullName"
-              type="text"
-              maxlength="255"
-              required
-              :disabled="isProfileLoading || isProfileSaving"
-            />
-          </label>
+        <p class="mb-0 text-break">
+          <strong>Selected occupation:</strong>
+          <span v-if="profileForm.occupationKey">
+            {{ selectedOccupationLabel || profileForm.occupationKey }}
+            <span class="d-block small text-body-secondary break-all">({{ profileForm.occupationKey }})</span>
+          </span>
+          <span v-else>None</span>
+        </p>
 
-          <label class="form-field">
-            <span>Summary</span>
-            <textarea
-              v-model="profileForm.summary"
-              rows="3"
-              :disabled="isProfileLoading || isProfileSaving"
-            />
-          </label>
-
-          <label class="form-field">
-            <span>Location</span>
-            <input
-              v-model="profileForm.location"
-              type="text"
-              maxlength="255"
-              :disabled="isProfileLoading || isProfileSaving"
-            />
-          </label>
-
-          <CatalogSearchPicker
-            label="Occupation"
-            placeholder="Search occupations"
-            no-results-text="No occupations found."
-            :disabled="isProfileLoading"
-            :busy="isProfileSaving"
-            :search-fn="searchOccupations"
-            @select="selectOccupation"
-          />
-
-          <p class="selected-item">
-            <strong>Selected occupation:</strong>
-            <span v-if="profileForm.occupationKey">
-              {{ selectedOccupationLabel || profileForm.occupationKey }}
-              <small>({{ profileForm.occupationKey }})</small>
-            </span>
-            <span v-else>None</span>
-          </p>
-
+        <div class="d-flex flex-wrap gap-2">
           <button
-            class="button-secondary"
+            class="btn btn-outline-secondary"
             type="button"
             :disabled="!profileForm.occupationKey || isProfileLoading || isProfileSaving"
             @click="clearOccupation"
           >
             Clear occupation
           </button>
-
-          <ApiErrorNotice
-            v-if="profileSaveError"
-            :error="profileSaveError"
-            show-all-messages
-          />
-          <p v-if="profileSaveSuccessMessage" class="form-success">{{ profileSaveSuccessMessage }}</p>
-
-          <button class="button-primary" type="submit" :disabled="isProfileLoading || isProfileSaving">
-            {{ isProfileSaving ? "Saving profile..." : "Save profile" }}
-          </button>
-        </form>
-      </section>
-
-      <section class="seeker-section">
-        <header class="section-header">
-          <h2>Competencies</h2>
-          <p>Add competencies and keep levels current.</p>
-        </header>
-
-        <ApiErrorNotice
-          v-if="competenciesLoadError"
-          :error="competenciesLoadError"
-          show-all-messages
-        />
-
-        <OccupationCompetencySuggestions
-          :occupation-key="profileForm.occupationKey"
-          :selected-keys="existingCompetencyKeys"
-          :disabled="isCompetenciesLoading"
-          :busy="isAddingCompetency"
-          label="Competencies related to selected occupation"
-          waiting-text="Select an occupation in Profile to see related competencies."
-          @select="addSuggestedCompetency"
-        />
-
-        <form class="seeker-form" @submit.prevent="addCompetency">
-          <CatalogSearchPicker
-            :key="competencyPickerKey"
-            label="Competency"
-            placeholder="Search competencies"
-            no-results-text="No competencies found."
-            :disabled="isCompetenciesLoading"
-            :busy="isAddingCompetency"
-            :search-fn="searchCompetencies"
-            @select="selectCompetency"
-          />
-
-	          <p class="selected-item">
-	            <strong>Selected competency:</strong>
-	            <span v-if="selectedCompetency">
-	              {{ selectedCompetency.label }}
-	            </span>
-	            <span v-else>None</span>
-	          </p>
-
-          <EnumSelect
-            v-model="newCompetencyLevel"
-            label="Level"
-            :options="competencyLevelOptions"
-            :disabled="isAddingCompetency || isCompetenciesLoading"
-          />
-
-          <ApiErrorNotice
-            v-if="addCompetencyError"
-            :error="addCompetencyError"
-            show-all-messages
-          />
-          <p v-if="addCompetencySuccessMessage" class="form-success">{{ addCompetencySuccessMessage }}</p>
-
-          <button
-            class="button-primary"
-            type="submit"
-            :disabled="isAddingCompetency || isCompetenciesLoading"
-          >
-            {{ isAddingCompetency ? "Adding competency..." : "Add competency" }}
-          </button>
-        </form>
-
-        <div v-if="isCompetenciesLoading" class="table-note">Loading competencies...</div>
-        <div v-else-if="competencyRows.length === 0" class="table-note">
-          No competencies saved yet.
         </div>
 
-	        <table v-else class="competency-table">
-	          <thead>
-	            <tr>
-	              <th>Competency</th>
-	              <th>Level</th>
-	              <th>Context</th>
-	              <th>Actions</th>
-	            </tr>
+        <ApiErrorNotice v-if="profileSaveError" :error="profileSaveError" show-all-messages />
+        <div v-if="profileSaveSuccessMessage" class="alert alert-success mb-0" role="status">
+          {{ profileSaveSuccessMessage }}
+        </div>
+
+        <button class="btn btn-primary" type="submit" :disabled="isProfileLoading || isProfileSaving">
+          {{ isProfileSaving ? "Saving profile..." : "Save profile" }}
+        </button>
+      </form>
+    </section>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Competencies</h2>
+        <p class="text-body-secondary mb-0">Add competencies and keep levels current.</p>
+      </header>
+
+      <ApiErrorNotice v-if="competenciesLoadError" :error="competenciesLoadError" show-all-messages />
+
+      <OccupationCompetencySuggestions
+        :occupation-key="profileForm.occupationKey"
+        :selected-keys="existingCompetencyKeys"
+        :disabled="isCompetenciesLoading"
+        :busy="isAddingCompetency"
+        label="Competencies related to selected occupation"
+        waiting-text="Select an occupation in Profile to see related competencies."
+        @select="addSuggestedCompetency"
+      />
+
+      <form class="d-grid gap-3" @submit.prevent="addCompetency">
+        <CatalogSearchPicker
+          :key="competencyPickerKey"
+          label="Competency"
+          placeholder="Search competencies"
+          no-results-text="No competencies found."
+          :disabled="isCompetenciesLoading"
+          :busy="isAddingCompetency"
+          :search-fn="searchCompetencies"
+          @select="selectCompetency"
+        />
+
+        <p class="mb-0 text-break">
+          <strong>Selected competency:</strong>
+          <span v-if="selectedCompetency">{{ selectedCompetency.label }}</span>
+          <span v-else>None</span>
+        </p>
+
+        <EnumSelect
+          v-model="newCompetencyLevel"
+          label="Level"
+          :options="competencyLevelOptions"
+          :disabled="isAddingCompetency || isCompetenciesLoading"
+        />
+
+        <ApiErrorNotice v-if="addCompetencyError" :error="addCompetencyError" show-all-messages />
+        <div v-if="addCompetencySuccessMessage" class="alert alert-success mb-0" role="status">
+          {{ addCompetencySuccessMessage }}
+        </div>
+
+        <button class="btn btn-primary" type="submit" :disabled="isAddingCompetency || isCompetenciesLoading">
+          {{ isAddingCompetency ? "Adding competency..." : "Add competency" }}
+        </button>
+      </form>
+
+      <p v-if="isCompetenciesLoading" class="text-body-secondary mb-0">Loading competencies...</p>
+      <p v-else-if="competencyRows.length === 0" class="text-body-secondary mb-0">No competencies saved yet.</p>
+
+      <div v-else class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Competency</th>
+              <th scope="col">Level</th>
+              <th scope="col">Context</th>
+              <th scope="col">Actions</th>
+            </tr>
           </thead>
-	          <tbody>
-	            <tr v-for="row in competencyRows" :key="row.id">
-	              <td>{{ competencyLabel(row.competencyKey) }}</td>
-	              <td>
-	                <EnumSelect
-	                  v-model="row.levelDraft"
-	                  label=""
+          <tbody>
+            <tr v-for="row in competencyRows" :key="row.id">
+              <td class="text-break">{{ competencyLabel(row.competencyKey) }}</td>
+              <td>
+                <EnumSelect
+                  v-model="row.levelDraft"
+                  label=""
                   :options="competencyLevelOptions"
                   :disabled="row.isSaving || row.isDeleting"
                 />
@@ -193,16 +183,16 @@
                 <button
                   v-if="indicatorCount(row.competencyKey) > 0"
                   type="button"
-                  class="button-secondary indicator-trigger-button"
+                  class="btn btn-outline-secondary btn-sm"
                   @click="openIndicators(row.competencyKey)"
                 >
                   View indicators
                 </button>
               </td>
               <td>
-                <div class="table-actions">
+                <div class="d-flex flex-wrap gap-2">
                   <button
-                    class="button-secondary"
+                    class="btn btn-outline-secondary btn-sm"
                     type="button"
                     :disabled="row.isSaving || row.isDeleting || row.levelDraft === row.persistedLevel"
                     @click="saveCompetencyLevel(row.id)"
@@ -210,7 +200,7 @@
                     {{ row.isSaving ? "Saving..." : "Save" }}
                   </button>
                   <button
-                    class="button-danger"
+                    class="btn btn-outline-danger btn-sm"
                     type="button"
                     :disabled="row.isSaving || row.isDeleting"
                     @click="deleteCompetency(row.id)"
@@ -223,9 +213,9 @@
             </tr>
           </tbody>
         </table>
-      </section>
+      </div>
     </section>
-  </main>
+  </div>
 
   <ActivityIndicatorsOverlay
     :competency-key="overlayCompetencyKey"

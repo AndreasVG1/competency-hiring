@@ -17,12 +17,12 @@
       >
         <h2 id="confirm-dialog-title">{{ activeRequest.title }}</h2>
         <p id="confirm-dialog-message">{{ activeRequest.message }}</p>
-        <div class="table-actions">
-          <button class="button-secondary" type="button" @click="cancelCurrent">
+        <div class="d-flex justify-content-end flex-wrap gap-2">
+          <button class="btn btn-outline-secondary" type="button" @click="cancelCurrent">
             {{ activeRequest.cancelLabel }}
           </button>
           <button
-            :class="activeRequest.tone === 'danger' ? 'button-danger' : 'button-primary'"
+            :class="activeRequest.tone === 'danger' ? 'btn btn-danger' : 'btn btn-primary'"
             type="button"
             @click="confirmCurrent"
           >

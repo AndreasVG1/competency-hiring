@@ -1,31 +1,33 @@
 <template>
-  <p v-if="requirements.length === 0" class="table-note">{{ emptyText }}</p>
+  <p v-if="requirements.length === 0" class="text-body-secondary mb-0">{{ emptyText }}</p>
 
-	<table v-else class="competency-table">
-	    <thead>
-	      <tr>
-	        <th>Competency</th>
-	        <th>Priority</th>
-	        <th v-if="showIndicatorsColumn">Context</th>
-	      </tr>
-	    </thead>
-	    <tbody>
-	      <tr v-for="item in requirements" :key="item.competency_key">
-	        <td>{{ resolveLabel(item.competency_key) }}</td>
-	        <td>{{ formatPriority(item.priority) }}</td>
-	        <td v-if="showIndicatorsColumn">
-	          <button
-	            v-if="indicatorCount(item.competency_key) > 0"
-            type="button"
-            class="button-secondary indicator-trigger-button"
-            @click="openIndicators(item.competency_key)"
-          >
-            View indicators
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div v-else class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th scope="col">Competency</th>
+          <th scope="col">Priority</th>
+          <th v-if="showIndicatorsColumn" scope="col">Context</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in requirements" :key="item.competency_key">
+          <td class="text-break">{{ resolveLabel(item.competency_key) }}</td>
+          <td>{{ formatPriority(item.priority) }}</td>
+          <td v-if="showIndicatorsColumn">
+            <button
+              v-if="indicatorCount(item.competency_key) > 0"
+              type="button"
+              class="btn btn-outline-secondary btn-sm"
+              @click="openIndicators(item.competency_key)"
+            >
+              View indicators
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
   <ActivityIndicatorsOverlay
     :competency-key="overlayCompetencyKey"

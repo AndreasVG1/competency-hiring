@@ -1,10 +1,11 @@
 <template>
-  <form class="marketplace-filter-bar" @submit.prevent="emitApply">
-    <label class="form-field">
-      <span>Search</span>
+  <form class="row g-3 align-items-end" @submit.prevent="emitApply">
+    <label class="col-12 col-lg-5">
+      <span class="form-label mb-0">Search</span>
       <input
         :value="query"
         type="search"
+        class="form-control"
         placeholder="Search title or description"
         :disabled="disabled"
         @input="onQueryInput"
@@ -12,6 +13,7 @@
     </label>
 
     <EnumSelect
+      class="col-12 col-lg-3"
       label="Occupation"
       :model-value="occupationKey"
       :options="occupationOptionsWithDefault"
@@ -20,6 +22,7 @@
     />
 
     <EnumSelect
+      class="col-12 col-lg-2"
       label="Application status"
       :model-value="appliedState"
       :options="appliedOptions"
@@ -27,9 +30,9 @@
       @update:model-value="onAppliedStateChange"
     />
 
-    <div class="table-actions">
-      <button class="button-primary" type="submit" :disabled="disabled">Apply filters</button>
-      <button class="button-secondary" type="button" :disabled="disabled" @click="emitClear">
+    <div class="col-12 col-lg-2 d-flex gap-2 flex-wrap">
+      <button class="btn btn-primary" type="submit" :disabled="disabled">Apply</button>
+      <button class="btn btn-outline-secondary" type="button" :disabled="disabled" @click="emitClear">
         Clear
       </button>
     </div>

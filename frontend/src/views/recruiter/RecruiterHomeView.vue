@@ -1,62 +1,66 @@
 <template>
-  <main class="recruiter-page">
-    <section class="panel recruiter-panel">
-      <PageActionsBar>
-        <RouterLink class="button-secondary" to="/recruiter/edit">Edit profile</RouterLink>
-        <RouterLink class="button-primary" to="/recruiter/job-offers/new">Create job offer</RouterLink>
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter/edit">Edit profile</RouterLink>
+      <RouterLink class="btn btn-primary" to="/recruiter/job-offers/new">Create job offer</RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <h1>Recruiter Overview</h1>
-        <p class="content">Review your profile information and draft job offers.</p>
+    <header>
+      <h1 class="h3 mb-1">Recruiter Overview</h1>
+      <p class="text-body-secondary mb-0">Review your profile information and draft job offers.</p>
+    </header>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-0">Recruiter Profile</h2>
       </header>
 
-      <section class="recruiter-section">
-        <header class="section-header">
-          <h2>Recruiter Profile</h2>
-        </header>
+      <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
 
-        <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
+      <p v-if="isProfileLoading" class="text-body-secondary mb-0">Loading profile...</p>
+      <template v-else-if="isFirstTimeProfile || !profile">
+        <p class="text-body-secondary mb-0">No recruiter profile found yet.</p>
+        <div>
+          <RouterLink class="btn btn-primary" to="/recruiter/edit">Create profile</RouterLink>
+        </div>
+      </template>
 
-        <p v-if="isProfileLoading" class="section-note">Loading profile...</p>
-        <template v-else-if="isFirstTimeProfile || !profile">
-          <p class="section-note">No recruiter profile found yet.</p>
-          <RouterLink class="button-primary" to="/recruiter/edit">Create profile</RouterLink>
-        </template>
-
-        <dl v-else class="summary-grid">
-          <dt>Company name</dt>
-          <dd>{{ profile.company_name }}</dd>
-          <dt>Contact name</dt>
-          <dd>{{ profile.contact_name }}</dd>
-        </dl>
-      </section>
-
-      <section class="recruiter-section">
-        <header class="section-header">
-          <h2>Job Offers</h2>
-          <p>Open an offer to review details, status, and available actions.</p>
-        </header>
-
-        <ApiErrorNotice v-if="jobOffersLoadError" :error="jobOffersLoadError" show-all-messages />
-
-        <p v-if="isJobOffersLoading" class="table-note">Loading job offers...</p>
-        <p v-else-if="jobOffers.length === 0" class="table-note">No draft offers yet.</p>
-
-        <ul v-else class="offer-list">
-          <li v-for="offer in jobOffers" :key="offer.id">
-            <RouterLink class="offer-select" :to="`/recruiter/job-offers/${offer.id}`">
-              <span>
-                <strong>{{ offer.title }}</strong>
-                <JobOfferStatusBadge :status="offer.status" />
-              </span>
-              <code>#{{ offer.id }}</code>
-            </RouterLink>
-          </li>
-        </ul>
-      </section>
+      <dl v-else class="row mb-0">
+        <dt class="col-sm-3 text-body-secondary">Company name</dt>
+        <dd class="col-sm-9 text-break">{{ profile.company_name }}</dd>
+        <dt class="col-sm-3 text-body-secondary">Contact name</dt>
+        <dd class="col-sm-9 text-break">{{ profile.contact_name }}</dd>
+      </dl>
     </section>
-  </main>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Job Offers</h2>
+        <p class="text-body-secondary mb-0">Open an offer to review details, status, and available actions.</p>
+      </header>
+
+      <ApiErrorNotice v-if="jobOffersLoadError" :error="jobOffersLoadError" show-all-messages />
+
+      <p v-if="isJobOffersLoading" class="text-body-secondary mb-0">Loading job offers...</p>
+      <p v-else-if="jobOffers.length === 0" class="text-body-secondary mb-0">No draft offers yet.</p>
+
+      <ul v-else class="list-group">
+        <li v-for="offer in jobOffers" :key="offer.id" class="list-group-item">
+          <RouterLink class="text-decoration-none text-reset d-block" :to="`/recruiter/job-offers/${offer.id}`">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <div class="min-w-0">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                  <strong class="text-break">{{ offer.title }}</strong>
+                  <JobOfferStatusBadge :status="offer.status" />
+                </div>
+              </div>
+              <code class="text-body-secondary">#{{ offer.id }}</code>
+            </div>
+          </RouterLink>
+        </li>
+      </ul>
+    </section>
+  </div>
 </template>
 
 <script setup lang="ts">

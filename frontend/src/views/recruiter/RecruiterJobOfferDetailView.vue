@@ -1,118 +1,114 @@
 <template>
-  <main class="recruiter-page">
-    <section class="panel recruiter-panel">
-      <PageActionsBar>
-        <RouterLink class="button-secondary" to="/recruiter">Back to recruiter</RouterLink>
-        <RouterLink
-          v-if="jobOffer"
-          class="button-secondary"
-          :to="`/recruiter/job-offers/${jobOffer.id}/edit`"
-        >
-          Edit offer
-        </RouterLink>
-        <RouterLink
-          v-if="jobOffer"
-          class="button-secondary"
-          :to="`/recruiter/job-offers/${jobOffer.id}/applicants`"
-        >
-          View applicants
-        </RouterLink>
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Back to recruiter</RouterLink>
+      <RouterLink v-if="jobOffer" class="btn btn-outline-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/edit`">
+        Edit offer
+      </RouterLink>
+      <RouterLink
+        v-if="jobOffer"
+        class="btn btn-outline-secondary"
+        :to="`/recruiter/job-offers/${jobOffer.id}/applicants`"
+      >
+        View applicants
+      </RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <p class="eyebrow">Recruiter Area</p>
-        <h1>Job Offer Details</h1>
-        <p class="content">Read-only view for a single offer and its requirements.</p>
+    <header>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
+      <h1 class="h3 mb-1">Job Offer Details</h1>
+      <p class="text-body-secondary mb-0">Read-only view for a single offer and its requirements.</p>
+    </header>
+
+    <ApiErrorNotice v-if="deleteOfferError" :error="deleteOfferError" show-all-messages />
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Offer</h2>
+        <p class="text-body-secondary mb-0">Read-only summary and publication controls for this offer.</p>
       </header>
 
-      <ApiErrorNotice v-if="deleteOfferError" :error="deleteOfferError" show-all-messages />
+      <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
+      <ApiErrorNotice v-if="transitionError" :error="transitionError" show-all-messages />
+      <div v-if="transitionSuccessMessage" class="alert alert-success mb-0" role="status">
+        {{ transitionSuccessMessage }}
+      </div>
 
-      <section class="recruiter-section">
-        <header class="section-header">
-          <h2>Offer</h2>
-          <p>Read-only summary and publication controls for this offer.</p>
-        </header>
+      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Loading offer...</p>
+      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Job offer not found.</p>
 
-        <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
-        <ApiErrorNotice v-if="transitionError" :error="transitionError" show-all-messages />
-        <p v-if="transitionSuccessMessage" class="form-success">{{ transitionSuccessMessage }}</p>
+      <template v-else-if="jobOffer">
+        <dl class="row mb-0">
+          <dt class="col-sm-3 text-body-secondary">Title</dt>
+          <dd class="col-sm-9 text-break">{{ jobOffer.title }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Status</dt>
+          <dd class="col-sm-9"><JobOfferStatusBadge :status="jobOffer.status" /></dd>
+          <dt class="col-sm-3 text-body-secondary">Occupation</dt>
+          <dd class="col-sm-9 text-break">
+            {{ occupationLabel || jobOffer.occupation_key }}
+            <span class="d-block small text-body-secondary break-all">({{ jobOffer.occupation_key }})</span>
+          </dd>
+          <dt class="col-sm-3 text-body-secondary">Description</dt>
+          <dd class="col-sm-9 text-break">{{ jobOffer.description }}</dd>
+        </dl>
 
-        <p v-if="isOfferLoading" class="section-note">Loading offer...</p>
-        <p v-else-if="isOfferNotFound" class="section-note">Job offer not found.</p>
-
-        <template v-else-if="jobOffer">
-          <dl class="summary-grid">
-            <dt>Title</dt>
-            <dd>{{ jobOffer.title }}</dd>
-            <dt>Status</dt>
-            <dd><JobOfferStatusBadge :status="jobOffer.status" /></dd>
-            <dt>Occupation</dt>
-            <dd>
-              {{ occupationLabel || jobOffer.occupation_key }}
-              <small>({{ jobOffer.occupation_key }})</small>
-            </dd>
-            <dt>Description</dt>
-            <dd>{{ jobOffer.description }}</dd>
-          </dl>
-
-          <div class="table-actions">
-            <RouterLink class="button-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/edit`">
-              Edit offer
-            </RouterLink>
-            <RouterLink class="button-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/applicants`">
-              View applicants
-            </RouterLink>
-            <button
-              v-if="jobOffer.status === 'draft'"
-              class="button-primary"
-              type="button"
-              :disabled="isTransitioning || isDeletingOffer"
-              @click="publishOffer"
-            >
-              {{ isTransitioning ? "Publishing..." : "Publish offer" }}
-            </button>
-            <button
-              v-else-if="jobOffer.status === 'published'"
-              class="button-secondary"
-              type="button"
-              :disabled="isTransitioning || isDeletingOffer"
-              @click="archiveOffer"
-            >
-              {{ isTransitioning ? "Archiving..." : "Archive offer" }}
-            </button>
-            <button
-              class="button-danger"
-              type="button"
-              :disabled="isDeletingOffer || isTransitioning"
-              @click="deleteOffer"
-            >
-              {{ isDeletingOffer ? "Deleting..." : "Delete offer" }}
-            </button>
-          </div>
-        </template>
-      </section>
-
-      <section class="recruiter-section">
-        <header class="section-header">
-          <h2>Requirements</h2>
-          <p>Read-only list of competency requirements for this offer.</p>
-        </header>
-
-        <ApiErrorNotice v-if="requirementsLoadError" :error="requirementsLoadError" show-all-messages />
-
-        <p v-if="isRequirementsLoading" class="table-note">Loading requirements...</p>
-        <JobOfferRequirementsTable
-          v-else
-          :requirements="tableRequirements"
-          empty-text="No requirements saved yet."
-          :label-resolver="competencyLabel"
-          :activity-indicator-resolver="activityIndicatorsFor"
-          :activity-indicator-count-resolver="activityIndicatorCountFor"
-          :activity-indicator-loader="loadActivityIndicators"
-        />
-      </section>
+        <div class="d-flex flex-wrap gap-2">
+          <RouterLink class="btn btn-outline-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/edit`">
+            Edit offer
+          </RouterLink>
+          <RouterLink class="btn btn-outline-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/applicants`">
+            View applicants
+          </RouterLink>
+          <button
+            v-if="jobOffer.status === 'draft'"
+            class="btn btn-primary"
+            type="button"
+            :disabled="isTransitioning || isDeletingOffer"
+            @click="publishOffer"
+          >
+            {{ isTransitioning ? "Publishing..." : "Publish offer" }}
+          </button>
+          <button
+            v-else-if="jobOffer.status === 'published'"
+            class="btn btn-outline-secondary"
+            type="button"
+            :disabled="isTransitioning || isDeletingOffer"
+            @click="archiveOffer"
+          >
+            {{ isTransitioning ? "Archiving..." : "Archive offer" }}
+          </button>
+          <button
+            class="btn btn-outline-danger"
+            type="button"
+            :disabled="isDeletingOffer || isTransitioning"
+            @click="deleteOffer"
+          >
+            {{ isDeletingOffer ? "Deleting..." : "Delete offer" }}
+          </button>
+        </div>
+      </template>
     </section>
-  </main>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Requirements</h2>
+        <p class="text-body-secondary mb-0">Read-only list of competency requirements for this offer.</p>
+      </header>
+
+      <ApiErrorNotice v-if="requirementsLoadError" :error="requirementsLoadError" show-all-messages />
+
+      <p v-if="isRequirementsLoading" class="text-body-secondary mb-0">Loading requirements...</p>
+      <JobOfferRequirementsTable
+        v-else
+        :requirements="tableRequirements"
+        empty-text="No requirements saved yet."
+        :label-resolver="competencyLabel"
+        :activity-indicator-resolver="activityIndicatorsFor"
+        :activity-indicator-count-resolver="activityIndicatorCountFor"
+        :activity-indicator-loader="loadActivityIndicators"
+      />
+    </section>
+  </div>
 </template>
 
 <script setup lang="ts">

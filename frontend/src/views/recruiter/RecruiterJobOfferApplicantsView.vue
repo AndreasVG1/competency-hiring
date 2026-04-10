@@ -1,169 +1,168 @@
 <template>
-  <main class="recruiter-page">
-    <section class="panel recruiter-panel">
-      <PageActionsBar>
-        <RouterLink class="button-secondary" :to="backToOfferPath">Back to offer</RouterLink>
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-outline-secondary" :to="backToOfferPath">Back to offer</RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <p class="eyebrow">Recruiter Area</p>
-        <h1>Offer Applicants</h1>
-        <p class="content">
-          Applicants appear only after explicit seeker consent through application.
-        </p>
+    <header>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
+      <h1 class="h3 mb-1">Offer Applicants</h1>
+      <p class="text-body-secondary mb-0">
+        Applicants appear only after explicit seeker consent through application.
+      </p>
+    </header>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Offer</h2>
+        <p class="text-body-secondary mb-0">Applicant data below is shared as an application-time snapshot.</p>
       </header>
 
-      <section class="recruiter-section">
-        <header class="section-header">
-          <h2>Offer</h2>
-          <p>Applicant data below is shared as an application-time snapshot.</p>
-        </header>
+      <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
 
-        <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
+      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Loading offer...</p>
+      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Job offer not found.</p>
+      <template v-else-if="jobOffer">
+        <dl class="row mb-0">
+          <dt class="col-sm-3 text-body-secondary">Title</dt>
+          <dd class="col-sm-9 text-break">{{ jobOffer.title }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Status</dt>
+          <dd class="col-sm-9"><JobOfferStatusBadge :status="jobOffer.status" /></dd>
+          <dt class="col-sm-3 text-body-secondary">Occupation key</dt>
+          <dd class="col-sm-9 text-break break-all">{{ jobOffer.occupation_key }}</dd>
+        </dl>
+      </template>
+    </section>
 
-        <p v-if="isOfferLoading" class="section-note">Loading offer...</p>
-        <p v-else-if="isOfferNotFound" class="section-note">Job offer not found.</p>
-        <template v-else-if="jobOffer">
-          <dl class="summary-grid">
-            <dt>Title</dt>
-            <dd>{{ jobOffer.title }}</dd>
-            <dt>Status</dt>
-            <dd><JobOfferStatusBadge :status="jobOffer.status" /></dd>
-            <dt>Occupation key</dt>
-            <dd>{{ jobOffer.occupation_key }}</dd>
-          </dl>
-        </template>
-      </section>
+    <section v-if="!isOfferNotFound" class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">Applicants</h2>
+        <p class="text-body-secondary mb-0">Only candidates who applied to this offer are visible.</p>
+      </header>
 
-      <section v-if="!isOfferNotFound" class="recruiter-section">
-        <header class="section-header">
-          <h2>Applicants</h2>
-          <p>Only candidates who applied to this offer are visible.</p>
-        </header>
+      <ApiErrorNotice v-if="applicantsLoadError" :error="applicantsLoadError" show-all-messages />
 
-        <ApiErrorNotice v-if="applicantsLoadError" :error="applicantsLoadError" show-all-messages />
-
-        <p v-if="isApplicantsLoading" class="section-note">Loading applicants...</p>
-        <p v-else-if="applicants.length === 0" class="section-note">No applicants yet.</p>
-        <template v-else>
-          <div class="applicants-toolbar">
-            <label class="form-field applicants-sort">
-              <span>Sort by</span>
-              <select v-model="applicantSort" class="enum-select">
+      <p v-if="isApplicantsLoading" class="text-body-secondary mb-0">Loading applicants...</p>
+      <p v-else-if="applicants.length === 0" class="text-body-secondary mb-0">No applicants yet.</p>
+      <template v-else>
+        <div class="row g-3 align-items-end">
+          <div class="col-12 col-md-5 col-lg-4">
+            <label class="d-grid gap-1">
+              <span class="form-label mb-0">Sort by</span>
+              <select v-model="applicantSort" class="form-select">
                 <option value="score_desc">Score (high to low)</option>
                 <option value="applied_desc">Date applied (newest first)</option>
               </select>
             </label>
           </div>
+        </div>
 
-          <ul class="applicants-list">
-            <li
-              v-for="applicant in sortedApplicants"
-              :key="applicant.application_id"
-              class="applicant-card"
-            >
-              <header class="applicant-card-header">
-                <div class="applicant-card-title-row">
-                  <h3 class="applicant-card-title">{{ applicant.shared_profile.full_name }}</h3>
-                  <p class="applicant-score-pill">
-                    Score:
-                    <strong>{{ formatApplicantScore(applicant) }}</strong>
-                  </p>
+        <ul class="list-group">
+          <li v-for="applicant in sortedApplicants" :key="applicant.application_id" class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <div class="min-w-0">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                  <h3 class="h6 mb-0 text-break">{{ applicant.shared_profile.full_name }}</h3>
+                  <span class="badge text-bg-primary">
+                    Score: {{ formatApplicantScore(applicant) }}
+                  </span>
                 </div>
-              </header>
+              </div>
+            </div>
 
-              <dl class="summary-grid">
-                <dt>Applied at</dt>
-                <dd>{{ formatDateTime(applicant.applied_at) }}</dd>
-                <dt>Summary</dt>
-                <dd>{{ applicant.shared_profile.summary || "Not provided" }}</dd>
+            <dl class="row mb-0 mt-2">
+              <dt class="col-sm-3 text-body-secondary">Applied at</dt>
+              <dd class="col-sm-9 text-break">{{ formatDateTime(applicant.applied_at) }}</dd>
+              <dt class="col-sm-3 text-body-secondary">Summary</dt>
+              <dd class="col-sm-9 text-break">{{ applicant.shared_profile.summary || "Not provided" }}</dd>
+            </dl>
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm mt-2"
+              :aria-expanded="isApplicantExpanded(applicant.application_id)"
+              :aria-controls="applicantDetailsId(applicant.application_id)"
+              @click="toggleApplicantDetails(applicant.application_id)"
+            >
+              {{ isApplicantExpanded(applicant.application_id) ? "Hide details" : "View details" }}
+            </button>
+
+            <div
+              v-if="isApplicantExpanded(applicant.application_id)"
+              :id="applicantDetailsId(applicant.application_id)"
+              class="d-grid gap-3 mt-3"
+            >
+              <dl class="row mb-0">
+                <dt class="col-sm-3 text-body-secondary">Occupation key</dt>
+                <dd class="col-sm-9 text-break break-all">{{ applicant.shared_profile.occupation_key || "Not provided" }}</dd>
+                <dt class="col-sm-3 text-body-secondary">Location</dt>
+                <dd class="col-sm-9 text-break">{{ applicant.shared_profile.location || "Not provided" }}</dd>
               </dl>
 
-              <button
-                type="button"
-                class="button-secondary applicant-toggle-button"
-                :aria-expanded="isApplicantExpanded(applicant.application_id)"
-                :aria-controls="applicantDetailsId(applicant.application_id)"
-                @click="toggleApplicantDetails(applicant.application_id)"
-              >
-                {{ isApplicantExpanded(applicant.application_id) ? "Hide details" : "View details" }}
-              </button>
-
-              <div
-                v-if="isApplicantExpanded(applicant.application_id)"
-                :id="applicantDetailsId(applicant.application_id)"
-                class="applicant-expanded-content"
-              >
-                <dl class="summary-grid">
-                  <dt>Occupation key</dt>
-                  <dd>{{ applicant.shared_profile.occupation_key || "Not provided" }}</dd>
-                  <dt>Location</dt>
-                  <dd>{{ applicant.shared_profile.location || "Not provided" }}</dd>
-                </dl>
-
-                <section>
-                  <header class="subsection-header">
-                    <h3>Shared competencies</h3>
-                    <p>Competency values shown here come from the stored application snapshot.</p>
-                  </header>
-
-                  <CompetencyLevelTable
-                    :rows="toSharedCompetencyRows(applicant)"
-                    empty-text="No competencies were shared."
-                    :label-resolver="competencyLabel"
-                  />
-                </section>
-
-                <section>
-                  <header class="subsection-header">
-                    <h3>Shared matching result</h3>
-                    <p>This result was shared at application time as part of consent.</p>
-                  </header>
-
-                  <template v-if="applicant.shared_matching">
-                    <dl class="summary-grid">
-                      <dt>Score</dt>
-                      <dd>{{ formatScore(applicant.shared_matching.score) }}</dd>
-                      <dt>Algorithm version</dt>
-                      <dd>{{ applicant.shared_matching.algorithm_version }}</dd>
-                      <dt>Matching snapshot created at</dt>
-                      <dd>{{ formatDateTime(applicant.shared_matching.snapshot_created_at) }}</dd>
-                    </dl>
-
-                    <MatchingExplanationPanel
-                      v-if="applicant.shared_matching.explanation"
-                      summary-title="Shared match explanation"
-                      :explanation="applicant.shared_matching.explanation"
-                      :competency-label="competencyLabel"
-                      :show-roadmap="false"
-                    />
-                    <p v-else class="section-note">
-                      Structured explanation is unavailable for this shared matching snapshot.
-                    </p>
-
-                    <details class="matching-disclosure">
-                      <summary class="matching-disclosure-summary">
-                        <span class="matching-disclosure-closed-label">Show matching payload</span>
-                        <span class="matching-disclosure-open-label">Hide matching payload</span>
-                      </summary>
-
-                      <JsonPayloadViewer
-                        title="Snapshot matching payload"
-                        :payload="applicant.shared_matching.result_payload"
-                      />
-                    </details>
-                  </template>
-                  <p v-else class="section-note">
-                    No shared matching snapshot is available for this application.
+              <section class="d-grid gap-2">
+                <header>
+                  <h3 class="h6 mb-1">Shared competencies</h3>
+                  <p class="text-body-secondary mb-0">
+                    Competency values shown here come from the stored application snapshot.
                   </p>
-                </section>
-              </div>
-            </li>
-          </ul>
-        </template>
-      </section>
+                </header>
+
+                <CompetencyLevelTable
+                  :rows="toSharedCompetencyRows(applicant)"
+                  empty-text="No competencies were shared."
+                  :label-resolver="competencyLabel"
+                />
+              </section>
+
+              <section class="d-grid gap-2">
+                <header>
+                  <h3 class="h6 mb-1">Shared matching result</h3>
+                  <p class="text-body-secondary mb-0">This result was shared at application time as part of consent.</p>
+                </header>
+
+                <template v-if="applicant.shared_matching">
+                  <dl class="row mb-0">
+                    <dt class="col-sm-3 text-body-secondary">Score</dt>
+                    <dd class="col-sm-9 text-break">{{ formatScore(applicant.shared_matching.score) }}</dd>
+                    <dt class="col-sm-3 text-body-secondary">Algorithm version</dt>
+                    <dd class="col-sm-9 text-break break-all">{{ applicant.shared_matching.algorithm_version }}</dd>
+                    <dt class="col-sm-3 text-body-secondary">Matching snapshot created at</dt>
+                    <dd class="col-sm-9 text-break">{{ formatDateTime(applicant.shared_matching.snapshot_created_at) }}</dd>
+                  </dl>
+
+                  <MatchingExplanationPanel
+                    v-if="applicant.shared_matching.explanation"
+                    summary-title="Shared match explanation"
+                    :explanation="applicant.shared_matching.explanation"
+                    :competency-label="competencyLabel"
+                    :show-roadmap="false"
+                  />
+                  <p v-else class="text-body-secondary mb-0">
+                    Structured explanation is unavailable for this shared matching snapshot.
+                  </p>
+
+                  <details class="matching-disclosure">
+                    <summary class="matching-disclosure-summary">
+                      <span class="matching-disclosure-closed-label">Show matching payload</span>
+                      <span class="matching-disclosure-open-label">Hide matching payload</span>
+                    </summary>
+
+                    <JsonPayloadViewer
+                      title="Snapshot matching payload"
+                      :payload="applicant.shared_matching.result_payload"
+                    />
+                  </details>
+                </template>
+                <p v-else class="text-body-secondary mb-0">
+                  No shared matching snapshot is available for this application.
+                </p>
+              </section>
+            </div>
+          </li>
+        </ul>
+      </template>
     </section>
-  </main>
+  </div>
 </template>
 
 <script setup lang="ts">

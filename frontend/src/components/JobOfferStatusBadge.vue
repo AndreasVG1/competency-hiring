@@ -25,11 +25,11 @@ const statusLabel = computed(() => {
 
 const badgeClass = computed(() => {
   if (props.status === "published") {
-    return "status-badge status-badge-published";
+    return "badge text-bg-success";
   }
   if (props.status === "archived") {
-    return "status-badge status-badge-archived";
+    return "badge text-bg-danger";
   }
-  return "status-badge status-badge-draft";
+  return "badge text-bg-secondary";
 });
 </script>

@@ -1,32 +1,33 @@
 <template>
-  <section class="catalog-search-picker">
-    <label class="form-field">
-      <span>{{ label }}</span>
+  <section class="d-grid gap-2">
+    <label class="d-grid gap-1">
+      <span class="form-label mb-0">{{ label }}</span>
       <input
         v-model="query"
         type="search"
+        class="form-control"
         :placeholder="placeholder"
         :disabled="isDisabled"
       />
     </label>
 
-    <p v-if="isSearching" class="picker-meta">Searching...</p>
-    <p v-else-if="searchError" class="picker-error">Search failed. Try again.</p>
-    <p v-else-if="showNoResults" class="picker-meta">{{ noResultsText }}</p>
+    <p v-if="isSearching" class="text-body-secondary mb-0">Searching...</p>
+    <p v-else-if="searchError" class="text-danger fw-semibold mb-0">Search failed. Try again.</p>
+    <p v-else-if="showNoResults" class="text-body-secondary mb-0">{{ noResultsText }}</p>
 
-    <ul v-if="results.length > 0" class="picker-results">
+    <ul v-if="results.length > 0" class="list-group">
       <li v-for="item in results" :key="item.key">
         <button
-          class="picker-result-button"
+          class="list-group-item list-group-item-action d-flex gap-2 align-items-start"
           type="button"
           :disabled="isDisabled"
           @click="selectItem(item)"
-	        >
-	          <span class="picker-result-label">{{ item.label }}</span>
-	        </button>
-	      </li>
-	    </ul>
-	  </section>
+        >
+          <span class="flex-grow-1 min-w-0 text-break fw-semibold">{{ item.label }}</span>
+        </button>
+      </li>
+    </ul>
+  </section>
 </template>
 
 <script setup lang="ts">

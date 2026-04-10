@@ -1,11 +1,14 @@
 <template>
-  <section class="json-payload-viewer">
-    <header v-if="title" class="subsection-header">
-      <h3>{{ title }}</h3>
+  <section class="d-grid gap-2">
+    <header v-if="title">
+      <h3 class="h6 mb-0">{{ title }}</h3>
     </header>
 
-    <p v-if="payload === null" class="section-note">{{ emptyText }}</p>
-    <pre v-else class="json-payload-block"><code>{{ formattedPayload }}</code></pre>
+    <p v-if="payload === null" class="text-body-secondary mb-0">{{ emptyText }}</p>
+    <pre
+      v-else
+      class="bg-light border rounded-3 p-3 mb-0 overflow-auto font-monospace small"
+    ><code>{{ formattedPayload }}</code></pre>
   </section>
 </template>
 

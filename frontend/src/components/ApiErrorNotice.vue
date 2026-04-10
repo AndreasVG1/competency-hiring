@@ -1,7 +1,7 @@
 <template>
-  <div class="api-error-notice" role="alert" aria-live="polite">
-    <p class="api-error-title">{{ messages[0] }}</p>
-    <ul v-if="showAllMessages && messages.length > 1" class="api-error-list">
+  <div class="alert alert-danger mb-0" role="alert" aria-live="polite">
+    <p class="fw-semibold mb-0">{{ messages[0] }}</p>
+    <ul v-if="showAllMessages && messages.length > 1" class="mt-2 mb-0 ps-4">
       <li v-for="(message, index) in messages.slice(1)" :key="`${index}-${message}`">
         {{ message }}
       </li>

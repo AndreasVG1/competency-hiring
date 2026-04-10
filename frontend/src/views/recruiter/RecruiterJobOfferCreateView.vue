@@ -1,71 +1,75 @@
 <template>
-  <main class="recruiter-page">
-    <section class="panel recruiter-panel">
-      <PageActionsBar>
-        <RouterLink class="button-secondary" to="/recruiter">Back to recruiter</RouterLink>
-      
-      </PageActionsBar>
+  <div class="d-grid gap-4">
+    <PageActionsBar>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Back to recruiter</RouterLink>
+    </PageActionsBar>
 
-      <header class="panel-header">
-        <p class="eyebrow">Recruiter Area</p>
-        <h1>Create Draft Job Offer</h1>
-        <p class="content">Choose an occupation and description. After creation, you will be redirected to edit details.</p>
+    <header>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
+      <h1 class="h3 mb-1">Create Draft Job Offer</h1>
+      <p class="text-body-secondary mb-0">
+        Choose an occupation and description. After creation, you will be redirected to edit details.
+      </p>
+    </header>
+
+    <section class="border rounded-3 bg-white p-3 d-grid gap-3">
+      <header>
+        <h2 class="h5 mb-1">New Job Offer</h2>
+        <p class="text-body-secondary mb-0">Create first, then continue in the edit route.</p>
       </header>
 
-      <section class="recruiter-section">
-        <header class="section-header">
-          <h2>New Job Offer</h2>
-          <p>Create first, then continue in the edit route.</p>
-        </header>
+      <form class="d-grid gap-3" @submit.prevent="createJobOffer">
+        <CatalogSearchPicker
+          :key="occupationPickerKey"
+          label="Occupation"
+          placeholder="Search occupations"
+          no-results-text="No occupations found."
+          :disabled="isCreating"
+          :busy="isCreating"
+          :search-fn="searchOccupations"
+          @select="selectOccupation"
+        />
 
-        <form class="recruiter-form" @submit.prevent="createJobOffer">
-          <CatalogSearchPicker
-            :key="occupationPickerKey"
-            label="Occupation"
-            placeholder="Search occupations"
-            no-results-text="No occupations found."
-            :disabled="isCreating"
-            :busy="isCreating"
-            :search-fn="searchOccupations"
-            @select="selectOccupation"
-          />
+        <p class="mb-0 text-break">
+          <strong>Selected occupation:</strong>
+          <span v-if="selectedOccupation">
+            {{ selectedOccupation.label }}
+            <span class="d-block small text-body-secondary break-all">({{ selectedOccupation.key }})</span>
+          </span>
+          <span v-else>None</span>
+        </p>
 
-          <p class="selected-item">
-            <strong>Selected occupation:</strong>
-            <span v-if="selectedOccupation">
-              {{ selectedOccupation.label }} <small>({{ selectedOccupation.key }})</small>
-            </span>
-            <span v-else>None</span>
-          </p>
-
+        <div class="d-flex flex-wrap gap-2">
           <button
-            class="button-secondary"
+            class="btn btn-outline-secondary"
             type="button"
             :disabled="!selectedOccupation || isCreating"
             @click="clearOccupation"
           >
             Clear occupation
           </button>
+        </div>
 
-          <label class="form-field">
-            <span>Description</span>
-            <textarea
-              v-model="description"
-              rows="4"
-              required
-              :disabled="isCreating"
-            />
-          </label>
+        <div>
+          <label class="form-label" for="job-offer-description">Description</label>
+          <textarea
+            id="job-offer-description"
+            v-model="description"
+            class="form-control"
+            rows="4"
+            required
+            :disabled="isCreating"
+          />
+        </div>
 
-          <ApiErrorNotice v-if="createError" :error="createError" show-all-messages />
+        <ApiErrorNotice v-if="createError" :error="createError" show-all-messages />
 
-          <button class="button-primary" type="submit" :disabled="isCreating || !selectedOccupation">
-            {{ isCreating ? "Creating..." : "Create draft offer" }}
-          </button>
-        </form>
-      </section>
+        <button class="btn btn-primary" type="submit" :disabled="isCreating || !selectedOccupation">
+          {{ isCreating ? "Creating..." : "Create draft offer" }}
+        </button>
+      </form>
     </section>
-  </main>
+  </div>
 </template>
 
 <script setup lang="ts">

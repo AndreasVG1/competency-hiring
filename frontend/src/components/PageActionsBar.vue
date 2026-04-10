@@ -1,12 +1,11 @@
 <template>
-  <nav class="page-actions">
+  <nav class="d-flex flex-wrap justify-content-end gap-2">
     <slot />
-    <button class="button-danger" type="button" :disabled="isLoggingOut" @click="logout">
-          {{ isLoggingOut ? "Signing out..." : "Log out" }}
-        </button>
+    <button class="btn btn-outline-danger" type="button" :disabled="isLoggingOut" @click="logout">
+      {{ isLoggingOut ? "Signing out..." : "Log out" }}
+    </button>
   </nav>
   <ApiErrorNotice v-if="logoutError" :error="logoutError" />
-
 </template>
 
 <script setup lang="ts">

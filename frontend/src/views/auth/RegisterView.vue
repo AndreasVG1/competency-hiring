@@ -1,44 +1,69 @@
 <template>
-  <section class="content">
-    <h2>Create Account</h2>
-    <p>Choose your role and create your account.</p>
+  <section class="d-grid gap-3">
+    <header>
+      <h2 class="h4 mb-1">Create Account</h2>
+      <p class="text-body-secondary mb-0">Choose your role and create your account.</p>
+    </header>
 
-    <form class="auth-form" @submit.prevent="submitRegistration">
-      <label class="form-field">
-        <span>Email</span>
-        <input v-model="email" type="email" autocomplete="email" required />
-      </label>
+    <form @submit.prevent="submitRegistration">
+      <div class="mb-3">
+        <label class="form-label" for="register-email">Email</label>
+        <input
+          id="register-email"
+          v-model="email"
+          class="form-control"
+          type="email"
+          autocomplete="email"
+          required
+        />
+      </div>
 
-      <label class="form-field">
-        <span>Password</span>
-        <input v-model="password" type="password" autocomplete="new-password" required />
-      </label>
+      <div class="mb-3">
+        <label class="form-label" for="register-password">Password</label>
+        <input
+          id="register-password"
+          v-model="password"
+          class="form-control"
+          type="password"
+          autocomplete="new-password"
+          required
+        />
+      </div>
 
-      <label class="form-field">
-        <span>Confirm Password</span>
-        <input v-model="confirmPassword" type="password" autocomplete="new-password" required />
-      </label>
+      <div class="mb-3">
+        <label class="form-label" for="register-password-confirm">Confirm Password</label>
+        <input
+          id="register-password-confirm"
+          v-model="confirmPassword"
+          class="form-control"
+          type="password"
+          autocomplete="new-password"
+          required
+        />
+      </div>
 
-      <fieldset class="role-fieldset">
-        <legend>Register as</legend>
-        <label class="radio-option">
-          <input v-model="role" type="radio" value="job_seeker" />
-          <span>Job seeker</span>
-        </label>
-        <label class="radio-option">
-          <input v-model="role" type="radio" value="recruiter" />
-          <span>Recruiter</span>
-        </label>
+      <fieldset class="border rounded-3 p-3 mb-3">
+        <legend class="float-none w-auto px-2 fs-6 mb-0">Register as</legend>
+        <div class="form-check">
+          <input id="role-seeker" v-model="role" class="form-check-input" type="radio" value="job_seeker" />
+          <label class="form-check-label" for="role-seeker">Job seeker</label>
+        </div>
+        <div class="form-check">
+          <input id="role-recruiter" v-model="role" class="form-check-input" type="radio" value="recruiter" />
+          <label class="form-check-label" for="role-recruiter">Recruiter</label>
+        </div>
       </fieldset>
 
-      <p v-if="errorMessage" class="form-error">{{ errorMessage }}</p>
+      <div v-if="errorMessage" class="alert alert-danger" role="alert">
+        {{ errorMessage }}
+      </div>
 
-      <button class="button-primary" type="submit" :disabled="isSubmitting">
+      <button class="btn btn-primary w-100" type="submit" :disabled="isSubmitting">
         {{ isSubmitting ? "Creating account..." : "Create account" }}
       </button>
     </form>
 
-    <RouterLink class="inline-link" to="/auth/login">Already have an account? Sign in</RouterLink>
+    <RouterLink class="link-primary" to="/auth/login">Already have an account? Sign in</RouterLink>
   </section>
 </template>
 

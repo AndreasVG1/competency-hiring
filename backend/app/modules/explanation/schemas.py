@@ -8,6 +8,15 @@ ExplanationAudience = Literal["seeker", "recruiter"]
 ExplanationHighlightKind = Literal["strength"]
 ExplanationGapKind = Literal["missing", "insufficient"]
 
+ExplanationMessageParams = dict[str, object]
+
+
+class ExplanationI18nMessage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1, max_length=255)
+    params: ExplanationMessageParams | None = None
+
 
 class ExplanationInputValidationError(Exception):
     """Raised when explanation inputs cannot be normalized safely."""
@@ -22,10 +31,20 @@ class ExplanationSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     headline: str
+    headline_code: str | None = None
+    headline_params: ExplanationMessageParams | None = None
     status_label: str
+    status_code: str | None = None
+    status_params: ExplanationMessageParams | None = None
     decision_support_notice: str
+    decision_support_notice_code: str | None = None
+    decision_support_notice_params: ExplanationMessageParams | None = None
     must_have_notice: str | None
+    must_have_notice_code: str | None = None
+    must_have_notice_params: ExplanationMessageParams | None = None
     no_requirements_notice: str | None
+    no_requirements_notice_code: str | None = None
+    no_requirements_notice_params: ExplanationMessageParams | None = None
 
 
 class ExplanationHighlightItem(BaseModel):
@@ -35,6 +54,8 @@ class ExplanationHighlightItem(BaseModel):
     competency_key: str = Field(min_length=1, max_length=255)
     priority: RequirementPriority
     text: str
+    text_code: str | None = None
+    text_params: ExplanationMessageParams | None = None
 
 
 class ExplanationGapItem(BaseModel):
@@ -47,6 +68,8 @@ class ExplanationGapItem(BaseModel):
     expected_level: CompetencyLevel | None = None
     current_level: CompetencyLevel | None = None
     text: str
+    text_code: str | None = None
+    text_params: ExplanationMessageParams | None = None
 
 
 class ExplanationRoadmapItem(BaseModel):
@@ -57,6 +80,8 @@ class ExplanationRoadmapItem(BaseModel):
     target_level: CompetencyLevel
     estimated_point_gain: float
     text: str
+    text_code: str | None = None
+    text_params: ExplanationMessageParams | None = None
 
 
 class MatchingExplanation(BaseModel):
@@ -69,3 +94,4 @@ class MatchingExplanation(BaseModel):
     gaps: list[ExplanationGapItem]
     development_roadmap: list[ExplanationRoadmapItem] | None
     transparency_notes: list[str]
+    transparency_notes_i18n: list[ExplanationI18nMessage] | None = None

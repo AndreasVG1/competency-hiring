@@ -47,11 +47,11 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   busy: false,
-  label: "Related competencies",
-  waitingText: "Select an occupation to see related competencies.",
-  emptyText: "No related competencies found for this occupation.",
-  addText: "Add",
-  alreadyAddedText: "Already added",
+  label: "Seotud kompetentsid",
+  waitingText: "Vali amet, et näha seotud kompetentse.",
+  emptyText: "Selle ametiga seotud kompetentse ei leitud.",
+  addText: "Lisa",
+  alreadyAddedText: "Juba lisatud",
 });
 
 const emit = defineEmits<{

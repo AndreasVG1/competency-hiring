@@ -237,12 +237,27 @@ export type ExplanationAudience = "seeker" | "recruiter";
 export type ExplanationHighlightKind = "strength";
 export type ExplanationGapKind = "missing" | "insufficient";
 
+export interface ExplanationI18nMessage {
+  code: string;
+  params?: Record<string, unknown> | null;
+}
+
 export interface ExplanationSummary {
   headline: string;
+  headline_code?: string | null;
+  headline_params?: Record<string, unknown> | null;
   status_label: string;
+  status_code?: string | null;
+  status_params?: Record<string, unknown> | null;
   decision_support_notice: string;
+  decision_support_notice_code?: string | null;
+  decision_support_notice_params?: Record<string, unknown> | null;
   must_have_notice: string | null;
+  must_have_notice_code?: string | null;
+  must_have_notice_params?: Record<string, unknown> | null;
   no_requirements_notice: string | null;
+  no_requirements_notice_code?: string | null;
+  no_requirements_notice_params?: Record<string, unknown> | null;
 }
 
 export interface ExplanationHighlightItem {
@@ -250,6 +265,8 @@ export interface ExplanationHighlightItem {
   competency_key: string;
   priority: RequirementPriority;
   text: string;
+  text_code?: string | null;
+  text_params?: Record<string, unknown> | null;
 }
 
 export interface ExplanationGapItem {
@@ -260,6 +277,8 @@ export interface ExplanationGapItem {
   expected_level: CompetencyLevel | null;
   current_level: CompetencyLevel | null;
   text: string;
+  text_code?: string | null;
+  text_params?: Record<string, unknown> | null;
 }
 
 export interface ExplanationRoadmapItem {
@@ -268,6 +287,8 @@ export interface ExplanationRoadmapItem {
   target_level: CompetencyLevel;
   estimated_point_gain: number;
   text: string;
+  text_code?: string | null;
+  text_params?: Record<string, unknown> | null;
 }
 
 export interface MatchingExplanation {
@@ -278,6 +299,7 @@ export interface MatchingExplanation {
   gaps: ExplanationGapItem[];
   development_roadmap: ExplanationRoadmapItem[] | null;
   transparency_notes: string[];
+  transparency_notes_i18n?: ExplanationI18nMessage[] | null;
 }
 
 export interface PrivateMatchingAnalysisResponse {

@@ -5,9 +5,9 @@
     <table class="table table-sm align-middle mb-0">
       <thead>
         <tr>
-          <th scope="col">Competency</th>
-          <th scope="col">Priority</th>
-          <th v-if="showIndicatorsColumn" scope="col">Context</th>
+          <th scope="col">Kompetents</th>
+          <th scope="col">Prioriteet</th>
+          <th v-if="showIndicatorsColumn" scope="col">Tegevusnäitajad</th>
         </tr>
       </thead>
       <tbody>
@@ -21,7 +21,7 @@
               class="btn btn-outline-secondary btn-sm"
               @click="openIndicators(item.competency_key)"
             >
-              View indicators
+              Kuva näitajad
             </button>
           </td>
         </tr>
@@ -59,7 +59,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  emptyText: "No requirements listed for this offer.",
+  emptyText: "Nõuded puuduvad.",
   labelResolver: undefined,
   activityIndicatorResolver: undefined,
   activityIndicatorCountResolver: undefined,
@@ -81,12 +81,12 @@ const activeIndicators = computed<ActivityIndicatorCatalogItem[]>(() => {
 
 function formatPriority(priority: RequirementPriority): string {
   if (priority === "must_have") {
-    return "Must have";
+    return "Kohustuslik";
   }
   if (priority === "important") {
-    return "Important";
+    return "Oluline";
   }
-  return "Nice to have";
+  return "Soovituslik";
 }
 
 function resolveLabel(competencyKey: string): string {

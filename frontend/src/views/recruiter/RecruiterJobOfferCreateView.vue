@@ -1,29 +1,29 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Back to recruiter</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Tagasi avalehele</RouterLink>
     </PageActionsBar>
 
     <header>
-      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
-      <h1 class="h3 mb-1">Create Draft Job Offer</h1>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Tööandja vaade</p>
+      <h1 class="h3 mb-1">Loo tööpakkumise mustand</h1>
       <p class="text-body-secondary mb-0">
-        Choose an occupation and description. After creation, you will be redirected to edit details.
+        Vali ametikoht ja kirjeldus. Pärast loomist suunatakse sind redigeerimise lehele.
       </p>
     </header>
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">New Job Offer</h2>
-        <p class="text-body-secondary mb-0">Create first, then continue in the edit route.</p>
+        <h2 class="h5 mb-1">Uus tööpakkumine</h2>
+        <p class="text-body-secondary mb-0">Loo esmalt uus tööpakkumine, seejärel jätka redigeerimise lehel.</p>
       </header>
 
       <form class="d-grid gap-3" @submit.prevent="createJobOffer">
         <CatalogSearchPicker
           :key="occupationPickerKey"
-          label="Occupation"
-          placeholder="Search occupations"
-          no-results-text="No occupations found."
+          label="Ametikoht"
+          placeholder="Otsi ametikohti"
+          no-results-text="Ametikohti ei leitud."
           :disabled="isCreating"
           :busy="isCreating"
           :search-fn="searchOccupations"
@@ -31,12 +31,12 @@
         />
 
         <p class="mb-0 text-break">
-          <strong>Selected occupation:</strong>
+          <strong>Valitud ametikoht: </strong>
           <span v-if="selectedOccupation">
             {{ selectedOccupation.label }}
             <span class="d-block small text-body-secondary break-all">({{ selectedOccupation.key }})</span>
           </span>
-          <span v-else>None</span>
+          <span v-else>Puudub</span>
         </p>
 
         <div class="d-flex flex-wrap gap-2">
@@ -46,15 +46,16 @@
             :disabled="!selectedOccupation || isCreating"
             @click="clearOccupation"
           >
-            Clear occupation
+            Eemalda ametikoht
           </button>
         </div>
 
         <div>
-          <label class="form-label" for="job-offer-description">Description</label>
+          <label class="form-label" for="job-offer-description">Kirjeldus</label>
           <textarea
             id="job-offer-description"
             v-model="description"
+            placeholder="Kirjelda tööpakkumist"
             class="form-control"
             rows="4"
             required
@@ -65,7 +66,7 @@
         <ApiErrorNotice v-if="createError" :error="createError" show-all-messages />
 
         <button class="btn btn-primary" type="submit" :disabled="isCreating || !selectedOccupation">
-          {{ isCreating ? "Creating..." : "Create draft offer" }}
+          {{ isCreating ? "Loon..." : "Loo mustand" }}
         </button>
       </form>
     </section>
@@ -114,7 +115,7 @@ async function createJobOffer(): Promise<void> {
   }
 
   if (!selectedOccupation.value) {
-    createError.value = "Choose an occupation before creating the offer.";
+    createError.value = "Vali ametikoht enne tööpakkumise koostamist.";
     return;
   }
 

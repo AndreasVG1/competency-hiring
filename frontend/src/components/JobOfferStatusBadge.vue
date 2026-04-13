@@ -15,12 +15,12 @@ const props = defineProps<Props>();
 
 const statusLabel = computed(() => {
   if (props.status === "published") {
-    return "Published";
+    return "Avaldatud";
   }
   if (props.status === "archived") {
-    return "Archived";
+    return "Arhiveeritud";
   }
-  return "Draft";
+  return "Mustand";
 });
 
 const badgeClass = computed(() => {

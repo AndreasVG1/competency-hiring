@@ -1,17 +1,17 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" to="/seeker">Back to seeker overview</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/seeker">Tagasi oma profiilile</RouterLink>
     </PageActionsBar>
 
     <header>
-      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Seeker Marketplace</p>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Tööpakkumised</p>
       <div class="d-flex flex-wrap align-items-center gap-2">
-        <h1 class="h3 mb-0">Published Job Offers</h1>
+        <h1 class="h3 mb-0">Avaldatud tööpakkumised</h1>
         <JobOfferStatusBadge status="published" />
       </div>
       <p class="text-body-secondary mb-0">
-        Browse currently published offers. No suitability score is shown in this phase.
+        Sirvi hetkel avaldatud tööpakkumisi.
       </p>
     </header>
 
@@ -19,8 +19,8 @@
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Filters</h2>
-        <p class="text-body-secondary mb-0">Apply explicit filters to narrow the list.</p>
+        <h2 class="h5 mb-1">Filtrid</h2>
+        <p class="text-body-secondary mb-0">Rakenda filtreid, et kitsendada nimekirja.</p>
       </header>
 
       <MarketplaceFilterBar
@@ -39,7 +39,7 @@
       <div class="row g-3">
         <div class="col-12 col-md-3">
           <label class="d-grid gap-1">
-            <span class="form-label mb-0">Page size</span>
+            <span class="form-label mb-0">Tööpakkumiste arv</span>
             <select v-model.number="limit" class="form-select" :disabled="isOffersLoading" @change="applyFilters">
               <option :value="10">10</option>
               <option :value="20">20</option>
@@ -52,16 +52,16 @@
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Results</h2>
+        <h2 class="h5 mb-1">Tulemused</h2>
         <p v-if="offers.length > 0" class="text-body-secondary mb-0">
-          Showing {{ pageStart }}-{{ pageEnd }} published offers.
+          Kuvatakse {{ pageStart }}-{{ pageEnd }} avaldatud pakkumist.
         </p>
       </header>
 
       <ApiErrorNotice v-if="offersLoadError" :error="offersLoadError" show-all-messages />
 
-      <p v-if="isOffersLoading" class="text-body-secondary mb-0">Loading published offers...</p>
-      <p v-else-if="offers.length === 0" class="text-body-secondary mb-0">No published offers match these filters.</p>
+      <p v-if="isOffersLoading" class="text-body-secondary mb-0">Laen tööpakkumisi...</p>
+      <p v-else-if="offers.length === 0" class="text-body-secondary mb-0">Tööpakkumisi ei leitud.</p>
 
       <ul v-else class="list-group">
         <li v-for="offer in offers" :key="offer.id" class="list-group-item">
@@ -70,17 +70,17 @@
               <div class="d-flex flex-wrap align-items-center gap-2">
                 <h3 class="h6 mb-0 text-break">{{ offer.title }}</h3>
                 <JobOfferStatusBadge status="published" />
-                <span v-if="offer.applied" class="badge text-bg-info">Applied</span>
+                <span v-if="offer.applied" class="badge text-bg-info">Kandideeritud</span>
               </div>
               <p class="text-body-secondary mb-1 text-break">
-                {{ offer.company_name || "Company not provided" }} | {{ offer.occupation_label }}
+                {{ offer.company_name || "Ettevõte pole esitatud" }} | {{ offer.occupation_label }}
               </p>
               <p class="mb-1 text-break">{{ offer.short_description }}</p>
-              <p class="text-body-secondary mb-0">Published {{ formatDateTime(offer.published_at) }}</p>
+              <p class="text-body-secondary mb-0">Avaldatud {{ formatDateTime(offer.published_at) }}</p>
             </div>
             <div class="flex-shrink-0">
               <RouterLink class="btn btn-outline-secondary btn-sm" :to="`/seeker/job-offers/${offer.id}`">
-                View details
+                Vaata üksikasju
               </RouterLink>
             </div>
           </div>
@@ -89,10 +89,10 @@
 
       <div class="d-flex flex-wrap gap-2 justify-content-end">
         <button class="btn btn-outline-secondary" type="button" :disabled="!canGoPrevious" @click="goPreviousPage">
-          Previous
+          Tagasi
         </button>
         <button class="btn btn-outline-secondary" type="button" :disabled="!canGoNext" @click="goNextPage">
-          Next
+          Edasi
         </button>
       </div>
     </section>

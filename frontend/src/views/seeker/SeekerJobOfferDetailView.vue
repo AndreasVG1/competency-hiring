@@ -1,27 +1,27 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" to="/seeker/job-offers">Back to marketplace</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/seeker/job-offers">Tagasi tööpakkumiste juurde</RouterLink>
     </PageActionsBar>
 
     <header>
-      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Seeker Marketplace</p>
-      <h1 class="h3 mb-1">Job Offer Detail</h1>
-      <p class="text-body-secondary mb-0">Review published information before deciding whether to apply.</p>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Tööpakkumised</p>
+      <h1 class="h3 mb-1">Tööpakkumise üksikasjad</h1>
+      <p class="text-body-secondary mb-0">Vaata tööpakkumise teavet enne kandideerimisotsuse langetamist.</p>
     </header>
 
     <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-0">Offer</h2>
+        <h2 class="h5 mb-0">Tööpakkumine</h2>
       </header>
 
-      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Loading offer...</p>
+      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Tööpakkumise laadimine...</p>
       <template v-else-if="isOfferNotFound">
-        <p class="text-body-secondary mb-0">Published job offer not found.</p>
+        <p class="text-body-secondary mb-0">Avaldatud tööpakkumist ei leitud.</p>
         <div>
-          <RouterLink class="btn btn-outline-secondary" to="/seeker/job-offers">Back to published offers</RouterLink>
+          <RouterLink class="btn btn-outline-secondary" to="/seeker/job-offers">Tagasi tööpakkumiste juurde</RouterLink>
         </div>
       </template>
       <template v-else-if="offer">
@@ -31,15 +31,15 @@
         </div>
 
         <dl class="row mb-0">
-          <dt class="col-sm-3 text-body-secondary">Company</dt>
-          <dd class="col-sm-9 text-break">{{ offer.company_name || "Company not provided" }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Occupation</dt>
+          <dt class="col-sm-3 text-body-secondary">Ettevõte</dt>
+          <dd class="col-sm-9 text-break">{{ offer.company_name || "Ettevõte pole määratud" }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Ametikoht</dt>
           <dd class="col-sm-9 text-break">{{ offer.occupation_label }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Published</dt>
+          <dt class="col-sm-3 text-body-secondary">Avaldatud</dt>
           <dd class="col-sm-9 text-break">{{ formatDateTime(offer.published_at) }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Application status</dt>
-          <dd class="col-sm-9 text-break">{{ offer.applied ? "Applied" : "Not applied" }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Description</dt>
+          <dt class="col-sm-3 text-body-secondary">Kandideerimise staatus</dt>
+          <dd class="col-sm-9 text-break">{{ offer.applied ? "Kandideeritud" : "Kandideerimata" }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Kirjeldus</dt>
           <dd class="col-sm-9 text-break">{{ offer.description }}</dd>
         </dl>
       </template>
@@ -47,8 +47,8 @@
 
     <section v-if="offer && !isOfferNotFound" class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Requirements</h2>
-        <p class="text-body-secondary mb-0">Requirements are listed exactly as published by the recruiter.</p>
+        <h2 class="h5 mb-1">Nõuded</h2>
+        <p class="text-body-secondary mb-0">Nõuded on loetletud täpselt nii, nagu need on avaldanud värbaja.</p>
       </header>
 
       <JobOfferRequirementsTable
@@ -62,10 +62,9 @@
 
     <section v-if="offer && !isOfferNotFound" class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Private analysis</h2>
+        <h2 class="h5 mb-1">Privaatne analüüs</h2>
         <p class="text-body-secondary mb-0">
-          Run a private analysis to review your current match details. This is decision support only and does
-          not make hiring decisions.
+          Käivita sobivusanalüüs, et vaadata oma sobivust töökohale. Sinu andmeid ei edastata tööandjale.
         </p>
       </header>
       <ApiErrorNotice v-if="analysisError" :error="analysisError" show-all-messages />
@@ -75,30 +74,30 @@
         </button>
       </div>
       <p v-if="analysisResult === null" class="text-body-secondary mb-0">
-        No analysis run yet. Use the button above to fetch your private analysis.
+        Analüüsi pole veel käivitatud. Vajuta nupule, et käivitada analüüs.
       </p>
       <template v-else>
         <MatchingExplanationPanel
-          summary-title="Current analysis explanation"
+          summary-title="Sobivusanalüüsi kokkuvõte"
           :explanation="analysisResult.explanation"
           :competency-label="competencyLabel"
         />
         <details class="matching-disclosure">
           <summary class="matching-disclosure-summary">
-            <span class="matching-disclosure-closed-label">Show raw analysis payload</span>
-            <span class="matching-disclosure-open-label">Hide raw analysis payload</span>
+            <span class="matching-disclosure-closed-label">Näita analüüsi üksikasju</span>
+            <span class="matching-disclosure-open-label">Peida analüüsi üksikasjad</span>
           </summary>
-          <JsonPayloadViewer title="Raw analysis payload" :payload="analysisResult" />
+          <JsonPayloadViewer title="Analüüsi üksikasjad" :payload="analysisResult" />
         </details>
       </template>
     </section>
 
     <section v-if="offer && !isOfferNotFound" class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Apply</h2>
+        <h2 class="h5 mb-1">Kandideerimine</h2>
         <p class="text-body-secondary mb-0">
-          Applying is an explicit consent action. If you apply, your profile snapshot at application time is shared
-          with the recruiter for this offer.
+          Kandideerimine on selgesõnaline nõusoleku tegevus. Kui kandideerid, jagatakse sinu profiili hetkeseis kandideerimise ajal
+          värbajaga selle pakkumise jaoks.
         </p>
       </header>
       <ApiErrorNotice v-if="applyError" :error="applyError" show-all-messages />
@@ -106,7 +105,7 @@
         {{ applySuccessMessage }}
       </div>
       <div class="alert alert-info mb-0">
-        Consent note: only data captured at the moment you apply is shared for this application.
+        Tähelepanek: värbajaga jagatakse profiili hetkeseis kandideerimise ajal. Värbajale ei kajastu hiljem tehtud muudatused.
       </div>
       <div class="d-flex flex-wrap gap-2">
         <button v-if="!hasApplied" class="btn btn-primary" type="button" :disabled="isApplying" @click="applyToOffer">
@@ -206,23 +205,23 @@ function formatDateTime(value: string): string {
 
 const applyButtonLabel = computed(() => {
   if (isApplying.value) {
-    return "Applying...";
+    return "Kandideerimine...";
   }
-  return "Apply with consent";
+  return "Kandideeri nõusolekuga";
 });
 
 const withdrawButtonLabel = computed(() => {
   if (isWithdrawing.value) {
-    return "Withdrawing...";
+    return "Tühistamine...";
   }
-  return "Withdraw application";
+  return "Tühista kandideerimine";
 });
 
 const analysisButtonLabel = computed(() => {
   if (isAnalysisLoading.value) {
-    return "Running analysis...";
+    return "Analüüsi käivitamine...";
   }
-  return "Run private analysis";
+  return "Käivita sobivusanalüüs";
 });
 
 async function loadOffer(): Promise<void> {
@@ -279,11 +278,11 @@ async function applyToOffer(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Apply with consent",
+    title: "Kandideeri pakkumisele",
     message:
-      "Apply to this offer and share your application-time profile snapshot with the recruiter for this offer?",
-    confirmLabel: "Apply with consent",
-    cancelLabel: "Cancel",
+      "Kandideerides sellele pakkumisele jagatakse sinu profiili hetkeseis kandideerimise ajal värbajaga.",
+    confirmLabel: "Kandideeri nõusolekuga",
+    cancelLabel: "Tagasi",
     tone: "primary",
   });
   if (!confirmed) {
@@ -298,10 +297,10 @@ async function applyToOffer(): Promise<void> {
     const created = await seekerClient.applyToJobOffer(offer.value.id);
     offer.value.applied = true;
     offer.value.application_id = created.id;
-    applySuccessMessage.value = "Application submitted. The recruiter now sees your application-time snapshot.";
+    applySuccessMessage.value = "Kandideerimine esitatud. Värbaja näeb nüüd sinu kandideerimiseaegset profiili.";
   } catch (error) {
     if (error instanceof ApiClientError && error.statusCode === 409) {
-      applySuccessMessage.value = "Application already submitted for this offer.";
+      applySuccessMessage.value = "Kandideerimine on juba selle pakkumise jaoks esitatud.";
       try {
         offer.value = await seekerClient.getPublishedJobOffer(offer.value.id);
       } catch {
@@ -321,11 +320,11 @@ async function withdrawApplication(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Withdraw application",
+    title: "Tühista kandideerimine",
     message:
-      "Withdraw this application and remove recruiter access to the application-time snapshot for this offer?",
-    confirmLabel: "Withdraw application",
-    cancelLabel: "Cancel",
+      "Kas soovid tühistada selle kandideerimise ja eemaldada värbaja juurdepääsu kandideerimiseaegsele profiilile?",
+    confirmLabel: "Tühista kandideerimine",
+    cancelLabel: "Tagasi",
     tone: "danger",
   });
   if (!confirmed) {
@@ -340,7 +339,7 @@ async function withdrawApplication(): Promise<void> {
     await seekerClient.deleteApplication(currentApplicationId.value);
     offer.value.applied = false;
     offer.value.application_id = null;
-    applySuccessMessage.value = "Application withdrawn. Recruiter access to this application is removed.";
+    applySuccessMessage.value = "Kandideerimine tühistatud. Värbaja juurdepääs sellele kandideerimisele on eemaldatud.";
   } catch (error) {
     applyError.value = error;
   } finally {

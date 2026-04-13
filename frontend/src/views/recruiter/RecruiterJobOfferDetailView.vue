@@ -1,31 +1,29 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Back to recruiter</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Tagasi avalehele</RouterLink>
       <RouterLink v-if="jobOffer" class="btn btn-outline-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/edit`">
-        Edit offer
+        Muuda pakkumist
       </RouterLink>
       <RouterLink
         v-if="jobOffer"
         class="btn btn-outline-secondary"
         :to="`/recruiter/job-offers/${jobOffer.id}/applicants`"
       >
-        View applicants
+        Vaata kandidaate
       </RouterLink>
     </PageActionsBar>
 
     <header>
-      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
-      <h1 class="h3 mb-1">Job Offer Details</h1>
-      <p class="text-body-secondary mb-0">Read-only view for a single offer and its requirements.</p>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Tööandja vaade</p>
+      <h1 class="h3 mb-1">Tööpakkumise Ülevaade</h1>
     </header>
 
     <ApiErrorNotice v-if="deleteOfferError" :error="deleteOfferError" show-all-messages />
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Offer</h2>
-        <p class="text-body-secondary mb-0">Read-only summary and publication controls for this offer.</p>
+        <h2 class="h5 mb-1">Tööpakkumine</h2>
       </header>
 
       <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
@@ -34,30 +32,30 @@
         {{ transitionSuccessMessage }}
       </div>
 
-      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Loading offer...</p>
-      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Job offer not found.</p>
+      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Laen tööpakkumist...</p>
+      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Tööpakkumist ei leitud.</p>
 
       <template v-else-if="jobOffer">
         <dl class="row mb-0">
-          <dt class="col-sm-3 text-body-secondary">Title</dt>
+          <dt class="col-sm-3 text-body-secondary">Pealkiri</dt>
           <dd class="col-sm-9 text-break">{{ jobOffer.title }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Status</dt>
+          <dt class="col-sm-3 text-body-secondary">Staatus</dt>
           <dd class="col-sm-9"><JobOfferStatusBadge :status="jobOffer.status" /></dd>
-          <dt class="col-sm-3 text-body-secondary">Occupation</dt>
+          <dt class="col-sm-3 text-body-secondary">Ametikoht</dt>
           <dd class="col-sm-9 text-break">
             {{ occupationLabel || jobOffer.occupation_key }}
             <span class="d-block small text-body-secondary break-all">({{ jobOffer.occupation_key }})</span>
           </dd>
-          <dt class="col-sm-3 text-body-secondary">Description</dt>
+          <dt class="col-sm-3 text-body-secondary">Kirjeldus  </dt>
           <dd class="col-sm-9 text-break">{{ jobOffer.description }}</dd>
         </dl>
 
         <div class="d-flex flex-wrap gap-2">
           <RouterLink class="btn btn-outline-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/edit`">
-            Edit offer
+            Muuda pakkumist
           </RouterLink>
           <RouterLink class="btn btn-outline-secondary" :to="`/recruiter/job-offers/${jobOffer.id}/applicants`">
-            View applicants
+            Vaata kandidaate
           </RouterLink>
           <button
             v-if="jobOffer.status === 'draft'"
@@ -66,7 +64,7 @@
             :disabled="isTransitioning || isDeletingOffer"
             @click="publishOffer"
           >
-            {{ isTransitioning ? "Publishing..." : "Publish offer" }}
+            {{ isTransitioning ? "Avaldamine..." : "Avalda pakkumine" }}
           </button>
           <button
             v-else-if="jobOffer.status === 'published'"
@@ -75,7 +73,7 @@
             :disabled="isTransitioning || isDeletingOffer"
             @click="archiveOffer"
           >
-            {{ isTransitioning ? "Archiving..." : "Archive offer" }}
+            {{ isTransitioning ? "Arhiveerimine..." : "Arhiveeri pakkumine" }}
           </button>
           <button
             class="btn btn-outline-danger"
@@ -83,7 +81,7 @@
             :disabled="isDeletingOffer || isTransitioning"
             @click="deleteOffer"
           >
-            {{ isDeletingOffer ? "Deleting..." : "Delete offer" }}
+            {{ isDeletingOffer ? "Kustutamine..." : "Kustuta pakkumine" }}
           </button>
         </div>
       </template>
@@ -91,17 +89,16 @@
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Requirements</h2>
-        <p class="text-body-secondary mb-0">Read-only list of competency requirements for this offer.</p>
+        <h2 class="h5 mb-1">Kompetentsid</h2>
       </header>
 
       <ApiErrorNotice v-if="requirementsLoadError" :error="requirementsLoadError" show-all-messages />
 
-      <p v-if="isRequirementsLoading" class="text-body-secondary mb-0">Loading requirements...</p>
+      <p v-if="isRequirementsLoading" class="text-body-secondary mb-0">Laadin kompetentse...</p>
       <JobOfferRequirementsTable
         v-else
         :requirements="tableRequirements"
-        empty-text="No requirements saved yet."
+        empty-text="Kompetentse pole veel salvestatud."
         :label-resolver="competencyLabel"
         :activity-indicator-resolver="activityIndicatorsFor"
         :activity-indicator-count-resolver="activityIndicatorCountFor"
@@ -269,10 +266,10 @@ async function deleteOffer(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Delete offer",
-    message: "Delete this draft offer and all requirements?",
-    confirmLabel: "Delete offer",
-    cancelLabel: "Keep offer",
+    title: "Kustuta pakkumine",
+    message: "Kustuta see pakkumine ja kõik nõuded?",
+    confirmLabel: "Kustuta pakkumine",
+    cancelLabel: "Tagasi",
     tone: "danger",
   });
   if (!confirmed) {
@@ -298,10 +295,10 @@ async function publishOffer(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Publish offer",
-    message: "Publish this offer now? After publishing, seekers can discover and view it in the marketplace.",
-    confirmLabel: "Publish offer",
-    cancelLabel: "Keep draft",
+    title: "Avalda pakkumine",
+    message: "Avalda see pakkumine? Pärast avaldamist muutub see tööotsijatele nähtavaks.",
+    confirmLabel: "Avalda pakkumine",
+    cancelLabel: "Tagasi",
     tone: "primary",
   });
   if (!confirmed) {
@@ -315,7 +312,7 @@ async function publishOffer(): Promise<void> {
   try {
     const updatedOffer = await recruiterClient.publishJobOffer(jobOffer.value.id);
     jobOffer.value = updatedOffer;
-    transitionSuccessMessage.value = "Offer published.";
+    transitionSuccessMessage.value = "Tööpakkumine avaldatud.";
   } catch (error) {
     transitionError.value = error;
   } finally {
@@ -334,10 +331,10 @@ async function archiveOffer(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Archive offer",
-    message: "Archive this offer now? Archived offers are no longer visible in the seeker marketplace.",
-    confirmLabel: "Archive offer",
-    cancelLabel: "Keep published",
+    title: "Arhiveeri pakkumine",
+    message: "Arhiveeri see pakkumine nüüd? Arhiveeritud pakkumised ei ole enam tööotsijatele nähtavad.",
+    confirmLabel: "Arhiveeri pakkumine",
+    cancelLabel: "Tagasi",
     tone: "danger",
   });
   if (!confirmed) {
@@ -351,7 +348,7 @@ async function archiveOffer(): Promise<void> {
   try {
     const updatedOffer = await recruiterClient.archiveJobOffer(jobOffer.value.id);
     jobOffer.value = updatedOffer;
-    transitionSuccessMessage.value = "Offer archived.";
+    transitionSuccessMessage.value = "Tööpakkumine arhiveeritud.";
   } catch (error) {
     transitionError.value = error;
   } finally {

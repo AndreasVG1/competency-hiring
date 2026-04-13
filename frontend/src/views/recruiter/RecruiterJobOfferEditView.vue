@@ -1,17 +1,17 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Back to recruiter</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Tagasi avalehele</RouterLink>
       <RouterLink v-if="jobOffer" class="btn btn-outline-secondary" :to="`/recruiter/job-offers/${jobOffer.id}`">
-        View read-only
+        Vaata ülevaadet
       </RouterLink>
     </PageActionsBar>
 
     <header>
-      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
-      <h1 class="h3 mb-1">Edit Job Offer</h1>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Tööandja vaade</p>
+      <h1 class="h3 mb-1">Redigeeri tööpakkumist</h1>
       <p class="text-body-secondary mb-0">
-        Update offer fields, manage requirements, and control publication state.
+        Uuenda pakkumise välju, halda nõudeid ja kontrolli avaldamise olekut.
       </p>
     </header>
 
@@ -19,8 +19,8 @@
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Offer</h2>
-        <p class="text-body-secondary mb-0">Editable offer fields and explicit status transitions.</p>
+        <h2 class="h5 mb-1">Tööpakkumine</h2>
+        <p class="text-body-secondary mb-0">Muudetavad tööpakkumise väljad ja staatus.</p>
       </header>
 
       <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
@@ -29,12 +29,12 @@
         {{ transitionSuccessMessage }}
       </div>
 
-      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Loading offer...</p>
-      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Job offer not found.</p>
+      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Laen tööpakkumist...</p>
+      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Tööpakkumist ei leitud.</p>
 
       <form v-else-if="jobOffer" class="d-grid gap-3" @submit.prevent="saveOffer">
         <p class="mb-0">
-          <strong>Current status:</strong>
+          <strong>Praegune staatus: </strong>
           <JobOfferStatusBadge :status="jobOffer.status" />
         </p>
 
@@ -46,7 +46,7 @@
             :disabled="isTransitioning || isDeletingOffer"
             @click="publishOffer"
           >
-            {{ isTransitioning ? "Publishing..." : "Publish offer" }}
+            {{ isTransitioning ? "Avaldamine..." : "Avalda pakkumine" }}
           </button>
           <button
             v-else-if="jobOffer.status === 'published'"
@@ -55,15 +55,15 @@
             :disabled="isTransitioning || isDeletingOffer"
             @click="archiveOffer"
           >
-            {{ isTransitioning ? "Archiving..." : "Archive offer" }}
+            {{ isTransitioning ? "Arhiveerimine..." : "Arhiveeri pakkumine" }}
           </button>
         </div>
 
         <CatalogSearchPicker
           :key="offerOccupationPickerKey"
-          label="Occupation"
-          placeholder="Search occupations"
-          no-results-text="No occupations found."
+          label="Ametikoht"
+          placeholder="Otsi ametikohti"
+          no-results-text="Ametikohti ei leitud."
           :disabled="isUpdatingOffer"
           :busy="isUpdatingOffer"
           :search-fn="searchOccupations"
@@ -71,16 +71,16 @@
         />
 
         <p class="mb-0 text-break">
-          <strong>Selected occupation:</strong>
+          <strong>Valitud ametikoht: </strong>
           <span v-if="offerForm.occupationKey">
             {{ offerForm.occupationLabel || offerForm.occupationKey }}
             <span class="d-block small text-body-secondary break-all">({{ offerForm.occupationKey }})</span>
           </span>
-          <span v-else>None</span>
+          <span v-else>Puudub</span>
         </p>
 
         <div>
-          <label class="form-label" for="recruiter-offer-description">Description</label>
+          <label class="form-label" for="recruiter-offer-description">Kirjeldus</label>
           <textarea
             id="recruiter-offer-description"
             v-model="offerForm.description"
@@ -98,7 +98,7 @@
 
         <div class="d-flex flex-wrap gap-2">
           <button class="btn btn-primary" type="submit" :disabled="isUpdatingOffer">
-            {{ isUpdatingOffer ? "Saving offer..." : "Save offer" }}
+            {{ isUpdatingOffer ? "Salvestan pakkumist..." : "Salvesta pakkumine" }}
           </button>
           <button
             class="btn btn-outline-danger"
@@ -106,7 +106,7 @@
             :disabled="isDeletingOffer || isTransitioning"
             @click="deleteOffer"
           >
-            {{ isDeletingOffer ? "Deleting..." : "Delete offer" }}
+            {{ isDeletingOffer ? "Kustutan..." : "Kustuta pakkumine" }}
           </button>
         </div>
       </form>
@@ -114,8 +114,8 @@
 
     <section v-if="jobOffer" class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Requirements</h2>
-        <p class="text-body-secondary mb-0">Add and maintain competency priorities.</p>
+        <h2 class="h5 mb-1">Kompetentsid</h2>
+        <p class="text-body-secondary mb-0">Lisa ja halda kompetentside prioriteete.</p>
       </header>
 
       <ApiErrorNotice v-if="requirementsLoadError" :error="requirementsLoadError" show-all-messages />
@@ -125,17 +125,17 @@
         :selected-keys="existingRequirementKeys"
         :disabled="isRequirementsLoading"
         :busy="isAddingRequirement"
-        label="Competencies related to selected occupation"
-        waiting-text="Select an occupation for this offer to see related competencies."
+        label="Valitud ametikohaga seotud kompetentsid"
+        waiting-text="Vali ametikoht, et näha seotud kompetentse."
         @select="addSuggestedRequirement"
       />
 
       <form class="d-grid gap-3" @submit.prevent="addRequirement">
         <CatalogSearchPicker
           :key="requirementPickerKey"
-          label="Competency"
-          placeholder="Search competencies"
-          no-results-text="No competencies found."
+          label="Kompetents"
+          placeholder="Otsi kompetentse"
+          no-results-text="Kompetentse ei leitud."
           :disabled="isRequirementsLoading"
           :busy="isAddingRequirement"
           :search-fn="searchCompetencies"
@@ -143,14 +143,14 @@
         />
 
         <p class="mb-0 text-break">
-          <strong>Selected competency:</strong>
+          <strong>Valitud kompetents: </strong>
           <span v-if="selectedRequirementCompetency">{{ selectedRequirementCompetency.label }}</span>
-          <span v-else>None</span>
+          <span v-else>Puudub</span>
         </p>
 
         <EnumSelect
           v-model="newRequirementPriority"
-          label="Priority"
+          label="Prioriteet"
           :options="requirementPriorityOptions"
           :disabled="isAddingRequirement || isRequirementsLoading"
         />
@@ -161,20 +161,20 @@
         </div>
 
         <button class="btn btn-primary" type="submit" :disabled="isAddingRequirement || isRequirementsLoading">
-          {{ isAddingRequirement ? "Adding requirement..." : "Add requirement" }}
+          {{ isAddingRequirement ? "Lisame kompetentsi..." : "Lisa kompetents" }}
         </button>
       </form>
 
-      <p v-if="isRequirementsLoading" class="text-body-secondary mb-0">Loading requirements...</p>
-      <p v-else-if="requirementRows.length === 0" class="text-body-secondary mb-0">No requirements saved yet.</p>
+      <p v-if="isRequirementsLoading" class="text-body-secondary mb-0">Laen nõudmisi...</p>
+      <p v-else-if="requirementRows.length === 0" class="text-body-secondary mb-0">Nõudmisi pole veel salvestatud.</p>
 
       <div v-else class="table-responsive">
         <table class="table table-sm align-middle mb-0">
           <thead>
             <tr>
-              <th scope="col">Competency</th>
-              <th scope="col">Priority</th>
-              <th scope="col">Actions</th>
+              <th scope="col">Kompetents</th>
+              <th scope="col">Prioriteet</th>
+              <th scope="col">Tegevused</th>
             </tr>
           </thead>
           <tbody>
@@ -196,7 +196,7 @@
                     :disabled="row.isSaving || row.isDeleting || row.priorityDraft === row.persistedPriority"
                     @click="saveRequirementPriority(row.id)"
                   >
-                    {{ row.isSaving ? "Saving..." : "Save" }}
+                    {{ row.isSaving ? "Salvestame..." : "Salvesta" }}
                   </button>
                   <button
                     class="btn btn-outline-danger btn-sm"
@@ -204,7 +204,7 @@
                     :disabled="row.isSaving || row.isDeleting"
                     @click="deleteRequirement(row.id)"
                   >
-                    {{ row.isDeleting ? "Removing..." : "Remove" }}
+                    {{ row.isDeleting ? "Eemaldame..." : "Eemalda" }}
                   </button>
                 </div>
                 <ApiErrorNotice v-if="row.error" :error="row.error" />
@@ -260,9 +260,9 @@ const { confirm } = useConfirmDialog();
 const labelCache = useCatalogLabelCache();
 
 const requirementPriorityOptions: { value: RequirementPriority; label: string }[] = [
-  { value: "must_have", label: "Must have" },
-  { value: "important", label: "Important" },
-  { value: "nice_to_have", label: "Nice to have" },
+  { value: "must_have", label: "Nõutud" },
+  { value: "important", label: "Oluline" },
+  { value: "nice_to_have", label: "Soovituslik" },
 ];
 
 const jobOffer = ref<JobOfferResponse | null>(null);
@@ -365,10 +365,10 @@ function competencyLabel(competencyKey: string): string {
 
   const state = labelCache.getLabelState(competencyKey);
   if (state === "error") {
-    return "Label unavailable";
+    return "Pealkiri pole saadaval";
   }
 
-  return "Loading label...";
+  return "Laadime pealkirja...";
 }
 
 async function loadOffer(): Promise<void> {
@@ -444,7 +444,7 @@ async function saveOffer(): Promise<void> {
   }
 
   if (!offerForm.occupationKey) {
-    offerUpdateError.value = "Choose an occupation before saving the offer.";
+    offerUpdateError.value = "Vali ametikoht enne tööpakkumise salvestamist.";
     return;
   }
 
@@ -459,7 +459,7 @@ async function saveOffer(): Promise<void> {
     });
     jobOffer.value = updated;
     hydrateOfferForm(updated);
-    offerUpdateSuccessMessage.value = "Draft offer saved.";
+    offerUpdateSuccessMessage.value = "Mustand salvestatud.";
   } catch (error) {
     offerUpdateError.value = error;
   } finally {
@@ -473,10 +473,10 @@ async function deleteOffer(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Delete offer",
-    message: "Delete this draft offer and all requirements?",
-    confirmLabel: "Delete offer",
-    cancelLabel: "Keep offer",
+    title: "Kustuta pakkumine",
+    message: "Kustuta see tööpakkumine ja kõik nõuded?",
+    confirmLabel: "Kustuta pakkumine",
+    cancelLabel: "Tagasi",
     tone: "danger",
   });
   if (!confirmed) {
@@ -502,10 +502,10 @@ async function publishOffer(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Publish offer",
-    message: "Publish this offer now? After publishing, seekers can discover and view it in the marketplace.",
-    confirmLabel: "Publish offer",
-    cancelLabel: "Keep draft",
+    title: "Avalda pakkumine",
+    message: "Avalda see pakkumine nüüd? Pärast avaldamist muutub see tööotsijatele nähtavaks.",
+    confirmLabel: "Avalda pakkumine",
+    cancelLabel: "Tagasi",
     tone: "primary",
   });
   if (!confirmed) {
@@ -520,7 +520,7 @@ async function publishOffer(): Promise<void> {
     const updatedOffer = await recruiterClient.publishJobOffer(jobOffer.value.id);
     jobOffer.value = updatedOffer;
     hydrateOfferForm(updatedOffer);
-    transitionSuccessMessage.value = "Offer published.";
+    transitionSuccessMessage.value = "Tööpakkumine avaldatud.";
   } catch (error) {
     transitionError.value = error;
   } finally {
@@ -539,10 +539,10 @@ async function archiveOffer(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Archive offer",
-    message: "Archive this offer now? Archived offers are no longer visible in the seeker marketplace.",
-    confirmLabel: "Archive offer",
-    cancelLabel: "Keep published",
+    title: "Arhiveeri pakkumine",
+    message: "Arhiveeri see pakkumine? Arhiveeritud pakkumised ei ole enam tööotsijatele nähtavad.",
+    confirmLabel: "Arhiveeri pakkumine",
+    cancelLabel: "Tagasi",
     tone: "danger",
   });
   if (!confirmed) {
@@ -557,7 +557,7 @@ async function archiveOffer(): Promise<void> {
     const updatedOffer = await recruiterClient.archiveJobOffer(jobOffer.value.id);
     jobOffer.value = updatedOffer;
     hydrateOfferForm(updatedOffer);
-    transitionSuccessMessage.value = "Offer archived.";
+    transitionSuccessMessage.value = "Tööpakkumine arhiveeritud.";
   } catch (error) {
     transitionError.value = error;
   } finally {
@@ -567,7 +567,7 @@ async function archiveOffer(): Promise<void> {
 
 async function addRequirement(): Promise<void> {
   if (!selectedRequirementCompetency.value) {
-    addRequirementError.value = "Choose a competency before adding.";
+    addRequirementError.value = "Vali kompetents enne lisamist.";
     return;
   }
 
@@ -586,7 +586,7 @@ async function addRequirementFromItem(
   addRequirementSuccessMessage.value = null;
 
   if (requirementRows.value.some((row) => row.competencyKey === item.key)) {
-    addRequirementError.value = "This competency is already a requirement for this offer.";
+    addRequirementError.value = "See kompetents on juba valitud.";
     return;
   }
 
@@ -607,7 +607,7 @@ async function addRequirementFromItem(
       requirementPickerKey.value += 1;
     }
 
-    addRequirementSuccessMessage.value = "Requirement added.";
+    addRequirementSuccessMessage.value = "Kompetents lisatud.";
   } catch (error) {
     addRequirementError.value = error;
   } finally {

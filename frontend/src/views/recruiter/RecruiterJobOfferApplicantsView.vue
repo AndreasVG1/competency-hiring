@@ -1,57 +1,57 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" :to="backToOfferPath">Back to offer</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" :to="backToOfferPath">Tagasi</RouterLink>
     </PageActionsBar>
 
     <header>
-      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
-      <h1 class="h3 mb-1">Offer Applicants</h1>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Tööandja vaade</p>
+      <h1 class="h3 mb-1">Tööpakkumise kandidaadid</h1>
       <p class="text-body-secondary mb-0">
-        Applicants appear only after explicit seeker consent through application.
+        Kandidaadid kuvatakse ainult pärast otsest nõusolekut tööotsijalt kandideerimise kaudu.
       </p>
     </header>
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Offer</h2>
-        <p class="text-body-secondary mb-0">Applicant data below is shared as an application-time snapshot.</p>
+        <h2 class="h5 mb-1">Tööpakkumine</h2>
+        <p class="text-body-secondary mb-0">Kandidaadi andmed jagatakse ainult kandideerimise hetke hetkepildina.</p>
       </header>
 
       <ApiErrorNotice v-if="offerLoadError" :error="offerLoadError" show-all-messages />
 
-      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Loading offer...</p>
-      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Job offer not found.</p>
+      <p v-if="isOfferLoading" class="text-body-secondary mb-0">Tööpakkumine laadimisel...</p>
+      <p v-else-if="isOfferNotFound" class="text-body-secondary mb-0">Tööpakkumist ei leitud.</p>
       <template v-else-if="jobOffer">
         <dl class="row mb-0">
-          <dt class="col-sm-3 text-body-secondary">Title</dt>
+          <dt class="col-sm-3 text-body-secondary">Pealkiri</dt>
           <dd class="col-sm-9 text-break">{{ jobOffer.title }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Status</dt>
+          <dt class="col-sm-3 text-body-secondary">Staatus</dt>
           <dd class="col-sm-9"><JobOfferStatusBadge :status="jobOffer.status" /></dd>
-          <dt class="col-sm-3 text-body-secondary">Occupation key</dt>
-          <dd class="col-sm-9 text-break break-all">{{ jobOffer.occupation_key }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Kirjeldus</dt>
+          <dd class="col-sm-9 text-break break-all">{{ jobOffer.description }}</dd>
         </dl>
       </template>
     </section>
 
     <section v-if="!isOfferNotFound" class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Applicants</h2>
-        <p class="text-body-secondary mb-0">Only candidates who applied to this offer are visible.</p>
+        <h2 class="h5 mb-1">Kandidaadid</h2>
+        <p class="text-body-secondary mb-0">Siin näed kandidaate, kes on sellele tööpakkumisele kandideerinud.</p>
       </header>
 
       <ApiErrorNotice v-if="applicantsLoadError" :error="applicantsLoadError" show-all-messages />
 
-      <p v-if="isApplicantsLoading" class="text-body-secondary mb-0">Loading applicants...</p>
-      <p v-else-if="applicants.length === 0" class="text-body-secondary mb-0">No applicants yet.</p>
+      <p v-if="isApplicantsLoading" class="text-body-secondary mb-0">Kandidaadid laadimisel...</p>
+      <p v-else-if="applicants.length === 0" class="text-body-secondary mb-0">Kandidaate veel pole.</p>
       <template v-else>
         <div class="row g-3 align-items-end">
           <div class="col-12 col-md-5 col-lg-4">
             <label class="d-grid gap-1">
-              <span class="form-label mb-0">Sort by</span>
+              <span class="form-label mb-0">Sorteeri</span>
               <select v-model="applicantSort" class="form-select">
-                <option value="score_desc">Score (high to low)</option>
-                <option value="applied_desc">Date applied (newest first)</option>
+                <option value="score_desc">Punktisumma (kõrgeimast madalaimani)</option>
+                <option value="applied_desc">Kandideerimise kuupäev (uusimad ees)</option>
               </select>
             </label>
           </div>
@@ -64,17 +64,17 @@
                 <div class="d-flex flex-wrap align-items-center gap-2">
                   <h3 class="h6 mb-0 text-break">{{ applicant.shared_profile.full_name }}</h3>
                   <span class="badge text-bg-primary">
-                    Score: {{ formatApplicantScore(applicant) }}
+                    Punktisumma: {{ formatApplicantScore(applicant) }}
                   </span>
                 </div>
               </div>
             </div>
 
             <dl class="row mb-0 mt-2">
-              <dt class="col-sm-3 text-body-secondary">Applied at</dt>
+              <dt class="col-sm-3 text-body-secondary">Kandideerimise kuupäev</dt>
               <dd class="col-sm-9 text-break">{{ formatDateTime(applicant.applied_at) }}</dd>
-              <dt class="col-sm-3 text-body-secondary">Summary</dt>
-              <dd class="col-sm-9 text-break">{{ applicant.shared_profile.summary || "Not provided" }}</dd>
+              <dt class="col-sm-3 text-body-secondary">Kokkuvõte</dt>
+              <dd class="col-sm-9 text-break">{{ applicant.shared_profile.summary || "Puudub" }}</dd>
             </dl>
 
             <button
@@ -84,7 +84,7 @@
               :aria-controls="applicantDetailsId(applicant.application_id)"
               @click="toggleApplicantDetails(applicant.application_id)"
             >
-              {{ isApplicantExpanded(applicant.application_id) ? "Hide details" : "View details" }}
+              {{ isApplicantExpanded(applicant.application_id) ? "Peida detailid" : "Vaata detaile" }}
             </button>
 
             <div
@@ -93,58 +93,58 @@
               class="d-grid gap-3 mt-3"
             >
               <dl class="row mb-0">
-                <dt class="col-sm-3 text-body-secondary">Occupation key</dt>
-                <dd class="col-sm-9 text-break break-all">{{ applicant.shared_profile.occupation_key || "Not provided" }}</dd>
-                <dt class="col-sm-3 text-body-secondary">Location</dt>
-                <dd class="col-sm-9 text-break">{{ applicant.shared_profile.location || "Not provided" }}</dd>
+                <dt class="col-sm-3 text-body-secondary">Ametikoht</dt>
+                <dd class="col-sm-9 text-break break-all">{{ applicant.shared_profile.occupation_key || "Puudub" }}</dd>
+                <dt class="col-sm-3 text-body-secondary">Asukoht</dt>
+                <dd class="col-sm-9 text-break">{{ applicant.shared_profile.location || "Puudub" }}</dd>
               </dl>
 
               <section class="d-grid gap-2">
                 <header>
-                  <h3 class="h6 mb-1">Shared competencies</h3>
+                  <h3 class="h6 mb-1">Jagatud kompetentsid</h3>
                   <p class="text-body-secondary mb-0">
-                    Competency values shown here come from the stored application snapshot.
+                    Siin kuvatud kompetentsid on salvestatud kandideerimise hetktõmmise põhjal.
                   </p>
                 </header>
 
                 <CompetencyLevelTable
                   :rows="toSharedCompetencyRows(applicant)"
-                  empty-text="No competencies were shared."
+                  empty-text="Puuduvad jagatud kompetentsid."
                   :label-resolver="competencyLabel"
                 />
               </section>
 
               <section class="d-grid gap-2">
                 <header>
-                  <h3 class="h6 mb-1">Shared matching result</h3>
-                  <p class="text-body-secondary mb-0">This result was shared at application time as part of consent.</p>
+                  <h3 class="h6 mb-1">Sobivusanalüüsi tulemused</h3>
+                  <p class="text-body-secondary mb-0">See tulemus jagati kandideerimise ajal osana nõusolekust.</p>
                 </header>
 
                 <template v-if="applicant.shared_matching">
                   <dl class="row mb-0">
-                    <dt class="col-sm-3 text-body-secondary">Score</dt>
+                    <dt class="col-sm-3 text-body-secondary">Punktisumma</dt>
                     <dd class="col-sm-9 text-break">{{ formatScore(applicant.shared_matching.score) }}</dd>
-                    <dt class="col-sm-3 text-body-secondary">Algorithm version</dt>
+                    <dt class="col-sm-3 text-body-secondary">Algoritmi versioon</dt>
                     <dd class="col-sm-9 text-break break-all">{{ applicant.shared_matching.algorithm_version }}</dd>
-                    <dt class="col-sm-3 text-body-secondary">Matching snapshot created at</dt>
+                    <dt class="col-sm-3 text-body-secondary">Sobivusanalüüsi kuupäev</dt>
                     <dd class="col-sm-9 text-break">{{ formatDateTime(applicant.shared_matching.snapshot_created_at) }}</dd>
                   </dl>
 
                   <MatchingExplanationPanel
                     v-if="applicant.shared_matching.explanation"
-                    summary-title="Shared match explanation"
+                    summary-title="Sobivusanalüüsi selgitus"
                     :explanation="applicant.shared_matching.explanation"
                     :competency-label="competencyLabel"
                     :show-roadmap="false"
                   />
                   <p v-else class="text-body-secondary mb-0">
-                    Structured explanation is unavailable for this shared matching snapshot.
+                    Sobivusanalüüsi selgitust ei ole saadaval.
                   </p>
 
                   <details class="matching-disclosure">
                     <summary class="matching-disclosure-summary">
-                      <span class="matching-disclosure-closed-label">Show matching payload</span>
-                      <span class="matching-disclosure-open-label">Hide matching payload</span>
+                      <span class="matching-disclosure-closed-label">Näita sobivusanalüüsi andmeid</span>
+                      <span class="matching-disclosure-open-label">Peida sobivusanalüüsi andmed</span>
                     </summary>
 
                     <JsonPayloadViewer
@@ -154,7 +154,7 @@
                   </details>
                 </template>
                 <p v-else class="text-body-secondary mb-0">
-                  No shared matching snapshot is available for this application.
+                  Sobivusanalüüsi hetktõmmist ei ole selle kandideerimise jaoks saadaval.
                 </p>
               </section>
             </div>

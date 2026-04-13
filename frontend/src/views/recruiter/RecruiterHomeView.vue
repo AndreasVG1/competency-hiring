@@ -1,48 +1,48 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" to="/recruiter/edit">Edit profile</RouterLink>
-      <RouterLink class="btn btn-primary" to="/recruiter/job-offers/new">Create job offer</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter/edit">Muuda profiili</RouterLink>
+      <RouterLink class="btn btn-primary" to="/recruiter/job-offers/new">Koosta tööpakkumine</RouterLink>
     </PageActionsBar>
 
     <header>
-      <h1 class="h3 mb-1">Recruiter Overview</h1>
-      <p class="text-body-secondary mb-0">Review your profile information and draft job offers.</p>
+      <h1 class="h3 mb-1">Tööandja Ülevaade</h1>
+      <p class="text-body-secondary mb-0">Vaata oma profiili teavet ja koosta tööpakkumisi.</p>
     </header>
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-0">Recruiter Profile</h2>
+        <h2 class="h5 mb-0">Tööandja profiil</h2>
       </header>
 
       <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
 
-      <p v-if="isProfileLoading" class="text-body-secondary mb-0">Loading profile...</p>
+      <p v-if="isProfileLoading" class="text-body-secondary mb-0">Laen profiili...</p>
       <template v-else-if="isFirstTimeProfile || !profile">
-        <p class="text-body-secondary mb-0">No recruiter profile found yet.</p>
+        <p class="text-body-secondary mb-0">Tööandja profiili ei leitud.</p>
         <div>
-          <RouterLink class="btn btn-primary" to="/recruiter/edit">Create profile</RouterLink>
+          <RouterLink class="btn btn-primary" to="/recruiter/edit">Loo profiil</RouterLink>
         </div>
       </template>
 
       <dl v-else class="row mb-0">
-        <dt class="col-sm-3 text-body-secondary">Company name</dt>
+        <dt class="col-sm-3 text-body-secondary">Ettevõtte nimi</dt>
         <dd class="col-sm-9 text-break">{{ profile.company_name }}</dd>
-        <dt class="col-sm-3 text-body-secondary">Contact name</dt>
+        <dt class="col-sm-3 text-body-secondary">Kontaktisik</dt>
         <dd class="col-sm-9 text-break">{{ profile.contact_name }}</dd>
       </dl>
     </section>
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Job Offers</h2>
-        <p class="text-body-secondary mb-0">Open an offer to review details, status, and available actions.</p>
+        <h2 class="h5 mb-1">Tööpakkumised</h2>
+        <p class="text-body-secondary mb-0">Ava tööpakkumine, et vaadata üksikasju, staatust ja saadaolevaid toiminguid.</p>
       </header>
 
       <ApiErrorNotice v-if="jobOffersLoadError" :error="jobOffersLoadError" show-all-messages />
 
-      <p v-if="isJobOffersLoading" class="text-body-secondary mb-0">Loading job offers...</p>
-      <p v-else-if="jobOffers.length === 0" class="text-body-secondary mb-0">No draft offers yet.</p>
+      <p v-if="isJobOffersLoading" class="text-body-secondary mb-0">Laen tööpakkumisi...</p>
+      <p v-else-if="jobOffers.length === 0" class="text-body-secondary mb-0">Tööpakkumisi ei leitud.</p>
 
       <ul v-else class="list-group">
         <li v-for="offer in jobOffers" :key="offer.id" class="list-group-item">

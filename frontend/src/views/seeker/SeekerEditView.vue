@@ -1,32 +1,32 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" to="/seeker">Back to profile</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/seeker">Tagasi avalehele</RouterLink>
     </PageActionsBar>
 
     <header>
-      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Job Seeker Area</p>
-      <h1 class="h3 mb-1">Edit Profile</h1>
-      <p class="text-body-secondary mb-0">Update your private profile and competency data.</p>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Tööotsija vaade</p>
+      <h1 class="h3 mb-1">Muuda profiili</h1>
+      <p class="text-body-secondary mb-0">Uuenda oma privaatset profiili ja kompetentside andmeid.</p>
     </header>
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Profile</h2>
+        <h2 class="h5 mb-1">Profiil</h2>
         <p class="text-body-secondary mb-0">
-          Keep your core information updated before running matching analysis.
+          Hoia oma põhiteave ajakohasena enne sobivusanalüüsi käivitamist.
         </p>
       </header>
 
       <p v-if="isFirstTimeProfile" class="text-body-secondary mb-0">
-        No profile found yet. Fill in your details and save to create one.
+        Profiil puudub. Täida oma andmed ja salvesta, et luua profiil.
       </p>
 
       <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
 
       <form class="d-grid gap-3" @submit.prevent="saveProfile">
         <div>
-          <label class="form-label" for="seeker-full-name">Full name</label>
+          <label class="form-label" for="seeker-full-name">Täisnimi</label>
           <input
             id="seeker-full-name"
             v-model="profileForm.fullName"
@@ -39,7 +39,7 @@
         </div>
 
         <div>
-          <label class="form-label" for="seeker-summary">Summary</label>
+          <label class="form-label" for="seeker-summary">Kokkuvõte</label>
           <textarea
             id="seeker-summary"
             v-model="profileForm.summary"
@@ -50,7 +50,7 @@
         </div>
 
         <div>
-          <label class="form-label" for="seeker-location">Location</label>
+          <label class="form-label" for="seeker-location">Asukoht</label>
           <input
             id="seeker-location"
             v-model="profileForm.location"
@@ -62,9 +62,9 @@
         </div>
 
         <CatalogSearchPicker
-          label="Occupation"
-          placeholder="Search occupations"
-          no-results-text="No occupations found."
+          label="Amet"
+          placeholder="Otsi ameteid"
+          no-results-text="Ametit ei leitud."
           :disabled="isProfileLoading"
           :busy="isProfileSaving"
           :search-fn="searchOccupations"
@@ -72,12 +72,12 @@
         />
 
         <p class="mb-0 text-break">
-          <strong>Selected occupation:</strong>
+          <strong>Valitud amet:</strong>
           <span v-if="profileForm.occupationKey">
             {{ selectedOccupationLabel || profileForm.occupationKey }}
             <span class="d-block small text-body-secondary break-all">({{ profileForm.occupationKey }})</span>
           </span>
-          <span v-else>None</span>
+          <span v-else>Puudub</span>
         </p>
 
         <div class="d-flex flex-wrap gap-2">
@@ -87,7 +87,7 @@
             :disabled="!profileForm.occupationKey || isProfileLoading || isProfileSaving"
             @click="clearOccupation"
           >
-            Clear occupation
+            Eemalda amet
           </button>
         </div>
 
@@ -97,15 +97,15 @@
         </div>
 
         <button class="btn btn-primary" type="submit" :disabled="isProfileLoading || isProfileSaving">
-          {{ isProfileSaving ? "Saving profile..." : "Save profile" }}
+          {{ isProfileSaving ? "Profiili salvestamine..." : "Salvesta profiil" }}
         </button>
       </form>
     </section>
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Competencies</h2>
-        <p class="text-body-secondary mb-0">Add competencies and keep levels current.</p>
+        <h2 class="h5 mb-1">Kompetentsid</h2>
+        <p class="text-body-secondary mb-0">Lisa kompetentsid ja hoia tasemed ajakohasena.</p>
       </header>
 
       <ApiErrorNotice v-if="competenciesLoadError" :error="competenciesLoadError" show-all-messages />
@@ -115,17 +115,17 @@
         :selected-keys="existingCompetencyKeys"
         :disabled="isCompetenciesLoading"
         :busy="isAddingCompetency"
-        label="Competencies related to selected occupation"
-        waiting-text="Select an occupation in Profile to see related competencies."
+        label="Valitud ametiga seotud kompetentsid"
+        waiting-text="Vali profiilist amet, et näha seotud kompetentse."
         @select="addSuggestedCompetency"
       />
 
       <form class="d-grid gap-3" @submit.prevent="addCompetency">
         <CatalogSearchPicker
           :key="competencyPickerKey"
-          label="Competency"
-          placeholder="Search competencies"
-          no-results-text="No competencies found."
+          label="Kompetents"
+          placeholder="Otsi kompetentse"
+          no-results-text="Kompetentsi ei leitud."
           :disabled="isCompetenciesLoading"
           :busy="isAddingCompetency"
           :search-fn="searchCompetencies"
@@ -133,14 +133,14 @@
         />
 
         <p class="mb-0 text-break">
-          <strong>Selected competency:</strong>
+          <strong>Valitud kompetents:</strong>
           <span v-if="selectedCompetency">{{ selectedCompetency.label }}</span>
-          <span v-else>None</span>
+          <span v-else>Puudub</span>
         </p>
 
         <EnumSelect
           v-model="newCompetencyLevel"
-          label="Level"
+          label="Tase"
           :options="competencyLevelOptions"
           :disabled="isAddingCompetency || isCompetenciesLoading"
         />
@@ -151,21 +151,21 @@
         </div>
 
         <button class="btn btn-primary" type="submit" :disabled="isAddingCompetency || isCompetenciesLoading">
-          {{ isAddingCompetency ? "Adding competency..." : "Add competency" }}
+          {{ isAddingCompetency ? "Kompetentsi lisamine..." : "Lisa kompetents" }}
         </button>
       </form>
 
-      <p v-if="isCompetenciesLoading" class="text-body-secondary mb-0">Loading competencies...</p>
-      <p v-else-if="competencyRows.length === 0" class="text-body-secondary mb-0">No competencies saved yet.</p>
+      <p v-if="isCompetenciesLoading" class="text-body-secondary mb-0">Kompetentside laadimine...</p>
+      <p v-else-if="competencyRows.length === 0" class="text-body-secondary mb-0">Kompetentse veel salvestamata.</p>
 
       <div v-else class="table-responsive">
         <table class="table table-sm align-middle mb-0">
           <thead>
             <tr>
-              <th scope="col">Competency</th>
-              <th scope="col">Level</th>
-              <th scope="col">Context</th>
-              <th scope="col">Actions</th>
+              <th scope="col">Kompetents</th>
+              <th scope="col">Tase</th>
+              <th scope="col">Kontekst</th>
+              <th scope="col">Tegevused</th>
             </tr>
           </thead>
           <tbody>
@@ -186,7 +186,7 @@
                   class="btn btn-outline-secondary btn-sm"
                   @click="openIndicators(row.competencyKey)"
                 >
-                  View indicators
+                  Vaata tegevusnäitajaid
                 </button>
               </td>
               <td>
@@ -197,7 +197,7 @@
                     :disabled="row.isSaving || row.isDeleting || row.levelDraft === row.persistedLevel"
                     @click="saveCompetencyLevel(row.id)"
                   >
-                    {{ row.isSaving ? "Saving..." : "Save" }}
+                    {{ row.isSaving ? "Salvestamine..." : "Salvesta" }}
                   </button>
                   <button
                     class="btn btn-outline-danger btn-sm"
@@ -205,7 +205,7 @@
                     :disabled="row.isSaving || row.isDeleting"
                     @click="deleteCompetency(row.id)"
                   >
-                    {{ row.isDeleting ? "Removing..." : "Remove" }}
+                    {{ row.isDeleting ? "Eemaldamine..." : "Eemalda" }}
                   </button>
                 </div>
                 <ApiErrorNotice v-if="row.error" :error="row.error" />
@@ -263,9 +263,9 @@ interface CompetencyRowState {
 }
 
 const competencyLevelOptions: { value: CompetencyLevel; label: string }[] = [
-  { value: "beginner", label: "Beginner" },
-  { value: "intermediate", label: "Intermediate" },
-  { value: "advanced", label: "Advanced" },
+  { value: "beginner", label: "Algaja" },
+  { value: "intermediate", label: "Kesktase" },
+  { value: "advanced", label: "Edasijõudnu" },
 ];
 
 const profileForm = reactive<ProfileFormState>({
@@ -466,7 +466,7 @@ async function saveProfile(): Promise<void> {
 
     hydrateProfileForm(profile);
     isFirstTimeProfile.value = false;
-    profileSaveSuccessMessage.value = "Profile saved.";
+    profileSaveSuccessMessage.value = "Profiil salvestatud.";
   } catch (error) {
     profileSaveError.value = error;
   } finally {
@@ -476,7 +476,7 @@ async function saveProfile(): Promise<void> {
 
 async function addCompetency(): Promise<void> {
   if (!selectedCompetency.value) {
-    addCompetencyError.value = "Choose a competency before adding.";
+    addCompetencyError.value = "Vali kompetents enne lisamist.";
     return;
   }
 
@@ -495,7 +495,7 @@ async function addCompetencyFromItem(
   addCompetencySuccessMessage.value = null;
 
   if (competencyRows.value.some((row) => row.competencyKey === item.key)) {
-    addCompetencyError.value = "This competency is already in your profile.";
+    addCompetencyError.value = "See kompetents on juba sinu profiilis.";
     return;
   }
 
@@ -516,7 +516,7 @@ async function addCompetencyFromItem(
       competencyPickerKey.value += 1;
     }
 
-    addCompetencySuccessMessage.value = "Competency added.";
+    addCompetencySuccessMessage.value = "Kompetents lisatud.";
   } catch (error) {
     addCompetencyError.value = error;
   } finally {
@@ -573,10 +573,10 @@ function competencyLabel(competencyKey: string): string {
 
   const state = labelCache.getLabelState(competencyKey);
   if (state === "error") {
-    return "Label unavailable";
+    return "Silt pole saadaval";
   }
 
-  return "Loading label...";
+  return "Sildi laadimine...";
 }
 
 onMounted(async () => {

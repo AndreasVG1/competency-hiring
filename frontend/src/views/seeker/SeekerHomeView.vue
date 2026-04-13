@@ -1,54 +1,54 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-primary" to="/seeker/job-offers">Browse published job offers</RouterLink>
-      <RouterLink class="btn btn-outline-secondary" to="/seeker/edit">Edit profile</RouterLink>
+      <RouterLink class="btn btn-primary" to="/seeker/job-offers">Sirvi tööpakkumisi</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/seeker/edit">Muuda profiili</RouterLink>
     </PageActionsBar>
 
     <header>
-      <h1 class="h3 mb-1">Profile Overview</h1>
-      <p class="text-body-secondary mb-0">Review what is currently saved in your private profile.</p>
+      <h1 class="h3 mb-1">Profiili ülevaade</h1>
+      <p class="text-body-secondary mb-0">Halda oma profiili ja kompetentse</p>
     </header>
 
     <ApiErrorNotice v-if="deleteProfileError" :error="deleteProfileError" show-all-messages />
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-0">Profile</h2>
+        <h2 class="h5 mb-0">Profiil</h2>
       </header>
 
       <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
 
-      <p v-if="isProfileLoading" class="text-body-secondary mb-0">Loading profile...</p>
+      <p v-if="isProfileLoading" class="text-body-secondary mb-0">Profiili laadimine...</p>
 
       <template v-else-if="isFirstTimeProfile || !profile">
-        <p class="text-body-secondary mb-0">No profile found yet.</p>
+        <p class="text-body-secondary mb-0">Profiili veel ei leitud.</p>
         <div>
-          <RouterLink class="btn btn-primary" to="/seeker/edit">Create profile</RouterLink>
+          <RouterLink class="btn btn-primary" to="/seeker/edit">Loo profiil</RouterLink>
         </div>
       </template>
 
       <template v-else>
         <dl class="row mb-0">
-          <dt class="col-sm-3 text-body-secondary">Full name</dt>
+          <dt class="col-sm-3 text-body-secondary">Täisnimi</dt>
           <dd class="col-sm-9 text-break">{{ profile.full_name }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Summary</dt>
-          <dd class="col-sm-9 text-break">{{ profile.summary || "Not set" }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Location</dt>
-          <dd class="col-sm-9 text-break">{{ profile.location || "Not set" }}</dd>
-          <dt class="col-sm-3 text-body-secondary">Occupation</dt>
+          <dt class="col-sm-3 text-body-secondary">Kokkuvõte</dt>
+          <dd class="col-sm-9 text-break">{{ profile.summary || "Pole määratud" }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Asukoht</dt>
+          <dd class="col-sm-9 text-break">{{ profile.location || "Pole määratud" }}</dd>
+          <dt class="col-sm-3 text-body-secondary">Amet</dt>
           <dd class="col-sm-9 text-break">
             <span v-if="profile.occupation_key">
               {{ selectedOccupationLabel || profile.occupation_key }}
             </span>
-            <span v-else>Not set</span>
+            <span v-else>Pole määratud</span>
           </dd>
         </dl>
 
         <div class="d-flex flex-wrap gap-2">
-          <RouterLink class="btn btn-outline-secondary" to="/seeker/edit">Edit profile</RouterLink>
+          <RouterLink class="btn btn-outline-secondary" to="/seeker/edit">Muuda profiili</RouterLink>
           <button class="btn btn-outline-danger" type="button" :disabled="isDeletingProfile" @click="deleteProfile">
-            {{ isDeletingProfile ? "Deleting..." : "Delete profile" }}
+            {{ isDeletingProfile ? "Kustutamine..." : "Kustuta profiil" }}
           </button>
         </div>
       </template>
@@ -56,16 +56,16 @@
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-0">Competencies</h2>
+        <h2 class="h5 mb-0">Kompetentsid</h2>
       </header>
 
       <ApiErrorNotice v-if="competenciesLoadError" :error="competenciesLoadError" show-all-messages />
 
-      <p v-if="isCompetenciesLoading" class="text-body-secondary mb-0">Loading competencies...</p>
+      <p v-if="isCompetenciesLoading" class="text-body-secondary mb-0">Kompetentside laadimine...</p>
       <CompetencyLevelTable
         v-else
         :rows="competencyTableRows"
-        empty-text="No competencies saved yet."
+        empty-text="Kompetentsid veel salvestamata."
         :label-resolver="competencyLabel"
         :level-formatter="formatLevel"
         :activity-indicator-resolver="activityIndicatorsFor"
@@ -115,12 +115,12 @@ const competencyTableRows = computed(() =>
 
 function formatLevel(level: string): string {
   if (level === "beginner") {
-    return "Beginner";
+    return "Algaja";
   }
   if (level === "intermediate") {
-    return "Intermediate";
+    return "Kesktase";
   }
-  return "Advanced";
+  return "Edasijõudnud";
 }
 
 function competencyLabel(competencyKey: string): string {
@@ -131,10 +131,10 @@ function competencyLabel(competencyKey: string): string {
 
   const state = labelCache.getLabelState(competencyKey);
   if (state === "error") {
-    return "Label unavailable";
+    return "Nimetus pole saadaval";
   }
 
-  return "Loading label...";
+  return "Nimetuse laadimine...";
 }
 
 function activityIndicatorsFor(competencyKey: string) {
@@ -215,10 +215,10 @@ async function deleteProfile(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Delete profile",
-    message: "Delete your profile and all saved competencies?",
-    confirmLabel: "Delete profile",
-    cancelLabel: "Keep profile",
+    title: "Kustuta profiil",
+    message: "Kas soovite kustutada oma profiili ja kõik salvestatud kompetentsid?",
+    confirmLabel: "Kustuta profiil",
+    cancelLabel: "Tagasi",
     tone: "danger",
   });
   if (!confirmed) {

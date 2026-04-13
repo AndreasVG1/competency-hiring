@@ -1,13 +1,13 @@
 <template>
   <section class="d-grid gap-3">
     <header>
-      <h2 class="h4 mb-1">Create Account</h2>
-      <p class="text-body-secondary mb-0">Choose your role and create your account.</p>
+      <h2 class="h4 mb-1">Loo konto</h2>
+      <p class="text-body-secondary mb-0">Vali oma roll ja loo konto</p>
     </header>
 
     <form @submit.prevent="submitRegistration">
       <div class="mb-3">
-        <label class="form-label" for="register-email">Email</label>
+        <label class="form-label" for="register-email">E-post</label>
         <input
           id="register-email"
           v-model="email"
@@ -19,7 +19,7 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="register-password">Password</label>
+        <label class="form-label" for="register-password">Parool</label>
         <input
           id="register-password"
           v-model="password"
@@ -31,7 +31,7 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="register-password-confirm">Confirm Password</label>
+        <label class="form-label" for="register-password-confirm">Kinnita parool</label>
         <input
           id="register-password-confirm"
           v-model="confirmPassword"
@@ -43,14 +43,14 @@
       </div>
 
       <fieldset class="border rounded-3 p-3 mb-3">
-        <legend class="float-none w-auto px-2 fs-6 mb-0">Register as</legend>
+        <legend class="float-none w-auto px-2 fs-6 mb-0">Registreeru kui</legend>
         <div class="form-check">
           <input id="role-seeker" v-model="role" class="form-check-input" type="radio" value="job_seeker" />
-          <label class="form-check-label" for="role-seeker">Job seeker</label>
+          <label class="form-check-label" for="role-seeker">Tööotsija</label>
         </div>
         <div class="form-check">
           <input id="role-recruiter" v-model="role" class="form-check-input" type="radio" value="recruiter" />
-          <label class="form-check-label" for="role-recruiter">Recruiter</label>
+          <label class="form-check-label" for="role-recruiter">Tööandja</label>
         </div>
       </fieldset>
 
@@ -59,11 +59,11 @@
       </div>
 
       <button class="btn btn-primary w-100" type="submit" :disabled="isSubmitting">
-        {{ isSubmitting ? "Creating account..." : "Create account" }}
+        {{ isSubmitting ? "Konto loomine..." : "Loo konto" }}
       </button>
     </form>
 
-    <RouterLink class="link-primary" to="/auth/login">Already have an account? Sign in</RouterLink>
+    <RouterLink class="link-primary" to="/auth/login">Sul on juba konto? Logi sisse</RouterLink>
   </section>
 </template>
 
@@ -98,7 +98,7 @@ async function submitRegistration(): Promise<void> {
   errorMessage.value = null;
 
   if (password.value !== confirmPassword.value) {
-    errorMessage.value = "Passwords do not match.";
+    errorMessage.value = "Paroolid ei ühti.";
     isSubmitting.value = false;
     return;
   }
@@ -114,9 +114,9 @@ async function submitRegistration(): Promise<void> {
   } catch (error) {
     if (error instanceof ApiClientError) {
       errorMessage.value =
-        error.payload.details[0]?.message ?? "Unable to create account.";
+        error.payload.details[0]?.message ?? "Konto loomine ebaõnnestus.";
     } else {
-      errorMessage.value = "Unexpected error while creating account.";
+      errorMessage.value = "Konto loomisel tekkis ootamatu viga.";
       console.error("Registration error:", error);
     }
   } finally {

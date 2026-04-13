@@ -22,18 +22,18 @@
 
     <section>
       <header class="mb-2">
-        <h3 class="h6 mb-0">Strengths</h3>
+        <h3 class="h6 mb-0">Tugevused</h3>
       </header>
       <p v-if="explanation.highlights.length === 0" class="text-body-secondary mb-0">
-        No strengths are currently highlighted in this analysis.
+        Praeguse analüüsi põhjal ei ole ühtegi tugevat külge esile toodud.
       </p>
       <div v-else class="table-responsive">
         <table class="table table-sm align-middle mb-0">
           <thead>
             <tr>
-              <th scope="col">Competency</th>
-              <th scope="col">Priority</th>
-              <th scope="col">Details</th>
+              <th scope="col">Kompetents</th>
+              <th scope="col">Prioriteet</th>
+              <th scope="col">Detailid</th>
             </tr>
           </thead>
           <tbody>
@@ -55,20 +55,20 @@
 
     <section>
       <header class="mb-2">
-        <h3 class="h6 mb-0">Gaps</h3>
+        <h3 class="h6 mb-0">Puudujäägid</h3>
       </header>
       <p v-if="explanation.gaps.length === 0" class="text-body-secondary mb-0">
-        No competency gaps are currently identified.
+        Praeguse analüüsi põhjal ei ole ühtegi puudujääki tuvastatud.
       </p>
       <div v-else class="table-responsive">
         <table class="table table-sm align-middle mb-0">
           <thead>
             <tr>
-              <th scope="col">Competency</th>
-              <th scope="col">Gap Type</th>
-              <th scope="col">Priority</th>
-              <th scope="col">Level Context</th>
-              <th scope="col">Details</th>
+              <th scope="col">Kompetents</th>
+              <th scope="col">Tüüp</th>
+              <th scope="col">Prioriteet</th>
+              <th scope="col">Selgitus</th>
+              <th scope="col">Detailid</th>
             </tr>
           </thead>
           <tbody>
@@ -92,20 +92,20 @@
 
     <section v-if="showRoadmap && explanation.development_roadmap !== null">
       <header class="mb-2">
-        <h3 class="h6 mb-0">Development Roadmap</h3>
+        <h3 class="h6 mb-0">Soovituslik arengutee</h3>
       </header>
       <p v-if="explanation.development_roadmap.length === 0" class="text-body-secondary mb-0">
-        No immediate roadmap targets are suggested from this analysis.
+        Praeguse analüüsi põhjal ei ole kohe rakendatavaid arengueesmärke soovitatud.
       </p>
       <div v-else class="table-responsive">
         <table class="table table-sm align-middle mb-0">
           <thead>
             <tr>
-              <th scope="col">Competency</th>
-              <th scope="col">Priority</th>
-              <th scope="col">Target Level</th>
-              <th scope="col">Estimated Point Gain</th>
-              <th scope="col">Details</th>
+              <th scope="col">Kompetents</th>
+              <th scope="col">Prioriteet</th>
+              <th scope="col">Sihttase</th>
+              <th scope="col">Punktitulu</th>
+              <th scope="col">Detailid</th>
             </tr>
           </thead>
           <tbody>
@@ -129,7 +129,7 @@
 
     <section>
       <header class="mb-2">
-        <h3 class="h6 mb-0">Transparency Notes</h3>
+        <h3 class="h6 mb-0">Märkused</h3>
       </header>
       <ul class="mb-0">
         <li v-for="(note, index) in explanation.transparency_notes" :key="`transparency-note-${index}`">
@@ -152,7 +152,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
   showRoadmap: true,
-  summaryTitle: "Explanation Summary",
+  summaryTitle: "Analüüsi kokkuvõte",
 });
 
 function humanizeToken(value: string): string {
@@ -162,15 +162,15 @@ function humanizeToken(value: string): string {
 
 function formatGapLevelContext(item: ExplanationGapItem): string {
   if (item.kind === "missing") {
-    return "Competency is not present in the profile.";
+    return "Kompetents puudub profiilis.";
   }
 
-  const currentLevel = item.current_level ? humanizeToken(item.current_level) : "Unknown current level";
-  const expectedLevel = item.expected_level ? humanizeToken(item.expected_level) : "Unknown expected level";
-  return `${currentLevel} vs expected ${expectedLevel}.`;
+  const currentLevel = item.current_level ? humanizeToken(item.current_level) : "Tundmatu praegune tase";
+  const expectedLevel = item.expected_level ? humanizeToken(item.expected_level) : "Tundmatu oodatud tase";
+  return `${currentLevel} vs oodatud ${expectedLevel}.`;
 }
 
 function formatPointGain(value: number): string {
-  return `+${value.toFixed(1)} points`;
+  return `+${value.toFixed(1)} punkti`;
 }
 </script>

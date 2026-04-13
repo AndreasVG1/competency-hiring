@@ -8,9 +8,9 @@
       @click.stop
     >
       <header class="indicator-overlay-header">
-        <h3 :id="titleId">Activity indicators</h3>
+        <h3 :id="titleId">Tegevusnäitajad</h3>
         <button type="button" class="btn btn-outline-secondary btn-sm" @click="emitClose">
-          Close
+          Sulge
         </button>
       </header>
 
@@ -18,8 +18,8 @@
         {{ resolveLabel(competencyKey) }}
       </p>
 
-      <p v-if="loading" class="text-body-secondary mb-0">Loading indicators...</p>
-      <p v-else-if="indicators.length === 0" class="text-body-secondary mb-0">No indicators available.</p>
+      <p v-if="loading" class="text-body-secondary mb-0">Tegevusnäitajad laaditakse...</p>
+      <p v-else-if="indicators.length === 0" class="text-body-secondary mb-0">Tegevusnäitajaid ei leitud.</p>
       <ol v-else class="indicator-overlay-list">
         <li v-for="indicator in indicators" :key="indicator.key" class="indicator-overlay-item">
           {{ indicator.text }}

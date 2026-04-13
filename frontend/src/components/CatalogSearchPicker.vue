@@ -11,8 +11,8 @@
       />
     </label>
 
-    <p v-if="isSearching" class="text-body-secondary mb-0">Searching...</p>
-    <p v-else-if="searchError" class="text-danger fw-semibold mb-0">Search failed. Try again.</p>
+    <p v-if="isSearching" class="text-body-secondary mb-0">Otsin...</p>
+    <p v-else-if="searchError" class="text-danger fw-semibold mb-0">Otsing ebaõnnestus. Proovi uuesti.</p>
     <p v-else-if="showNoResults" class="text-body-secondary mb-0">{{ noResultsText }}</p>
 
     <ul v-if="results.length > 0" class="list-group">
@@ -47,8 +47,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: "Search...",
-  noResultsText: "No matching items.",
+  placeholder: "Otsi...",
+  noResultsText: "Sobivaid tulemusi ei leitud.",
   minQueryLength: 2,
   debounceMs: 300,
   disabled: false,

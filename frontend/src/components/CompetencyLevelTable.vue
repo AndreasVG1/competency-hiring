@@ -5,9 +5,9 @@
     <table class="table table-sm align-middle mb-0">
       <thead>
         <tr>
-          <th scope="col">Competency</th>
-          <th scope="col">Level</th>
-          <th v-if="showContextColumn" scope="col">Context</th>
+          <th scope="col">Kompetents</th>
+          <th scope="col">Tase</th>
+          <th v-if="showContextColumn" scope="col">Tegevusnäitajad</th>
         </tr>
       </thead>
       <tbody>
@@ -21,7 +21,7 @@
               class="btn btn-outline-secondary btn-sm"
               @click="openIndicators(row.competency_key)"
             >
-              View indicators
+              Kuva näitajad
             </button>
           </td>
         </tr>
@@ -63,7 +63,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  emptyText: "No competencies available.",
+  emptyText: "Kompetentsid puuduvad.",
   labelResolver: undefined,
   levelFormatter: undefined,
   activityIndicatorResolver: undefined,

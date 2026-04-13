@@ -1,30 +1,30 @@
 <template>
   <div class="d-grid gap-4">
     <PageActionsBar>
-      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Back to recruiter</RouterLink>
+      <RouterLink class="btn btn-outline-secondary" to="/recruiter">Tagasi avalehele</RouterLink>
     </PageActionsBar>
 
     <header>
-      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Recruiter Area</p>
-      <h1 class="h3 mb-1">Edit Recruiter Profile</h1>
-      <p class="text-body-secondary mb-0">Update company and contact information.</p>
+      <p class="text-uppercase small text-body-secondary fw-semibold mb-1">Tööandja vaade</p>
+      <h1 class="h3 mb-1">Muuda tööandja profiili</h1>
+      <p class="text-body-secondary mb-0">Uuenda ettevõtte ja kontaktandmeid.</p>
     </header>
 
     <section class="border rounded-3 bg-white p-3 d-grid gap-3">
       <header>
-        <h2 class="h5 mb-1">Recruiter Profile</h2>
-        <p class="text-body-secondary mb-0">Profile details are saved separately from job offers.</p>
+        <h2 class="h5 mb-1">Tööandja profiil</h2>
+        <p class="text-body-secondary mb-0">Profiili andmed salvestatakse eraldi tööpakkumistest.</p>
       </header>
 
       <p v-if="isFirstTimeProfile" class="text-body-secondary mb-0">
-        No recruiter profile found yet. Fill in details and save to create one.
+        Profiili ei leitud. Täida andmed ja salvesta, et luua profiil.  
       </p>
 
       <ApiErrorNotice v-if="profileLoadError" :error="profileLoadError" show-all-messages />
 
       <form class="d-grid gap-3" @submit.prevent="saveProfile">
         <div>
-          <label class="form-label" for="recruiter-company-name">Company name</label>
+          <label class="form-label" for="recruiter-company-name">Ettevõtte nimi</label>
           <input
             id="recruiter-company-name"
             v-model="profileForm.companyName"
@@ -37,7 +37,7 @@
         </div>
 
         <div>
-          <label class="form-label" for="recruiter-contact-name">Contact name</label>
+          <label class="form-label" for="recruiter-contact-name">Kontaktisik</label>
           <input
             id="recruiter-contact-name"
             v-model="profileForm.contactName"
@@ -55,7 +55,7 @@
         </div>
 
         <button class="btn btn-primary" type="submit" :disabled="isProfileLoading || isProfileSaving">
-          {{ isProfileSaving ? "Saving profile..." : "Save profile" }}
+          {{ isProfileSaving ? "Profiil salvestamisel..." : "Salvesta muudatused" }}
         </button>
       </form>
     </section>
@@ -129,7 +129,7 @@ async function saveProfile(): Promise<void> {
 
     hydrateProfileForm(profile);
     isFirstTimeProfile.value = false;
-    profileSaveSuccessMessage.value = "Recruiter profile saved.";
+    profileSaveSuccessMessage.value = "Profiil salvestatud.";
   } catch (error) {
     profileSaveError.value = error;
   } finally {

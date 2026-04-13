@@ -1,13 +1,13 @@
 <template>
   <section class="d-grid gap-3">
     <header>
-      <h2 class="h4 mb-1">Login</h2>
-      <p class="text-body-secondary mb-0">Sign in to continue to your dashboard.</p>
+      <h2 class="h4 mb-1">Logi sisse</h2>
+      <p class="text-body-secondary mb-0">Logi sisse, et näha oma profiili</p>
     </header>
 
     <form @submit.prevent="submitLogin">
       <div class="mb-3">
-        <label class="form-label" for="login-email">Email</label>
+        <label class="form-label" for="login-email">E-post</label>
         <input
           id="login-email"
           v-model="email"
@@ -19,7 +19,7 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="login-password">Password</label>
+        <label class="form-label" for="login-password">Parool</label>
         <input
           id="login-password"
           v-model="password"
@@ -35,11 +35,11 @@
       </div>
 
       <button class="btn btn-primary w-100" type="submit" :disabled="isSubmitting">
-        {{ isSubmitting ? "Signing in..." : "Sign in" }}
+        {{ isSubmitting ? "Sisselogimine..." : "Logi sisse" }}
       </button>
     </form>
 
-    <RouterLink class="link-primary" to="/auth/register">Create an account</RouterLink>
+    <RouterLink class="link-primary" to="/auth/register">Loo konto</RouterLink>
   </section>
 </template>
 
@@ -80,9 +80,9 @@ async function submitLogin(): Promise<void> {
   } catch (error) {
     if (error instanceof ApiClientError) {
       errorMessage.value =
-        error.payload.details[0]?.message ?? "Unable to sign in with provided credentials.";
+        error.payload.details[0]?.message ?? "Sisselogimine ebaõnnestus, kontrollige, et sisestasite õiged andmed.";
     } else {
-      errorMessage.value = "Unexpected error while signing in.";
+      errorMessage.value = "Sisselogimisel tekkis ootamatu viga.";
       console.error("Login error:", error);
     }
   } finally {

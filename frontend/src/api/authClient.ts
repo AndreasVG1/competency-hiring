@@ -2,6 +2,8 @@ import { apiRequest } from "./httpClient";
 import type {
   AuthenticatedUser,
   AuthTokenResponse,
+  ChangePasswordRequest,
+  DeleteAccountRequest,
   LoginRequest,
   RefreshTokenRequest,
   RegisterRequest,
@@ -70,5 +72,21 @@ export const authClient = {
 
   me(): Promise<AuthenticatedUser> {
     return apiRequest<AuthenticatedUser>(`${AUTH_BASE_PATH}/me`);
+  },
+
+  changePassword(payload: ChangePasswordRequest): Promise<void> {
+    return apiRequest<void>(`${AUTH_BASE_PATH}/account/password`, {
+      method: "POST",
+      body: payload,
+      credentials: "include",
+    });
+  },
+
+  deleteAccount(payload: DeleteAccountRequest): Promise<void> {
+    return apiRequest<void>(`${AUTH_BASE_PATH}/account`, {
+      method: "DELETE",
+      body: payload,
+      credentials: "include",
+    });
   },
 };

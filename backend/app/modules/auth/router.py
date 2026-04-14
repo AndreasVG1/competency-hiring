@@ -9,6 +9,8 @@ from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.schemas import (
     AuthTokenResponse,
     AuthenticatedUser,
+    ChangePasswordRequest,
+    DeleteAccountRequest,
     LoginRequest,
     RefreshTokenRequest,
     RegisterRequest,
@@ -21,6 +23,8 @@ from app.modules.auth.cookies import (
 )
 from app.modules.auth.service import (
     authenticate_user,
+    change_password,
+    delete_account,
     issue_auth_tokens,
     register_user,
     revoke_refresh_token,
@@ -137,3 +141,34 @@ def logout(
 @router.get("/me", response_model=AuthenticatedUser)
 def get_me(current_user: CurrentUser) -> AuthenticatedUser:
     return AuthenticatedUser.model_validate(current_user)
+
+
+@router.post("/account/password", status_code=status.HTTP_204_NO_CONTENT)
+def update_password(
+    payload: ChangePasswordRequest,
+    db_session: DbSession,
+    response: Response,
+    current_user: CurrentUser,
+) -> None:
+    change_password(
+        db_session,
+        user=current_user,
+        old_password=payload.old_password,
+        new_password=payload.new_password,
+    )
+    clear_auth_cookies(response)
+
+
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+def remove_account(
+    payload: DeleteAccountRequest,
+    db_session: DbSession,
+    response: Response,
+    current_user: CurrentUser,
+) -> None:
+    delete_account(
+        db_session,
+        user=current_user,
+        current_password=payload.current_password,
+    )
+    clear_auth_cookies(response)

@@ -29,3 +29,12 @@ export interface RefreshTokenRequest {
   refresh_token: string;
 }
 
+export interface ChangePasswordRequest {
+  old_password: string;
+  new_password: string;
+  confirm_new_password: string;
+}
+
+export interface DeleteAccountRequest {
+  current_password: string;
+}

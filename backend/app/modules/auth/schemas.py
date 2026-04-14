@@ -50,3 +50,21 @@ class AuthTokenResponse(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str = Field(min_length=1)
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=1)
+    confirm_new_password: str = Field(min_length=1)
+
+    @field_validator("confirm_new_password")
+    @classmethod
+    def validate_password_confirmation(cls, value: str, info) -> str:
+        new_password = info.data.get("new_password")
+        if isinstance(new_password, str) and value != new_password:
+            raise ValueError("New password confirmation does not match.")
+        return value
+
+
+class DeleteAccountRequest(BaseModel):
+    current_password: str = Field(min_length=1)

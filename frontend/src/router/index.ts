@@ -3,6 +3,7 @@ import { createRouter, createWebHistory, type RouteLocationNormalized } from "vu
 import { useAuthStore } from "../stores/auth";
 import type { UserRole } from "../types/auth";
 import AuthLayoutView from "../views/auth/AuthLayoutView.vue";
+import AccountView from "../views/auth/AccountView.vue";
 import LoginView from "../views/auth/LoginView.vue";
 import RegisterView from "../views/auth/RegisterView.vue";
 import RecruiterHomeView from "../views/recruiter/RecruiterHomeView.vue";
@@ -92,6 +93,11 @@ export const router = createRouter({
           name: "seeker-job-offer-detail",
           component: SeekerJobOfferDetailView,
         },
+        {
+          path: "account",
+          name: "seeker-account",
+          component: AccountView,
+        },
       ],
     },
     {
@@ -131,6 +137,11 @@ export const router = createRouter({
           path: "job-offers/:id/applicants",
           name: "recruiter-job-offer-applicants",
           component: RecruiterJobOfferApplicantsView,
+        },
+        {
+          path: "account",
+          name: "recruiter-account",
+          component: AccountView,
         },
       ],
     },

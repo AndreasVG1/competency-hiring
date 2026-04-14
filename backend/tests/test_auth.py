@@ -1,10 +1,21 @@
 from importlib import import_module
+from datetime import datetime, timezone
 
 import pytest
 from fastapi import APIRouter, Depends
 from fastapi.testclient import TestClient
 
-from app.db.models import User, UserRole
+from app.db.models import (
+    Application,
+    CompetencyLevel,
+    JobOffer,
+    JobOfferStatus,
+    JobSeekerCompetency,
+    JobSeekerProfile,
+    RecruiterProfile,
+    User,
+    UserRole,
+)
 from app.core.settings import get_settings
 
 API_PREFIX = "/api/v1"
@@ -13,6 +24,8 @@ LOGIN_ROUTE = f"{API_PREFIX}/auth/login"
 REFRESH_ROUTE = f"{API_PREFIX}/auth/refresh"
 LOGOUT_ROUTE = f"{API_PREFIX}/auth/logout"
 AUTH_ME_ROUTE = f"{API_PREFIX}/auth/me"
+ACCOUNT_PASSWORD_ROUTE = f"{API_PREFIX}/auth/account/password"
+ACCOUNT_ROUTE = f"{API_PREFIX}/auth/account"
 
 def assert_error_response(response, *, status_code: int, error: str, message: str) -> None:
     assert response.status_code == status_code
@@ -54,6 +67,10 @@ def csrf_headers_from_cookie(client: TestClient) -> dict[str, str]:
     csrf_token = client.cookies.get(settings.auth_csrf_cookie_name)
     assert csrf_token
     return {"x-csrf-token": csrf_token}
+
+
+def auth_headers(access_token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {access_token}"}
 
 
 def import_or_xfail(module_name: str):
@@ -527,3 +544,324 @@ def test_refresh_with_cookie_requires_csrf_header(client):
         error="http_error",
         message="Missing or invalid CSRF token.",
     )
+
+
+def test_change_password_updates_credentials_and_revokes_refresh_sessions(client):
+    register_response = register_user(
+        client,
+        email="change-password@example.com",
+        password="OldPassword123!",
+        role="job_seeker",
+    )
+    access_token = register_response.json()["access_token"]
+
+    response = client.post(
+        ACCOUNT_PASSWORD_ROUTE,
+        json={
+            "old_password": "OldPassword123!",
+            "new_password": "NewPassword123!",
+            "confirm_new_password": "NewPassword123!",
+        },
+        headers=auth_headers(access_token),
+    )
+    assert response.status_code == 204
+
+    old_login = login_user(
+        client,
+        email="change-password@example.com",
+        password="OldPassword123!",
+    )
+    assert_error_response(
+        old_login,
+        status_code=401,
+        error="http_error",
+        message="Invalid email or password.",
+    )
+
+    new_login = login_user(
+        client,
+        email="change-password@example.com",
+        password="NewPassword123!",
+    )
+    assert new_login.status_code == 200
+
+    refresh_after_change = client.post(
+        REFRESH_ROUTE,
+        json={"refresh_token": register_response.json()["refresh_token"]},
+    )
+    assert_error_response(
+        refresh_after_change,
+        status_code=401,
+        error="http_error",
+        message="Invalid refresh token.",
+    )
+
+
+def test_change_password_rejects_wrong_old_password(client):
+    register_response = register_user(
+        client,
+        email="wrong-old-password@example.com",
+        password="OldPassword123!",
+        role="job_seeker",
+    )
+    access_token = register_response.json()["access_token"]
+
+    response = client.post(
+        ACCOUNT_PASSWORD_ROUTE,
+        json={
+            "old_password": "WrongPassword123!",
+            "new_password": "NewPassword123!",
+            "confirm_new_password": "NewPassword123!",
+        },
+        headers=auth_headers(access_token),
+    )
+
+    assert_error_response(
+        response,
+        status_code=401,
+        error="http_error",
+        message="Invalid email or password.",
+    )
+
+
+def test_change_password_rejects_same_password(client):
+    register_response = register_user(
+        client,
+        email="same-password@example.com",
+        password="SamePassword123!",
+        role="job_seeker",
+    )
+    access_token = register_response.json()["access_token"]
+
+    response = client.post(
+        ACCOUNT_PASSWORD_ROUTE,
+        json={
+            "old_password": "SamePassword123!",
+            "new_password": "SamePassword123!",
+            "confirm_new_password": "SamePassword123!",
+        },
+        headers=auth_headers(access_token),
+    )
+
+    assert_error_response(
+        response,
+        status_code=400,
+        error="http_error",
+        message="New password must be different from old password.",
+    )
+
+
+def test_change_password_rejects_confirmation_mismatch(client):
+    register_response = register_user(
+        client,
+        email="password-confirmation@example.com",
+        password="OldPassword123!",
+        role="job_seeker",
+    )
+    access_token = register_response.json()["access_token"]
+
+    response = client.post(
+        ACCOUNT_PASSWORD_ROUTE,
+        json={
+            "old_password": "OldPassword123!",
+            "new_password": "NewPassword123!",
+            "confirm_new_password": "MismatchPassword123!",
+        },
+        headers=auth_headers(access_token),
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"] == "validation_error"
+    assert body["details"]
+    assert body["details"][0]["field"] == "body.confirm_new_password"
+
+
+def test_change_password_requires_authentication(client):
+    response = client.post(
+        ACCOUNT_PASSWORD_ROUTE,
+        json={
+            "old_password": "OldPassword123!",
+            "new_password": "NewPassword123!",
+            "confirm_new_password": "NewPassword123!",
+        },
+    )
+    assert_error_response(
+        response,
+        status_code=401,
+        error="http_error",
+        message="Could not validate credentials.",
+    )
+
+
+def test_change_password_clears_auth_cookies(client):
+    register_response = register_user(
+        client,
+        email="change-password-cookie@example.com",
+        password="OldPassword123!",
+        role="job_seeker",
+    )
+    access_token = register_response.json()["access_token"]
+
+    response = client.post(
+        ACCOUNT_PASSWORD_ROUTE,
+        json={
+            "old_password": "OldPassword123!",
+            "new_password": "NewPassword123!",
+            "confirm_new_password": "NewPassword123!",
+        },
+        headers=auth_headers(access_token),
+    )
+    assert response.status_code == 204
+
+    settings = get_settings()
+    assert client.cookies.get(settings.auth_refresh_cookie_name) is None
+    assert client.cookies.get(settings.auth_csrf_cookie_name) is None
+
+
+def test_delete_account_hard_deletes_user_and_cascades_rows(client, db_session):
+    recruiter = create_user(db_session, email="cascade-recruiter@example.com", role=UserRole.RECRUITER)
+    db_session.add(RecruiterProfile(user_id=recruiter.id, company_name="Cascade Ltd", contact_name="Manager"))
+    job_offer = JobOffer(
+        recruiter_user_id=recruiter.id,
+        title="Backend Engineer",
+        occupation_key="occupation.backend",
+        description="Role",
+        status=JobOfferStatus.PUBLISHED,
+    )
+    db_session.add(job_offer)
+    db_session.flush()
+    db_session.commit()
+
+    seeker_register_response = register_user(
+        client,
+        email="cascade-seeker@example.com",
+        password="DeleteMe123!",
+        role="job_seeker",
+    )
+    seeker_token = seeker_register_response.json()["access_token"]
+    seeker_user = db_session.query(User).filter(User.email == "cascade-seeker@example.com").one()
+    seeker_user_id = seeker_user.id
+
+    db_session.add(
+        JobSeekerProfile(
+            user_id=seeker_user_id,
+            full_name="Cascade Seeker",
+            summary="Summary",
+            location="Tallinn",
+            occupation_key="occupation.backend",
+        )
+    )
+    db_session.add(
+        JobSeekerCompetency(
+            user_id=seeker_user_id,
+            competency_key="competency.python",
+            level=CompetencyLevel.ADVANCED,
+        )
+    )
+    db_session.add(
+        Application(
+            job_offer_id=job_offer.id,
+            seeker_user_id=seeker_user_id,
+            consent_given_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        )
+    )
+    db_session.commit()
+
+    response = client.request(
+        "DELETE",
+        ACCOUNT_ROUTE,
+        json={"current_password": "DeleteMe123!"},
+        headers=auth_headers(seeker_token),
+    )
+    assert response.status_code == 204
+    db_session.expire_all()
+
+    deleted_user = db_session.query(User).filter(User.email == "cascade-seeker@example.com").one_or_none()
+    assert deleted_user is None
+    assert db_session.query(JobSeekerProfile).filter(JobSeekerProfile.user_id == seeker_user_id).count() == 0
+    assert db_session.query(JobSeekerCompetency).filter(JobSeekerCompetency.user_id == seeker_user_id).count() == 0
+    assert db_session.query(Application).filter(Application.seeker_user_id == seeker_user_id).count() == 0
+
+
+@pytest.mark.parametrize("role", ["job_seeker", "recruiter"])
+def test_delete_account_works_for_both_roles(client, role):
+    password = "DeleteAccount123!"
+    register_response = register_user(
+        client,
+        email=f"delete-{role}@example.com",
+        password=password,
+        role=role,
+    )
+    access_token = register_response.json()["access_token"]
+
+    response = client.request(
+        "DELETE",
+        ACCOUNT_ROUTE,
+        json={"current_password": password},
+        headers=auth_headers(access_token),
+    )
+
+    assert response.status_code == 204
+
+
+def test_delete_account_rejects_wrong_password(client):
+    register_response = register_user(
+        client,
+        email="delete-wrong-password@example.com",
+        password="DeleteMe123!",
+        role="job_seeker",
+    )
+    access_token = register_response.json()["access_token"]
+
+    response = client.request(
+        "DELETE",
+        ACCOUNT_ROUTE,
+        json={"current_password": "WrongPassword123!"},
+        headers=auth_headers(access_token),
+    )
+
+    assert_error_response(
+        response,
+        status_code=401,
+        error="http_error",
+        message="Invalid email or password.",
+    )
+
+
+def test_delete_account_requires_authentication(client):
+    response = client.request(
+        "DELETE",
+        ACCOUNT_ROUTE,
+        json={"current_password": "DeleteMe123!"},
+    )
+
+    assert_error_response(
+        response,
+        status_code=401,
+        error="http_error",
+        message="Could not validate credentials.",
+    )
+
+
+def test_delete_account_clears_auth_cookies(client):
+    password = "DeleteCookie123!"
+    register_response = register_user(
+        client,
+        email="delete-cookie@example.com",
+        password=password,
+        role="job_seeker",
+    )
+    access_token = register_response.json()["access_token"]
+
+    response = client.request(
+        "DELETE",
+        ACCOUNT_ROUTE,
+        json={"current_password": password},
+        headers=auth_headers(access_token),
+    )
+    assert response.status_code == 204
+
+    settings = get_settings()
+    assert client.cookies.get(settings.auth_refresh_cookie_name) is None
+    assert client.cookies.get(settings.auth_csrf_cookie_name) is None

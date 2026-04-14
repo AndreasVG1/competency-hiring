@@ -11,6 +11,7 @@ from app.modules.auth import security
 INVALID_CREDENTIALS_MESSAGE = "Invalid email or password."
 DUPLICATE_EMAIL_MESSAGE = "Email is already registered."
 INVALID_REFRESH_TOKEN_MESSAGE = "Invalid refresh token."
+PASSWORD_REUSE_MESSAGE = "New password must be different from old password."
 
 
 def normalize_email(email: str) -> str:
@@ -139,3 +140,59 @@ def revoke_refresh_token(db_session: Session, *, refresh_token: str) -> None:
     if session is not None and session.revoked_at is None and session.expires_at > _utc_now():
         session.revoked_at = _utc_now()
         db_session.commit()
+
+
+def revoke_all_user_refresh_tokens(db_session: Session, *, user_id: int) -> None:
+    statement = select(RefreshTokenSession).where(RefreshTokenSession.user_id == user_id)
+    refresh_sessions = db_session.execute(statement).scalars().all()
+    now = _utc_now()
+    has_changes = False
+    for refresh_session in refresh_sessions:
+        if refresh_session.revoked_at is None:
+            refresh_session.revoked_at = now
+            has_changes = True
+
+    if has_changes:
+        db_session.commit()
+
+
+def change_password(
+    db_session: Session,
+    *,
+    user: User,
+    old_password: str,
+    new_password: str,
+) -> None:
+    if not security.verify_password(old_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=INVALID_CREDENTIALS_MESSAGE,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if security.verify_password(new_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=PASSWORD_REUSE_MESSAGE,
+        )
+
+    user.password_hash = security.hash_password(new_password)
+    db_session.commit()
+    revoke_all_user_refresh_tokens(db_session, user_id=user.id)
+
+
+def delete_account(
+    db_session: Session,
+    *,
+    user: User,
+    current_password: str,
+) -> None:
+    if not security.verify_password(current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=INVALID_CREDENTIALS_MESSAGE,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    db_session.delete(user)
+    db_session.commit()

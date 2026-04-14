@@ -114,6 +114,7 @@ class RecruiterApplicantListItem(BaseModel):
     application_id: int
     job_offer_id: int
     seeker_user_id: int
+    seeker_email: str
     consent_given_at: datetime
     applied_at: datetime
     shared_profile: RecruiterApplicantSharedProfile

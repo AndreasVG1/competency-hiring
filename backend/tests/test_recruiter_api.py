@@ -868,6 +868,7 @@ def test_applicants_list_returns_snapshot_based_rows_for_owned_offer(client: Tes
     assert len(items) == 1
     applicant = items[0]
     assert applicant["job_offer_id"] == offer_id
+    assert applicant["seeker_email"] == "seeker-applicants-owned@example.com"
     assert applicant["shared_profile"]["full_name"] == "Alice Snapshot"
     assert applicant["shared_profile"]["summary"] == "Initial summary"
     assert applicant["shared_profile"]["location"] == "Tallinn"

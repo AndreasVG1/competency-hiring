@@ -15,6 +15,17 @@ def _driver_and_database() -> tuple[Driver, str]:
     settings = get_settings()
     return get_neo4j_driver(settings), settings.neo4j_database
 
+def clear_graph() -> None:
+    driver, database = _driver_and_database()
+
+    cypher = """
+    MATCH (n)
+    DETACH DELETE n
+    """
+
+    with driver.session(database=database) as session:
+        session.run(cypher).consume()
+
 def ensure_constraints() -> None:
     driver, database = _driver_and_database()
 
@@ -84,6 +95,8 @@ def populate_graph(occupation_data: List[OccupationData]) -> None:
             session.run(cypher, {"occupation": _occupation_to_dict(occupation)}).consume()
     
 if __name__ == "__main__":
+    print("Clearing Graph...")
+    clear_graph()
     ensure_constraints()
     print("Graph counts before population:")
     counts_before = get_graph_counts()

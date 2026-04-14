@@ -337,6 +337,7 @@ export interface RecruiterApplicantListItem {
   application_id: number;
   job_offer_id: number;
   seeker_user_id: number;
+  seeker_email: string;
   consent_given_at: string;
   applied_at: string;
   shared_profile: RecruiterApplicantSharedProfile;

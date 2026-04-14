@@ -251,8 +251,14 @@ def list_applicants_for_owned_job_offer(
         )
 
     rows = (
-        db_session.query(Application, ApplicationSnapshot, ApplicationMatchingSnapshot)
+        db_session.query(
+            Application,
+            ApplicationSnapshot,
+            ApplicationMatchingSnapshot,
+            User,
+        )
         .join(ApplicationSnapshot, ApplicationSnapshot.application_id == Application.id)
+        .join(User, User.id == Application.seeker_user_id)
         .outerjoin(
             ApplicationMatchingSnapshot,
             ApplicationMatchingSnapshot.application_id == Application.id,
@@ -267,6 +273,7 @@ def list_applicants_for_owned_job_offer(
             "application_id": application.id,
             "job_offer_id": application.job_offer_id,
             "seeker_user_id": application.seeker_user_id,
+            "seeker_email": seeker_user.email,
             "consent_given_at": application.consent_given_at,
             "applied_at": application.created_at,
             "shared_profile": {
@@ -286,5 +293,5 @@ def list_applicants_for_owned_job_offer(
                 else None
             ),
         }
-        for application, snapshot, matching_snapshot in rows
+        for application, snapshot, matching_snapshot, seeker_user in rows
     ]

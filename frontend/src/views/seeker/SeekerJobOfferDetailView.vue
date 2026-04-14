@@ -105,7 +105,7 @@
         {{ applySuccessMessage }}
       </div>
       <div class="alert alert-info mb-0">
-        Tähelepanek: värbajaga jagatakse profiili hetkeseis kandideerimise ajal. Värbajale ei kajastu hiljem tehtud muudatused.
+        Tähelepanek: värbajaga jagatakse e-post ja profiili hetkeseis kandideerimise ajal. Värbajale ei kajastu hiljem tehtud muudatused.
       </div>
       <div class="d-flex flex-wrap gap-2">
         <button v-if="!hasApplied" class="btn btn-primary" type="button" :disabled="isApplying" @click="applyToOffer">
@@ -280,7 +280,7 @@ async function applyToOffer(): Promise<void> {
   const confirmed = await confirm({
     title: "Kandideeri pakkumisele",
     message:
-      "Kandideerides sellele pakkumisele jagatakse sinu profiili hetkeseis kandideerimise ajal värbajaga.",
+      "Kandideerides sellele pakkumisele jagatakse sinu e-post ja profiili hetkeseis kandideerimise ajal värbajaga.",
     confirmLabel: "Kandideeri nõusolekuga",
     cancelLabel: "Tagasi",
     tone: "primary",

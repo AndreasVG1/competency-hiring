@@ -67,6 +67,7 @@
                     Punktisumma: {{ formatApplicantScore(applicant) }}
                   </span>
                 </div>
+                <p class="text-body-secondary mb-0 mt-1 text-break">{{ applicant.seeker_email }}</p>
               </div>
             </div>
 

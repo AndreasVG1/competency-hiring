@@ -702,6 +702,7 @@ def test_list_applicants_for_owned_job_offer_returns_snapshot_only(db_session):
     item = listed[0]
     assert item["application_id"] == created.id
     assert item["seeker_user_id"] == seeker.id
+    assert item["seeker_email"] == "application-service-applicants-seeker@example.com"
     assert item["shared_profile"]["full_name"] == "Alice Example"
     assert item["shared_matching"] is not None
     assert item["shared_matching"]["algorithm_version"] == "v2_exact_priority_level_dual_signal"

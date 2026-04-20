@@ -703,15 +703,15 @@ def test_list_applicants_for_owned_job_offer_returns_snapshot_only(db_session):
     assert item["application_id"] == created.id
     assert item["seeker_user_id"] == seeker.id
     assert item["seeker_email"] == "application-service-applicants-seeker@example.com"
-    assert item["shared_profile"]["full_name"] == "Alice Example"
+    assert item["shared_profile"]["full_name"] == "Alice Example" # type: ignore
     assert item["shared_matching"] is not None
-    assert item["shared_matching"]["algorithm_version"] == "v2_exact_priority_level_dual_signal"
-    assert isinstance(item["shared_matching"]["score"], float)
-    assert item["shared_matching"]["result_payload"]["scope"] == "shared_application_snapshot"
-    assert item["shared_matching"]["snapshot_created_at"] is not None
-    assert item["shared_matching"]["explanation"] is not None
-    assert item["shared_matching"]["explanation"]["audience"] == "recruiter"
-    assert item["shared_matching"]["explanation"]["development_roadmap"] is None
+    assert item["shared_matching"]["algorithm_version"] == "v2_exact_priority_level_dual_signal" # type: ignore
+    assert isinstance(item["shared_matching"]["score"], float) # type: ignore
+    assert item["shared_matching"]["result_payload"]["scope"] == "shared_application_snapshot" # type: ignore
+    assert item["shared_matching"]["snapshot_created_at"] is not None # type: ignore
+    assert item["shared_matching"]["explanation"] is not None # type: ignore
+    assert item["shared_matching"]["explanation"]["audience"] == "recruiter" # type: ignore
+    assert item["shared_matching"]["explanation"]["development_roadmap"] is None # type: ignore
 
 
 def test_list_applicants_for_owned_job_offer_returns_null_shared_matching_when_snapshot_missing(
@@ -801,7 +801,7 @@ def test_list_applicants_for_owned_job_offer_keeps_row_when_explanation_payload_
     item = listed[0]
     assert item["application_id"] == created.id
     assert item["shared_matching"] is not None
-    assert item["shared_matching"]["explanation"] is None
+    assert item["shared_matching"]["explanation"] is None # type: ignore
 
 
 def test_list_applicants_for_owned_job_offer_uses_fallback_for_unknown_algorithm_version(
@@ -846,7 +846,7 @@ def test_list_applicants_for_owned_job_offer_uses_fallback_for_unknown_algorithm
         job_offer_id=offer.id,
     )
     assert len(listed) == 1
-    explanation = listed[0]["shared_matching"]["explanation"]
+    explanation = listed[0]["shared_matching"]["explanation"] # type: ignore
     assert explanation is not None
     assert explanation["audience"] == "recruiter"
     assert explanation["development_roadmap"] is None

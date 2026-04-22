@@ -112,6 +112,11 @@
                   :rows="toSharedCompetencyRows(applicant)"
                   empty-text="Puuduvad jagatud kompetentsid."
                   :label-resolver="competencyLabel"
+                  :level-formatter="formatLevel"
+                  :activity-indicator-resolver="activityIndicatorsFor"
+                  :activity-indicator-count-resolver="activityIndicatorCountFor"
+                  :activity-indicator-loader="loadActivityIndicators"
+                  :overlay-title-id="applicantIndicatorsTitleId(applicant.application_id)"
                 />
               </section>
 
@@ -252,6 +257,35 @@ function competencyLabel(competencyKey: string): string {
   }
 
   return competencyKey;
+}
+
+function formatLevel(level: string): string {
+  if (level === "beginner") {
+    return "Algaja";
+  }
+  if (level === "intermediate") {
+    return "Kesktase";
+  }
+  if (level === "advanced") {
+    return "Edasijõudnud";
+  }
+  return level;
+}
+
+function activityIndicatorsFor(competencyKey: string) {
+  return labelCache.getActivityIndicators(competencyKey) ?? [];
+}
+
+function activityIndicatorCountFor(competencyKey: string): number {
+  return labelCache.getActivityIndicatorCount(competencyKey);
+}
+
+async function loadActivityIndicators(competencyKey: string): Promise<void> {
+  await labelCache.ensureActivityIndicators(competencyKey);
+}
+
+function applicantIndicatorsTitleId(applicationId: number): string {
+  return `recruiter-applicant-${applicationId}-indicators-title`;
 }
 
 function formatDateTime(value: string): string {

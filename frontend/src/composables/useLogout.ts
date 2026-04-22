@@ -19,10 +19,10 @@ export function useLogout() {
     }
 
     const confirmed = await confirm({
-      title: "Log out",
-      message: "Log out now? You will need to sign in again to access seeker or recruiter features.",
-      confirmLabel: "Log out",
-      cancelLabel: "Stay signed in",
+      title: "Logi välja",
+      message: "Logi välja? Töötosija või tööandja funktsionaalsustele ligi pääsemiseks pead uuesti sisse logima.",
+      confirmLabel: "Logi välja",
+      cancelLabel: "Tagasi",
       tone: "danger",
     });
     if (!confirmed) {

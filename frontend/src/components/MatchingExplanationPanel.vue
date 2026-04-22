@@ -9,6 +9,9 @@
         <p class="fw-semibold mb-1">
           {{ renderSummaryHeadline() }}
         </p>
+        <p v-if="pointsSummary !== null" class="text-body-primary mb-2">
+          {{ pointsSummary }}
+        </p>
         <p class="text-body-secondary mb-2">{{ renderSummaryStatusLabel() }}</p>
         <p v-if="explanation.summary.must_have_notice" class="mb-2 text-danger fw-semibold">
           {{ renderSummaryMustHaveNotice() }}
@@ -150,6 +153,7 @@ import type {
   ExplanationGapKind,
   ExplanationHighlightItem,
   ExplanationRoadmapItem,
+  MatchingTotals,
   MatchingExplanation,
   RequirementPriority,
 } from "../types/domain";
@@ -157,17 +161,20 @@ import type {
 interface Props {
   explanation: MatchingExplanation;
   competencyLabel: (competencyKey: string) => string;
+  totals?: MatchingTotals | null;
   showRoadmap?: boolean;
   summaryTitle?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  totals: null,
   showRoadmap: true,
   summaryTitle: "Analüüsi kokkuvõte",
 });
 
 const explanation = computed(() => props.explanation);
 const competencyLabel = props.competencyLabel;
+const totals = computed(() => props.totals);
 const showRoadmap = computed(() => props.showRoadmap);
 const summaryTitle = computed(() => props.summaryTitle);
 
@@ -232,6 +239,17 @@ function renderSummaryHeadline(): string {
   }
   return explanation.value.summary.headline;
 }
+
+const pointsSummary = computed(() => {
+  const snapshot = totals.value;
+  if (!snapshot) {
+    return null;
+  }
+  if (!Number.isFinite(snapshot.max_points) || snapshot.max_points <= 0) {
+    return null;
+  }
+  return `Punktid: ${snapshot.earned_points.toFixed(1)}/${snapshot.max_points.toFixed(1)}`;
+});
 
 function renderSummaryStatusLabel(): string {
   const code = explanation.value.summary.status_code;

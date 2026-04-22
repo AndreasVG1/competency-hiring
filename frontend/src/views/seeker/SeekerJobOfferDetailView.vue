@@ -81,6 +81,7 @@
           summary-title="Sobivusanalüüsi kokkuvõte"
           :explanation="analysisResult.explanation"
           :competency-label="competencyLabel"
+          :totals="analysisResult.totals"
         />
         <details class="matching-disclosure">
           <summary class="matching-disclosure-summary">

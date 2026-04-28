@@ -23,7 +23,7 @@
 
     <EnumSelect
       class="col-12 col-lg-2"
-      label="Application status"
+      label="Kandideerimise staatus"
       :model-value="appliedState"
       :options="appliedOptions"
       :disabled="disabled"

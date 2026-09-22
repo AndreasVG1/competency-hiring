@@ -384,7 +384,7 @@ def test_application_and_snapshot_timestamps_and_required_consent(db_session):
     missing_consent = Application(
         job_offer_id=offer.id,
         seeker_user_id=seeker.id,
-        consent_given_at=None,  # type: ignore[arg-type]
+        consent_given_at=None,
     )
     db_session.add(missing_consent)
     with pytest.raises(IntegrityError):
